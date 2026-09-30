@@ -35,13 +35,16 @@ p{margin:0}
 
 /* Shell */
 .app{min-height:100%;display:flex;flex-direction:column}
+body::before{content:"";position:fixed;left:0;right:0;top:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:45;pointer-events:none}
+.sheet>*{flex-shrink:0}
 .topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .topbar-in{max-width:980px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:1.1rem}
-.brand-mark{width:34px;height:34px;border-radius:10px;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;position:relative;overflow:hidden}
+.brand{display:flex;align-items:center;gap:10px;white-space:nowrap;min-width:0;font-family:var(--display);font-weight:800;font-size:1.1rem}
+.brand-mark{flex:none;width:34px;height:34px;border-radius:10px;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;position:relative;overflow:hidden}
 .brand-mark::after{content:"";position:absolute;left:9px;top:0;bottom:0;width:2px;background:var(--margin)}
 .brand small{display:block;font-family:var(--body);font-weight:400;font-size:.72rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 .topbar .spacer{flex:1}
+@media (max-width:420px){.who{display:none}}
 .who{font-size:.8rem;color:var(--muted);text-align:right}
 main{flex:1;width:100%;max-width:980px;margin:0 auto;padding-inline:16px;padding-block:18px 110px;display:flex;flex-direction:column;gap:18px}
 .nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -283,16 +286,16 @@ ins{background:var(--ok-soft);color:var(--ok);text-decoration:none;border-radius
   .p3{display:grid;grid-template-columns:minmax(330px,400px) 1fr;align-items:start}
   .p3-prev{position:sticky;top:calc(76px + env(safe-area-inset-top,0px));max-height:calc(100vh - 170px);overflow:auto;border-radius:8px}
 }
-.info{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);font:700 12px/1 var(--body);display:inline-grid;place-items:center;cursor:pointer;flex:none;padding:0;vertical-align:middle;margin-left:4px;transition:all .15s;position:relative}
-.info::before{content:"";position:absolute;inset:-11px}
-.info:hover,.info[aria-expanded="true"]{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.ajuda-btn{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);font:700 12px/1 var(--body);display:inline-grid;place-items:center;cursor:pointer;flex:none;padding:0;vertical-align:middle;margin-left:4px;transition:all .15s;position:relative}
+.ajuda-btn::before{content:"";position:absolute;inset:-11px}
+.ajuda-btn:hover,.ajuda-btn[aria-expanded="true"]{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
 .dica-txt{display:block;flex-basis:100%;width:100%;font-size:.84rem;font-weight:400;line-height:1.45;color:var(--ink);background:var(--surface-2);border-radius:10px;padding:8px 11px;margin-top:6px;text-transform:none;letter-spacing:0;animation:dica .18s ease-out}
 .dica-txt[hidden]{display:none!important}
 @keyframes dica{from{opacity:0;transform:translateY(-3px)}}
 .th{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .th>svg{width:20px;height:20px;color:var(--warn)}
 label.f{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:2px}
-label.f>*:not(.info){flex-basis:100%}
+label.f>*:not(.ajuda-btn){flex-basis:100%}
 .opcao{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:6px;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:2px 12px 2px 0}
 .opcao .switch{border:0;background:none;padding:10px 12px}
 .opcao .dica-txt{grid-column:1/-1;margin:0 0 10px 12px;width:auto}
@@ -369,7 +372,7 @@ function lembrar(){try{localStorage.setItem("senov.tab",S.tab);localStorage.setI
 /* Explicações ficam escondidas atrás de um botão "?" e abrem só quando o professor toca */
 const DICAS=new Set();
 const dh=k=>DICAS.has(k)?"":"hidden";
-function ajuda(k,txt){return `<button type="button" class="info" data-a="dica" data-k="${k}" aria-expanded="${DICAS.has(k)}" aria-label="Explicação">?</button><span class="dica-txt" data-k="${k}" ${dh(k)}>${txt}</span>`;}
+function ajuda(k,txt){return `<button type="button" class="ajuda-btn" data-a="dica" data-k="${k}" aria-expanded="${DICAS.has(k)}" aria-label="Explicação">?</button><span class="dica-txt" data-k="${k}" ${dh(k)}>${txt}</span>`;}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -1135,6 +1138,7 @@ function vEscola(){
     <label class="f" for="e-prof">Seu nome<input class="in" id="e-prof" value="${esc(pf.professor)}" placeholder="Como deve aparecer na prova"></label>
     <button class="btn primary" data-a="salvar-escola">Salvar dados</button>
   </div>
+  <div class="card stack"><div class="th"><h3>Tamanho do texto</h3>${ajuda("zoom","Aumenta o texto e os botões por igual, sem desmontar a tela. Vale só neste aparelho.")}</div><div class="seg" role="group">${[["1","Normal"],["1.1","Grande"],["1.2","Maior"]].map(([v,n])=>`<button data-a="zoom" data-v="${v}" aria-pressed="${String(ZOOM)===v}">${n}</button>`).join("")}</div></div>
   <div class="card stack"><h3>Autorização de compartilhamento</h3>
     ${pf.termoAceitoEm?`<p class="small">Você autorizou o compartilhamento em <b>${dataBR(pf.termoAceitoEm)}</b>. Suas questões continuam disponíveis para você no banco.</p>`:`<p class="small muted">Você ainda não autorizou. A autorização é necessária para cadastrar questões e montar provas.</p><button class="btn" data-a="ver-termo">Ler e autorizar</button>`}
   </div>
@@ -1386,6 +1390,7 @@ document.addEventListener("click",async ev=>{
   if(a==="fechar-scrim"){if(ev.target===el)fecharSheet();return;}
   const p=S.prova;
   switch(a){
+    case "zoom":aplicarZoom(el.dataset.v);render();break;
     case "dica":{const k=el.dataset.k,ab=!DICAS.has(k);ab?DICAS.add(k):DICAS.delete(k);el.setAttribute("aria-expanded",ab);document.querySelectorAll(`.dica-txt[data-k="${k}"]`).forEach(x=>x.hidden=!ab);break;}
     case "fechar":fecharSheet();break;
     case "nova-prova":novaProva();S.tab="prova";lembrar();render();window.scrollTo(0,0);break;
@@ -1552,5 +1557,8 @@ document.addEventListener("keydown",ev=>{
   if(ev.key==="Escape"&&$("#layer").innerHTML){fecharSheet();}
   if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches('[role="button"][data-a]')){ev.preventDefault();ev.target.click();}
 });
+let ZOOM=1;
+function aplicarZoom(v){ZOOM=[1,1.1,1.2].includes(+v)?+v:1;document.documentElement.style.zoom=ZOOM===1?"":String(ZOOM);try{localStorage.setItem("senov.zoom",String(ZOOM));}catch(e){}}
+try{aplicarZoom(localStorage.getItem("senov.zoom")||1);}catch(e){}
 iniciar();
 </script>
