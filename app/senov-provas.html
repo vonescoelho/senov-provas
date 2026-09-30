@@ -836,7 +836,7 @@ function desenharSheetGrafico(){
 function render(){
   const tabs=[["inicio","Início",I.home],["banco","Banco",I.bank],["prova","Nova prova",I.prova],["escola","Escola",I.school]];
   $("#nav").innerHTML=tabs.map(([k,n,ic])=>`<button data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span class="ico">${ic}</span>${n}</button>`).join("");
-  $("#who").innerHTML=S.isOwner?`<span class="pill aee">Administrador</span>`:"";
+  $("#who").innerHTML="";
   const m=$("#main");
   const foco=document.activeElement&&document.activeElement.id; const pos=foco&&document.activeElement.selectionStart;
   if(S.tab==="inicio") m.innerHTML=vInicio();
