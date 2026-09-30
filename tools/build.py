@@ -66,7 +66,7 @@ html = f"""<!doctype html>
 <meta name="theme-color" content="#0C1120" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="SENOV Provas">
+<meta name="apple-mobile-web-app-title" content="ChatSenov">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -124,8 +124,8 @@ for nome, cor in (("splash.png", (242, 244, 249)), ("splash-dark.png", (12, 17, 
 
 # ---------- manifest ----------
 manifest = {
-    "name": "SENOV Provas",
-    "short_name": "SENOV Provas",
+    "name": "ChatSenov",
+    "short_name": "ChatSenov",
     "description": "Provas adaptadas com gabarito equilibrado, perfil AEE e PDF no padrão ABNT.",
     "id": "./",
     "start_url": "./",
