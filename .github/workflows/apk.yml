@@ -36,6 +36,26 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Texto no tamanho do layout (a fonte ampliada do sistema não desmonta a tela)
+        run: |
+          cat > android/app/src/main/java/br/com/senov/provas/MainActivity.java <<'JAVA'
+          package br.com.senov.provas;
+
+          import android.webkit.WebView;
+          import com.getcapacitor.BridgeActivity;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              protected void load() {
+                  super.load();
+                  if (bridge != null && bridge.getWebView() != null) {
+                      WebView wv = bridge.getWebView();
+                      wv.getSettings().setTextZoom(100);
+                  }
+              }
+          }
+          JAVA
+
       - name: Ícone e tela de abertura
         continue-on-error: true
         run: npx @capacitor/assets generate --android --iconBackgroundColor '#2447C6' --iconBackgroundColorDark '#2447C6' --splashBackgroundColor '#F2F4F9' --splashBackgroundColorDark '#0C1120'
