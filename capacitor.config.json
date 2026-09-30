@@ -1,6 +1,6 @@
 {
   "appId": "br.com.senov.provas",
-  "appName": "SENOV Provas",
+  "appName": "ChatSenov",
   "webDir": "www",
   "android": {
     "backgroundColor": "#F2F4F9"
