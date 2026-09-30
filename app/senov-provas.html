@@ -1,4 +1,4 @@
-<title>SENOV Provas</title>
+<title>ChatSenov</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
@@ -348,7 +348,7 @@ label.f>*:not(.ajuda-btn){flex-basis:100%}
 <div class="app">
   <header class="topbar"><div class="topbar-in">
     <div class="brand"><div class="brand-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div>
-      <div>SENOV Provas<small>SENOV Educacional</small></div></div>
+      <div>ChatSenov</div></div>
     <div class="spacer"></div>
     <div class="who" id="who"></div>
   </div></header>
@@ -461,7 +461,7 @@ function exigirTermo(){
     if(termoOk()) return res(true);
     abrirSheet(`
       <div class="sheet-h"><h2>Autorização de compartilhamento</h2></div>
-      <p>Você usa o SENOV Provas sem custo. Em troca, autoriza o compartilhamento das questões que cadastrar.</p>
+      <p>Você usa o ChatSenov sem custo. Em troca, autoriza o compartilhamento das questões que cadastrar.</p>
       <div class="notice info">${I.info}<div class="stack" style="gap:6px">
         <span>As questões que você cadastrar passam a fazer parte do <b>banco de questões da SENOV Educacional</b>, que pode usá-las e organizá-las.</span>
         <span>Você <b>continua com acesso</b> a todas as suas questões, pode editá-las e usá-las em suas provas sempre que quiser.</span>
@@ -1480,7 +1480,7 @@ function gerarPDF(p,midiaFn){midiaFn=midiaFn||midia;
   const tot=doc.getNumberOfPages();
   for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFont("helvetica","normal");
     if(i<=nProva){doc.setFontSize(10);doc.setTextColor(0);doc.text(String(i),PW-MR,20,{align:"right"});}
-    doc.setFontSize(7.5);doc.setTextColor(150);doc.text("SENOV Educacional",ML+W/2,PH-9,{align:"center"});doc.setTextColor(0);}
+    doc.setFontSize(7.5);doc.setTextColor(150);doc.text("ChatSenov",ML+W/2,PH-9,{align:"center"});doc.setTextColor(0);}
   return doc.output("blob");
 }
 function nomeArquivo(p){return ("Prova "+[p.disciplina,p.serie,p.bimestre].join(" ")).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w\- ]+/g,"").replace(/\s+/g,"_")+".pdf";}
@@ -1659,7 +1659,7 @@ document.addEventListener("change",async ev=>{
   if(t.id==="imp-file"&&t.files&&t.files[0]&&S.db){
     try{const arr=JSON.parse(await t.files[0].text());if(!Array.isArray(arr))throw 0;let n=0;
       for(const q of arr){if(!q||typeof q.enunciado!=="string"||!Array.isArray(q.alternativas))continue;const {id,privada,...rest}=q;await S.db.doc("questoes/"+(id&&/^[\w-]+$/.test(id)?id:Date.now().toString(36)+n)).set(rest);n++;}
-      toast(n===1?"1 questão importada.":n+" questões importadas.");}catch(e){toast("Arquivo inválido. Use o JSON exportado pelo SENOV Provas.");}
+      toast(n===1?"1 questão importada.":n+" questões importadas.");}catch(e){toast("Arquivo inválido. Use o JSON exportado pelo ChatSenov.");}
     t.value="";
   }
   if(t.id==="anexar-file"&&t.files&&t.files[0]&&S._anexarId){
