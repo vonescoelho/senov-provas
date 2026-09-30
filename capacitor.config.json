@@ -1,0 +1,14 @@
+{
+  "appId": "br.com.senov.provas",
+  "appName": "SENOV Provas",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#F2F4F9"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover"
+    }
+  }
+}
