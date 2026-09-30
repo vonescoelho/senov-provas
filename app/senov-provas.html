@@ -309,6 +309,7 @@ label.f>*:not(.ajuda-btn){flex-basis:100%}
 .aeebox[open]>summary::after{transform:rotate(-135deg)}
 .aeebox[open]>summary{margin-bottom:12px}
 .hero{gap:4px}
+.dica-txt,.notice>span,.notice .stack>span,.qcard .txt,.sheet p,.hero p,.revdoc p,.origbox p,.card p,.selitem .body p,.opt span span{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .hr{height:1px;background:var(--line);border:0;margin:4px 0}
 </style>
@@ -1557,6 +1558,7 @@ document.addEventListener("keydown",ev=>{
   if(ev.key==="Escape"&&$("#layer").innerHTML){fecharSheet();}
   if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches('[role="button"][data-a]')){ev.preventDefault();ev.target.click();}
 });
+document.documentElement.lang="pt-BR";
 let ZOOM=1;
 function aplicarZoom(v){ZOOM=[1,1.1,1.2].includes(+v)?+v:1;document.documentElement.style.zoom=ZOOM===1?"":String(ZOOM);try{localStorage.setItem("senov.zoom",String(ZOOM));}catch(e){}}
 try{aplicarZoom(localStorage.getItem("senov.zoom")||1);}catch(e){}
