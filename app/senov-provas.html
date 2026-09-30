@@ -316,6 +316,31 @@ label.f>*:not(.ajuda-btn){flex-basis:100%}
 .aviso.plano{background:var(--primary-soft);color:var(--ink)}
 .aviso.plano>svg{color:var(--primary)}
 .notice .taxa{background:color-mix(in srgb,var(--surface) 60%,transparent);border-left:3px solid var(--primary);padding:6px 10px;border-radius:8px}
+.chat{display:flex;flex-direction:column;gap:10px;padding-bottom:84px}
+.msg{display:flex;flex-direction:column;gap:6px;max-width:88%}
+.msg.bot{align-self:flex-start}
+.msg.eu{align-self:flex-end;align-items:flex-end}
+.bolha{background:var(--surface);border:1px solid var(--line);border-radius:4px 18px 18px 18px;padding:9px 13px 20px;position:relative;line-height:1.45;min-width:72px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.msg.eu .bolha{background:var(--primary);color:var(--primary-ink);border-color:transparent;border-radius:18px 4px 18px 18px}
+.bolha small{opacity:.8}
+.hora{position:absolute;right:11px;bottom:4px;font-size:.66rem;opacity:.6}
+.chips.resp{padding-left:2px}
+.chips.resp .chip{background:var(--surface);border-color:color-mix(in srgb,var(--primary) 45%,var(--line));color:var(--primary)}
+.digitando{display:flex;gap:5px;padding:13px 15px;min-width:0}
+.digitando i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:pisca 1s infinite}
+.digitando i:nth-child(2){animation-delay:.15s}.digitando i:nth-child(3){animation-delay:.3s}
+@keyframes pisca{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.composer{position:fixed;left:0;right:0;bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:25;display:flex;gap:8px;padding:8px 16px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-top:1px solid var(--line)}
+.composer .in{flex:1;border-radius:24px;min-height:46px}
+.composer .btn{border-radius:50%;width:46px;min-height:46px;padding:0;flex:none}
+@media (min-width:900px){.composer{left:96px;bottom:0;padding-bottom:12px}}
+.cprova{margin-top:8px;display:flex;flex-direction:column;gap:3px;background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.cprova span{font-size:.86rem;color:var(--muted)}
+.cprova .gab{font-variant-numeric:tabular-nums}
+.cprova .row{margin-top:6px}
+.cprova.velho .row{display:none}
+.clista{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.clista .btn{justify-content:flex-start}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .hr{height:1px;background:var(--line);border:0;margin:4px 0}
 </style>
@@ -361,6 +386,8 @@ const I={
  image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>',
  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg>',
  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+ chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></svg>',
+ send:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>',
  save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v6h8M7 21v-7h10v7"/></svg>'
 };
 
@@ -844,12 +871,12 @@ function desenharSheetGrafico(){
 
 /* ============ Render ============ */
 function render(){
-  const tabs=[["inicio","Início",I.home],["banco","Banco",I.bank],["prova","Nova prova",I.prova],["escola","Escola",I.school]];
+  const tabs=[["inicio","Conversa",I.chat],["banco","Banco",I.bank],["prova","Nova prova",I.prova],["escola","Escola",I.school]];
   $("#nav").innerHTML=tabs.map(([k,n,ic])=>`<button data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span class="ico">${ic}</span>${n}</button>`).join("");
   $("#who").innerHTML="";
   const m=$("#main");
   const foco=document.activeElement&&document.activeElement.id; const pos=foco&&document.activeElement.selectionStart;
-  if(S.tab==="inicio") m.innerHTML=vInicio();
+  if(S.tab==="inicio") m.innerHTML=vConversa();
   else if(S.tab==="banco") m.innerHTML=vBanco();
   else if(S.tab==="prova") m.innerHTML=vProva();
   else m.innerHTML=vEscola();
@@ -939,6 +966,85 @@ function vRapida(){
   </div>`:`<div class="empty"><b>O banco ainda não tem questões</b><span>Cadastre questões ou monte a prova escrevendo as suas.</span><button class="btn primary" data-a="nova-questao">${I.plus} Cadastrar questão</button></div>`}
   <button class="btn ghost" data-a="personalizar" style="align-self:center">${I.pen} Prefiro montar passo a passo</button>
   <div class="bar"><button class="btn primary" data-a="gerar-rapida" ${r.disciplina?"":"disabled"}>${I.wand} Gerar prova</button></div>`;
+}
+/* ============ Conversa: assistente de provas em formato de chat ============ */
+const CHAT={msgs:[],d:{},perg:null,espera:null,digitando:false};
+const hora=()=>new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+const semAcento=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const menuChips=()=>[{t:"Nova prova",a:"c-nova"},{t:"Minhas provas",a:"c-minhas"},{t:"Cadastrar questão",a:"c-questao"}];
+function renderChat(){if(S.tab!=="inicio")return;render();requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.scrollHeight));}
+function chatEu(t){CHAT.msgs.push({de:"eu",html:esc(t),h:hora()});}
+function chatBot(html,chips,extra){CHAT.digitando=true;renderChat();setTimeout(()=>{CHAT.digitando=false;CHAT.msgs.push({de:"bot",html,chips:chips||[],extra:extra||"",h:hora()});renderChat();},350);}
+function iniciarChat(){
+  if(CHAT.msgs.length)return;
+  const nome=(S.perfil.professor||"").split(" ")[0];
+  CHAT.msgs.push({de:"bot",html:`${nome?"Olá, "+esc(nome)+"!":"Olá!"} Eu monto a sua prova em poucos toques. O que vamos fazer?`,chips:menuChips(),h:hora()});
+}
+function vConversa(){
+  iniciarChat();
+  const ult=CHAT.msgs.length-1;
+  return `${avisoModo()}<div class="chat" id="chat">${CHAT.msgs.map((m,i)=>`<div class="msg ${m.de}"><div class="bolha">${m.html}${m.extra||""}<span class="hora">${m.h}</span></div>${m.de==="bot"&&i===ult&&!CHAT.digitando&&m.chips.length?`<div class="chips resp">${m.chips.map(c=>`<button class="chip" data-a="${c.a}" data-v="${esc(c.v||"")}">${esc(c.t)}</button>`).join("")}</div>`:""}</div>`).join("")}${CHAT.digitando?`<div class="msg bot"><div class="bolha digitando" aria-label="Digitando"><i></i><i></i><i></i></div></div>`:""}</div>
+  <form class="composer" id="composer"><input id="chat-txt" class="in" autocomplete="off" enterkeyhint="send" aria-label="Mensagem" placeholder="${CHAT.espera?esc(CHAT.espera.ph):"Ex.: Matemática, 6º ano, 10 questões"}"><button class="btn primary" aria-label="Enviar">${I.send}</button></form>`;
+}
+function perguntar(){
+  const d=CHAT.d;
+  if(!S.perfil.escola&&!d.pulouEscola){CHAT.perg="escola";CHAT.espera={campo:"escola",ph:"Nome da escola"};return chatBot("Qual é o nome da sua escola? Ele vai no cabeçalho da prova.",[{t:"Pular",a:"c-pular"}]);}
+  CHAT.espera=null;
+  if(!d.disciplina){const ds=disciplinasDoBanco();CHAT.perg="disciplina";
+    if(!ds.length)return chatBot("O banco ainda não tem questões. Cadastre a primeira para montar provas.",[{t:"Cadastrar questão",a:"c-questao"}]);
+    return chatBot("Qual disciplina?",ds.map(([n,c])=>({t:`${n} (${c})`,a:"c-resp",v:"disciplina|"+n})));}
+  if(!d.serie){CHAT.perg="serie";const ops=[];["EF","EM"].forEach(nv=>SERIES[nv].forEach(se=>{const c=contar(q=>q.disciplina===d.disciplina&&q.nivel===nv&&q.serie===se);if(c)ops.push({t:`${se} (${c})`,a:"c-resp",v:`serie|${nv}|${se}`});}));
+    return chatBot("Para qual série ou ano?",ops.length?ops:[{t:"Outra disciplina",a:"c-resp",v:"disciplina|"}]);}
+  if(!d.bimestre){CHAT.perg="bimestre";return chatBot("Qual bimestre?",BIM.map(b=>({t:b,a:"c-resp",v:"bimestre|"+b})));}
+  if(!d.qtd){CHAT.perg="qtd";return chatBot("Quantas questões?",[5,10,15,20].map(n=>({t:String(n),a:"c-resp",v:"qtd|"+n})));}
+  if(d.aee==null){CHAT.perg="aee";return chatBot("É uma prova adaptada para estudantes do AEE?",[{t:"Não",a:"c-resp",v:"aee|0"},{t:"Sim, adaptada",a:"c-resp",v:"aee|1"}]);}
+  CHAT.perg=null;gerarNoChat();
+}
+function responder(v){
+  const [k,a,b]=String(v).split("|"),d=CHAT.d;
+  if(k==="disciplina"){d.disciplina=a||"";d.serie=null;}
+  else if(k==="serie"){d.nivel=a;d.serie=b;}
+  else if(k==="bimestre")d.bimestre=a;
+  else if(k==="qtd")d.qtd=+a;
+  else if(k==="aee")d.aee=a==="1";
+  perguntar();
+}
+function chatTexto(t){
+  t=t.trim();if(!t)return;chatEu(t);
+  const d=CHAT.d,n=semAcento(t);
+  if(CHAT.espera&&CHAT.espera.campo==="escola"){salvarPerfil({escola:t});CHAT.espera=null;return perguntar();}
+  if(/^(oi|ola|bom dia|boa tarde|boa noite|menu|inicio|ajuda)\b/.test(n)){CHAT.d={};CHAT.perg=null;return chatBot("O que vamos fazer?",menuChips());}
+  let achou=false;
+  if(CHAT.perg==="qtd"&&/^\d{1,2}$/.test(n)){d.qtd=Math.min(40,Math.max(1,+n));achou=true;}
+  if(CHAT.perg==="bimestre"&&/^[1-4]$/.test(n)){d.bimestre=BIM[+n-1];achou=true;}
+  if(CHAT.perg==="aee"&&/^(sim|s|nao|n)\b/.test(n)){d.aee=n[0]==="s";achou=true;}
+  const disc=disciplinasDoBanco().map(x=>x[0]).find(x=>n.includes(semAcento(x)));
+  if(disc){if(disc!==d.disciplina)d.serie=null;d.disciplina=disc;achou=true;}
+  const ms=n.match(/(\d)\s*(?:o|º|ª|a)?\s*(ano|serie)/);
+  if(ms){const nv=ms[2]==="ano"?"EF":"EM",se=nv==="EF"?ms[1]+"º ano":ms[1]+"ª série";if(SERIES[nv].includes(se)){d.nivel=nv;d.serie=se;achou=true;}}
+  const mq=n.match(/(\d{1,2})\s*quest/);if(mq){d.qtd=Math.min(40,Math.max(1,+mq[1]));achou=true;}
+  const mb=n.match(/([1-4])\s*(?:o|º)?\s*bim/);if(mb){d.bimestre=BIM[+mb[1]-1];achou=true;}
+  if(/\baee\b|adaptad/.test(n)){d.aee=true;achou=true;}
+  if(!achou&&/(nova|montar|criar|fazer|gerar)\b.*prova|^prova\b/.test(n)){CHAT.d={};return perguntar();}
+  if(!achou)return chatBot("Não entendi. Escreva, por exemplo, <i>Matemática, 6º ano, 10 questões</i>, ou toque em uma opção.",menuChips());
+  perguntar();
+}
+function gerarNoChat(){
+  const d=CHAT.d;
+  novaProva();const p=S.prova;
+  Object.assign(p,{escola:S.perfil.escola||"",professor:S.perfil.professor||"",disciplina:d.disciplina,nivel:d.nivel,serie:d.serie,bimestre:d.bimestre,aee:!!d.aee,bastao:!!d.aee});
+  S.auto={conteudos:[],qtd:d.qtd,distr:"equilibrada",mesmaSerie:true};
+  let res=montarAuto(),obs="";
+  if(res.erro||res.falta){S.auto.mesmaSerie=false;const r2=montarAuto();
+    if(!r2.erro&&r2.sel.length>((res.sel&&res.sel.length)||0)){res=r2;obs=`Completei com questões de outras séries do ${NIVEL_NOME[d.nivel]}.`;}else S.auto.mesmaSerie=true;}
+  CHAT.d={};
+  if(res.erro)return chatBot(d.aee?"Ainda não há questões adaptadas ao AEE nesta disciplina. No modo passo a passo você pode adaptar questões do banco.":"Não encontrei questões para esses filtros.",[{t:"Nova prova",a:"c-nova"},{t:"Passo a passo",a:"personalizar"}]);
+  p.itens=res.sel;p.montagem=organizar(p.itens,p.nivel);S.passo=3;
+  if(res.falta)obs=(obs?obs+" ":"")+`Encontrei ${res.sel.length} de ${d.qtd} questões.`;
+  CHAT.msgs.forEach(m=>{if(m.extra)m.extra=m.extra.replace('class="cprova"','class="cprova velho"');});
+  const dist=distribuicao(p.montagem,p.nivel).map((v,i)=>`${LET[i]} ${v}`).join(" · ");
+  const card=`<div class="cprova"><b>${esc(p.disciplina)} · ${esc(p.serie)}</b><span>${esc(p.bimestre)} · ${p.montagem.length} questões${p.aee?" · adaptada":""}</span><span class="gab">Gabarito: ${dist}</span><div class="row"><button class="btn primary sm" data-a="pdf">${I.down} Baixar PDF</button><button class="btn sm" data-a="c-ver">${I.pen} Ver e ajustar</button></div></div>`;
+  chatBot(`Pronto! Organizei as questões por dificuldade e o gabarito vai em folha separada.${obs?"<br><small>"+esc(obs)+"</small>":""}`,[{t:"Salvar em Minhas provas",a:"salvar-prova"},{t:"Nova prova",a:"c-nova"}],card);
 }
 function gerarRapida(){
   const r=RAP;
@@ -1401,9 +1507,19 @@ document.addEventListener("click",async ev=>{
   const p=S.prova;
   switch(a){
     case "zoom":aplicarZoom(el.dataset.v);render();break;
+    case "c-nova":chatEu("Nova prova");CHAT.d={};perguntar();break;
+    case "c-resp":chatEu(el.textContent.replace(/\s*\(\d+\)$/,""));responder(el.dataset.v);break;
+    case "c-pular":chatEu("Pular");CHAT.d.pulouEscola=true;perguntar();break;
+    case "c-ver":S.tab="prova";S.passo=3;lembrar();render();window.scrollTo(0,0);break;
+    case "c-minhas":chatEu("Minhas provas");
+      if(!S.provas.length)chatBot("Você ainda não salvou provas. Depois de montar uma, toque em “Salvar em Minhas provas”.",menuChips());
+      else chatBot("Estas são as suas últimas provas:",menuChips(),`<div class="clista">${S.provas.slice(0,6).map(pv=>`<button class="btn sm" data-a="abrir-prova" data-id="${esc(pv.id)}">${esc(pv.disciplina)} · ${esc(pv.serie)} · ${esc(pv.bimestre)}</button>`).join("")}</div>`);
+      break;
     case "dica":{const k=el.dataset.k,ab=!DICAS.has(k);ab?DICAS.add(k):DICAS.delete(k);el.setAttribute("aria-expanded",ab);document.querySelectorAll(`.dica-txt[data-k="${k}"]`).forEach(x=>x.hidden=!ab);break;}
     case "fechar":fecharSheet();break;
     case "nova-prova":novaProva();S.tab="prova";lembrar();render();window.scrollTo(0,0);break;
+    case "c-questao":chatEu("Cadastrar questão");renderChat();
+    /* falls through */
     case "nova-questao":
       if(!podeGravar()){toast(S.db?"Você não tem permissão para cadastrar questões.":"Abra pelo claude.ai para cadastrar questões.");break;}
       if(!(await exigirTermo()))break;editorQuestao(null,false);break;
@@ -1562,6 +1678,7 @@ document.addEventListener("paste",async ev=>{
   if(!S._ed||!$("#ed-en"))return;const it=[...(ev.clipboardData&&ev.clipboardData.items||[])].find(i=>i.type.startsWith("image/"));if(!it)return;
   ev.preventDefault();lerEditor();try{const r=await arquivoParaImagem(it.getAsFile());S._ed.foto=r;S._ed.d.grafico=null;S._ed.d.temFoto=true;desenharEditor();toast("Imagem colada na questão.");}catch(e){toast("Não foi possível usar a imagem colada.");}
 });
+document.addEventListener("submit",ev=>{if(ev.target.id==="composer"){ev.preventDefault();const i=$("#chat-txt");const t=i.value;i.value="";chatTexto(t);}});
 document.addEventListener("toggle",ev=>{if(ev.target.classList&&ev.target.classList.contains("aeebox")){ev.target.open?DICAS.add("aee-painel"):DICAS.delete("aee-painel");}if(ev.target.id==="qdet"){S._qopen=ev.target.open;}},true);
 document.addEventListener("keydown",ev=>{
   if(ev.key==="Escape"&&$("#layer").innerHTML){fecharSheet();}
