@@ -427,20 +427,19 @@ function podeGravar(){return !!(S.db&&S.uid&&S.canWrite!==false);}
 
 /* ============ Termo de autorização ============ */
 const TERMO_V=2;
-const TEXTO_TAXA="O acesso ao <b>banco geral</b> terá uma <b>taxa</b> para cobrir os custos do site e da plataforma. Valor e forma de pagamento serão informados antes de qualquer cobrança. Suas próprias questões não têm custo. Durante os testes, o acesso está liberado.";
+const TEXTO_TAXA="O acesso às questões de todos os professores (<b>banco completo</b>) terá uma taxa para cobrir os custos do site e da plataforma. Valor e forma de pagamento serão informados antes de qualquer cobrança. Durante os testes, o acesso está liberado.";
 function termoOk(){return !!(S.perfil.termoAceitoEm&&(S.perfil.termoVersao||1)>=TERMO_V);}
 function exigirTermo(){
   return new Promise(res=>{
     if(termoOk()) return res(true);
     abrirSheet(`
       <div class="sheet-h"><h2>Autorização de compartilhamento</h2></div>
-      <p>Para montar provas com o SENOV Provas, você precisa autorizar o compartilhamento das questões que cadastrar.</p>
+      <p>Você usa o SENOV Provas sem custo. Em troca, autoriza o compartilhamento das questões que cadastrar.</p>
       <div class="notice info">${I.info}<div class="stack" style="gap:6px">
         <span>As questões que você cadastrar passam a fazer parte do <b>banco de questões da SENOV Educacional</b>, que pode usá-las e organizá-las.</span>
         <span>Você <b>continua com acesso</b> a todas as suas questões, pode editá-las e usá-las em suas provas sempre que quiser.</span>
-        <span>O banco reúne questões de todos os professores participantes, organizadas por conteúdo e dificuldade.</span>
-        <span class="taxa">${TEXTO_TAXA}</span>
-        <span>Antes de entrar no banco, cada questão passa por uma <b>revisão da IA</b>, que corrige o texto mudando o mínimo e garante que não haja dúvida sobre a resposta. Você vê cada ajuste antes de enviar.</span></div></div>
+        <span>Antes de entrar no banco, cada questão passa por uma <b>revisão da IA</b>, que corrige o texto mudando o mínimo e garante que não haja dúvida sobre a resposta. Você vê cada ajuste antes de enviar.</span>
+        <span class="taxa">${TEXTO_TAXA}</span></div></div>
       <label class="switch" for="termo-ok"><input type="checkbox" id="termo-ok"><span class="t"><b>Li e autorizo o compartilhamento</b><span>Você pode ler este termo novamente em Escola.</span></span></label>
       <div class="row"><button class="btn" data-a="termo-nao" style="flex:1">Agora não</button><button class="btn primary" data-a="termo-sim" style="flex:1" disabled id="termo-btn">Autorizar</button></div>`);
     $("#termo-ok").onchange=e=>{$("#termo-btn").disabled=!e.target.checked;};
@@ -899,7 +898,6 @@ function vBanco(){
   const f=S.f,lista=filtrosBanco();
   return `${avisoModo()}
   <section class="hero"><span class="eyebrow">Banco de questões</span><h1>Questões por conteúdo</h1></section>
-  <div class="aviso plano">${I.bank}<span>Banco geral: acesso com taxa</span>${ajuda("taxa",TEXTO_TAXA)}</div>
   <div class="row" style="flex-wrap:nowrap"><input class="in" id="busca" placeholder="Buscar no enunciado ou conteúdo" value="${esc(f.busca)}" aria-label="Buscar"><button class="btn primary" data-a="nova-questao" aria-label="Cadastrar questão">${I.plus}</button></div>
   <div class="filters" role="group" aria-label="Filtros">
     <select id="f-nivel" aria-label="Nível"><option value="">Todos os níveis</option><option value="EF" ${f.nivel==="EF"?"selected":""}>Fundamental (A–D)</option><option value="EM" ${f.nivel==="EM"?"selected":""}>Médio (A–E)</option></select>
@@ -1152,7 +1150,6 @@ function vEscola(){
   </div>
   <div class="card stack"><div class="th"><h3>Tamanho do texto</h3>${ajuda("zoom","Aumenta o texto e os botões por igual, sem desmontar a tela. Vale só neste aparelho.")}</div><div class="seg" role="group">${[["1","Normal"],["1.1","Grande"],["1.2","Maior"]].map(([v,n])=>`<button data-a="zoom" data-v="${v}" aria-pressed="${String(ZOOM)===v}">${n}</button>`).join("")}</div></div>
   <div class="card stack"><h3>Autorização de compartilhamento</h3>
-    <div class="aviso plano">${I.bank}<span>Banco geral: acesso com taxa</span>${ajuda("taxa-e",TEXTO_TAXA)}</div>
     ${termoOk()?`<p class="small">Você autorizou o compartilhamento em <b>${dataBR(pf.termoAceitoEm)}</b>. Suas questões continuam disponíveis para você no banco.</p>`:`<p class="small muted">Você ainda não autorizou. A autorização é necessária para cadastrar questões e montar provas.</p><button class="btn" data-a="ver-termo">Ler e autorizar</button>`}
   </div>
   ${window.SENOV_LOCAL?vIALocal():""}
