@@ -1,0 +1,1556 @@
+<title>SENOV Provas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
+<style>
+:root{
+  --bg:#F2F4F9; --surface:#FFFFFF; --surface-2:#E9EDF6; --ink:#141C33; --muted:#56627E; --line:#D8DEEA;
+  --primary:#2447C6; --primary-ink:#FFFFFF; --primary-soft:#E2E8FC; --margin:#D23F58;
+  --ok:#1D8657; --ok-soft:#DDF3E8; --warn:#A96400; --warn-soft:#FBEBD2; --danger:#C0303D; --danger-soft:#FBE1E3;
+  --paper:#FFFFFF; --paper-ink:#121212; --paper-rule:#CFDBF3;
+  --shadow:0 1px 2px rgba(20,28,51,.06),0 10px 28px rgba(20,28,51,.07);
+  --r:16px; --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0C1120; --surface:#141B2D; --surface-2:#1C2540; --ink:#E7ECF8; --muted:#9BA6C2; --line:#29344F;
+  --primary:#8FAAFF; --primary-ink:#0C1120; --primary-soft:#1D2950; --margin:#FF7189;
+  --ok:#52C98F; --ok-soft:#133526; --warn:#F2AA4C; --warn-soft:#3A2A12; --danger:#FF717B; --danger-soft:#3D1A1F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.25); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0C1120; --surface:#141B2D; --surface-2:#1C2540; --ink:#E7ECF8; --muted:#9BA6C2; --line:#29344F;
+  --primary:#8FAAFF; --primary-ink:#0C1120; --primary-soft:#1D2950; --margin:#FF7189;
+  --ok:#52C98F; --ok-soft:#133526; --warn:#F2AA4C; --warn-soft:#3A2A12; --danger:#FF717B; --danger-soft:#3D1A1F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.25); color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--display);line-height:1.15;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:1.75rem;font-weight:800} h2{font-size:1.3rem;font-weight:700} h3{font-size:1.05rem;font-weight:700}
+p{margin:0}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px;border-radius:8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* Shell */
+.app{min-height:100%;display:flex;flex-direction:column}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar-in{max-width:980px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:1.1rem}
+.brand-mark{width:34px;height:34px;border-radius:10px;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;position:relative;overflow:hidden}
+.brand-mark::after{content:"";position:absolute;left:9px;top:0;bottom:0;width:2px;background:var(--margin)}
+.brand small{display:block;font-family:var(--body);font-weight:400;font-size:.72rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.topbar .spacer{flex:1}
+.who{font-size:.8rem;color:var(--muted);text-align:right}
+main{flex:1;width:100%;max-width:980px;margin:0 auto;padding-inline:16px;padding-block:18px 110px;display:flex;flex-direction:column;gap:18px}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav-in{max-width:620px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.nav button{background:none;border:0;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:.75rem;color:var(--muted);cursor:pointer;min-height:60px}
+.nav button svg{width:24px;height:24px}
+.nav button[aria-current="page"]{color:var(--primary);font-weight:700}
+.nav button[aria-current="page"] .ico{background:var(--primary-soft)}
+.nav .ico{padding:3px 16px;border-radius:99px;display:grid;place-items:center;transition:background .2s}
+@media (min-width:900px){
+  .nav{top:0;right:auto;width:96px;border-top:0;border-right:1px solid var(--line);padding-top:84px}
+  .nav-in{grid-template-columns:1fr;gap:6px}
+  .app{padding-left:96px}
+  main{padding-block:24px 48px}
+}
+
+/* Blocks */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow)}
+.card.flat{box-shadow:none}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+.eyebrow{font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.hero{display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.hero p{color:var(--muted);max-width:60ch}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.stat b{display:block;font-family:var(--display);font-size:1.6rem;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{font-size:.78rem;color:var(--muted)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.bigact{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);cursor:pointer;text-align:left;min-height:120px}
+.bigact.primary{background:var(--primary);color:var(--primary-ink);border-color:transparent}
+.bigact svg{width:28px;height:28px}
+.bigact b{font-family:var(--display);font-size:1.08rem}
+.bigact span{font-size:.84rem;opacity:.85}
+
+/* Buttons & forms */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:12px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700;text-decoration:none}
+.btn:hover{border-color:var(--primary)}
+.btn.primary{background:var(--primary);color:var(--primary-ink);border-color:transparent}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--primary)}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,var(--line))}
+.btn.sm{min-height:38px;padding:0 12px;font-size:.88rem;border-radius:10px}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.btn svg{width:20px;height:20px}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:.9rem}
+label.f .hint{font-weight:400;color:var(--muted);font-size:.8rem}
+.in,select.in,textarea.in{width:100%;min-height:48px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 12px;font-weight:400}
+textarea.in{min-height:110px;resize:vertical;line-height:1.45}
+.in:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px var(--primary-soft)}
+.seg{display:flex;background:var(--surface-2);border-radius:12px;padding:4px;gap:4px;flex-wrap:wrap}
+.seg button{flex:1;min-height:40px;border:0;border-radius:9px;background:transparent;cursor:pointer;font-weight:700;color:var(--muted);padding:0 10px;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.switch{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;background:var(--surface)}
+.switch input{appearance:none;width:46px;height:28px;border-radius:99px;background:var(--line);position:relative;flex:none;cursor:pointer;transition:background .2s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.switch input:checked{background:var(--primary)}
+.switch input:checked::after{transform:translateX(18px)}
+.switch .t b{display:block}
+.switch .t span{font-size:.82rem;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:7px 13px;font-size:.88rem;cursor:pointer;font-weight:700}
+.chip[aria-pressed="true"]{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:99px;padding:3px 9px;font-size:.75rem;font-weight:700;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.aee{background:var(--primary-soft);color:var(--primary)}
+.pill.d1{background:var(--ok-soft);color:var(--ok)} .pill.d2{background:var(--warn-soft);color:var(--warn)} .pill.d3{background:var(--danger-soft);color:var(--danger)}
+.pill.mine{background:transparent;border:1px solid var(--line)}
+.dots{display:inline-flex;gap:3px}.dots i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.25}.dots i.on{opacity:1}
+
+/* Lists */
+.qlist{display:flex;flex-direction:column;gap:10px}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;width:100%}
+.qcard:hover{border-color:var(--primary)}
+.qcard .meta{display:flex;flex-wrap:wrap;gap:6px}
+.qcard .txt{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.qcard.sel{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-soft)}
+.qhead{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.empty{text-align:center;padding:28px 16px;border:1.5px dashed var(--line);border-radius:var(--r);color:var(--muted);display:flex;flex-direction:column;gap:10px;align-items:center}
+.empty b{color:var(--ink);font-family:var(--display);font-size:1.1rem}
+.notice{display:flex;gap:10px;padding:12px 14px;border-radius:12px;background:var(--warn-soft);color:var(--ink);font-size:.9rem;align-items:flex-start}
+.notice.info{background:var(--primary-soft)}
+.notice.bad{background:var(--danger-soft)}
+.notice svg{flex:none;width:20px;height:20px;margin-top:2px}
+.filters{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.filters select{min-height:40px;border-radius:99px;border:1px solid var(--line);background:var(--surface);padding:0 12px;font-size:.88rem;font-weight:700;flex:none}
+
+/* Wizard */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.step{display:flex;flex-direction:column;gap:6px;font-size:.78rem;color:var(--muted);font-weight:700;background:none;border:0;text-align:left;cursor:pointer;padding:0}
+.step::before{content:"";height:5px;border-radius:99px;background:var(--line)}
+.step.done::before,.step.cur::before{background:var(--primary)}
+.step.cur{color:var(--ink)}
+.bar{position:sticky;bottom:calc(72px + env(safe-area-inset-bottom,0px));display:flex;gap:10px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);z-index:10}
+.bar .btn{flex:1}
+@media (min-width:900px){.bar{bottom:16px}}
+.selitem{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.selitem .n{font-family:var(--display);font-weight:800;min-width:26px;color:var(--primary)}
+.selitem .body{flex:1;min-width:0}
+.selitem .body p{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.iconbtn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;flex:none}
+.iconbtn svg{width:18px;height:18px}
+.logo-drop{display:flex;align-items:center;gap:14px;padding:12px;border:1.5px dashed var(--line);border-radius:14px;cursor:pointer;background:var(--surface)}
+.logo-drop .lg{width:64px;height:64px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;overflow:hidden;flex:none}
+.logo-drop .lg img{max-width:100%;max-height:100%;object-fit:contain}
+.dist{display:flex;gap:6px;flex-wrap:wrap}
+.dist span{font-variant-numeric:tabular-nums;font-weight:700;background:var(--surface-2);border-radius:8px;padding:4px 10px;font-size:.88rem}
+
+/* Paper preview */
+.paper-wrap{padding:2px}
+.paper{--pf:"Arimo",Arial,Helvetica,sans-serif;background:#fff;color:#141414;border-radius:4px;box-shadow:0 1px 2px rgba(0,0,0,.08),0 12px 32px rgba(20,28,51,.14);padding:clamp(22px,9%,68px) clamp(16px,6%,46px) clamp(18px,6%,46px) clamp(20px,9%,68px);max-width:794px;margin:0 auto;position:relative;font-family:var(--pf);font-size:clamp(13px,1.9vw,15.5px);line-height:1.5}
+.paper .pnum{position:absolute;top:clamp(12px,4.5%,40px);right:clamp(16px,6%,46px);font-size:.8em}
+.paper.bastao{text-transform:uppercase;font-size:clamp(14px,2.2vw,17.5px);letter-spacing:.02em}
+.ph{display:flex;flex-direction:column;gap:12px}
+.ph-top{display:flex;gap:14px;align-items:center;padding-bottom:10px;border-bottom:2px solid #141414}
+.ph-logo{width:62px;height:62px;display:grid;place-items:center;flex:none}
+.ph-logo img{max-width:100%;max-height:100%;object-fit:contain}
+.ph-escola{font-weight:700;font-size:1em;letter-spacing:.01em}
+.ph-meta{font-size:.84em;color:#555;line-height:1.4;margin-top:2px}
+.ph-line{display:flex;gap:6px;align-items:flex-end;font-size:.84em}
+.ph-line b{font-weight:700;text-transform:none}
+.ph-line .l{flex:1;border-bottom:1px solid #888;min-height:1.25em;padding-left:4px}
+.ph-lines{display:flex;flex-direction:column;gap:10px;padding-bottom:10px;border-bottom:1px solid #141414}
+.ph-row{display:flex;gap:16px;flex-wrap:wrap}.ph-row .ph-line{flex:1;min-width:90px}
+.ptit{font-family:var(--pf);font-size:1em;font-weight:700;text-align:center;margin:1.4em 0 .6em;letter-spacing:.01em}
+.p-instr{font-size:.84em;text-align:justify;line-height:1.35;margin-bottom:.8em}
+.pq{margin-top:1em;break-inside:avoid}
+.paper.cols2 .qs{column-count:2;column-gap:28px;column-rule:1px solid #ccc}
+.paper.cols2 .pq:first-child{margin-top:0}
+@media (max-width:560px){.paper.cols2{font-size:11.5px}.paper.cols2.bastao{font-size:12.5px}}
+.pq .en{display:flex;gap:.5em;white-space:pre-wrap}
+.pq .en span,.pq ol li span{text-align:justify;hyphens:auto;-webkit-hyphens:auto;flex:1}
+.pq .en b{flex:none}
+.pq ol{list-style:none;margin:.3em 0 0 1.7em;padding:0;display:flex;flex-direction:column}
+.pq ol li{display:flex;gap:.45em}.pq ol li b{flex:none;min-width:1.4em}
+.pgab{margin-top:2em;border-top:2px dashed #aaa;padding-top:1.2em;text-transform:none}
+.pgab h3{font-family:var(--pf);font-size:1em;text-align:center}
+.pgab>span{display:block;text-align:center;color:#666}
+.gabgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:6px;margin-top:10px}
+.gabgrid div{border:1px solid #999;border-radius:5px;display:flex;justify-content:space-between;padding:3px 8px;font-variant-numeric:tabular-nums;font-size:.9em}
+.gabgrid div b{font-size:1.05em}
+
+/* Sheet / modal */
+.scrim{position:fixed;inset:0;background:rgba(8,12,24,.45);z-index:50;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+.sheet{background:var(--surface);width:100%;max-width:680px;max-height:92%;overflow:auto;border-radius:22px 22px 0 0;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;animation:up .2s ease-out}
+.sheet .grab{width:44px;height:5px;border-radius:99px;background:var(--line);margin:4px auto 0;flex:none}
+.sheet-h{display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:-8px;background:var(--surface);padding:8px 0;z-index:2}
+@media (min-width:700px){.scrim{align-items:center}.sheet{border-radius:22px;max-height:88%}}
+@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
+@keyframes fade{from{opacity:0}}
+.alt-row{display:flex;gap:8px;align-items:center}
+.alt-row .lt{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--line);display:grid;place-items:center;font-weight:800;cursor:pointer;flex:none;background:var(--surface)}
+.alt-row .lt[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:#fff}
+.alt-row .in{min-height:44px}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;z-index:80;font-weight:700;max-width:calc(100% - 32px);box-shadow:var(--shadow);animation:up .2s}
+.barchart{display:flex;flex-direction:column;gap:8px}
+.barchart .r{display:grid;grid-template-columns:minmax(90px,150px) 1fr 36px;gap:8px;align-items:center;font-size:.86rem}
+.barchart .t{height:10px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.barchart .t i{display:block;height:100%;background:var(--primary);border-radius:99px}
+.barchart .v{text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+.aeebox{border-color:color-mix(in srgb,var(--primary) 45%,var(--line));background:linear-gradient(var(--primary-soft),var(--surface) 70%)}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;width:100%}
+.opt:hover:not([disabled]){border-color:var(--primary)}
+.opt[disabled]{opacity:.55;cursor:not-allowed}
+.opt>svg{width:22px;height:22px;flex:none;color:var(--primary);margin-top:2px}
+.opt b{display:block}.opt span span{font-size:.84rem;color:var(--muted)}
+.orient{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface)}
+.orient summary{font-weight:700;cursor:pointer;color:var(--primary)}
+.orient ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+.origbox{background:var(--surface-2);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:.92rem}
+.origbox ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.origbox li.ok{color:var(--ok);font-weight:700}
+.imgbox{position:relative;border:1px solid var(--line);border-radius:12px;background:#fff;padding:8px;display:flex;justify-content:center}
+.imgbox img{max-height:220px;max-width:100%;min-width:0;object-fit:contain}
+.imgbox .iconbtn{position:absolute;top:6px;right:6px}
+.qthumb{max-height:90px;max-width:160px;border-radius:8px;border:1px solid var(--line);background:#fff;object-fit:contain}
+.qimg{background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px;align-self:flex-start;max-height:260px;object-fit:contain}
+img[data-img]:not([src]){min-height:80px;min-width:120px;background:var(--surface-2)}
+.fotofalta{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:90px;min-width:160px;padding:10px;border:1.5px dashed #999;border-radius:8px;color:#777;font-size:.8rem;background:#fafafa}
+.fotofalta svg{width:24px;height:24px}
+.revdoc{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface);display:flex;flex-direction:column;gap:8px;line-height:1.55}
+.revdoc p{white-space:pre-wrap}
+.revdoc ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.revdoc li.ok b{color:var(--ok)}
+del{background:var(--danger-soft);color:var(--danger);text-decoration:line-through;border-radius:3px;padding:0 2px}
+ins{background:var(--ok-soft);color:var(--ok);text-decoration:none;border-radius:3px;padding:0 2px;font-weight:700}
+.notice.okk{background:var(--ok-soft)}
+.revload{display:flex;gap:14px;align-items:center;padding:18px 4px}
+.spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--primary-soft);border-top-color:var(--primary);animation:gira 1s linear infinite;flex:none}
+@keyframes gira{to{transform:rotate(360deg)}}
+.gr-rows{display:flex;flex-direction:column;gap:6px}
+.gr-row{display:grid;grid-template-columns:1fr 110px 38px;gap:6px;align-items:center}
+.gr-row .in{min-height:42px}
+.gr-prev{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.gr-prev img{max-height:260px;width:100%;min-width:0;object-fit:contain}
+.pimg{margin:.5em 0 .2em 1.7em;display:flex;flex-direction:column;gap:3px;align-items:center}
+.pimg img{max-width:min(100%,420px);max-height:260px;object-fit:contain}
+.pimg figcaption{font-size:.8em;align-self:center;max-width:min(100%,420px);width:100%;line-height:1.3}
+.gr-cap{font-size:.8rem;color:#333;align-self:flex-start;font-family:"Arimo",Arial,sans-serif}
+.cta{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:18px;border-radius:20px;border:0;cursor:pointer;background:var(--primary);color:var(--primary-ink);box-shadow:0 10px 26px color-mix(in srgb,var(--primary) 30%,transparent);position:relative;overflow:hidden}
+.cta::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:color-mix(in srgb,var(--primary-ink) 10%,transparent)}
+.cta-ico{width:48px;height:48px;border-radius:14px;background:color-mix(in srgb,var(--primary-ink) 16%,transparent);display:grid;place-items:center;flex:none}
+.cta-ico svg{width:26px;height:26px}
+.cta-t{flex:1;display:flex;flex-direction:column;gap:3px}
+.cta-t b{font-family:var(--display);font-size:1.2rem}.cta-t span{font-size:.88rem;opacity:.88}
+.cta-seta{font-size:1.5rem;font-weight:700;position:relative;z-index:1}
+.chip small,.seg small{font-weight:400;opacity:.7;margin-left:3px;font-size:.8em}
+.chip.vazio{opacity:.55}
+.rapida .seg button{min-height:44px}
+.escola-mini{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.escola-mini .lg{width:44px;height:44px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;overflow:hidden;flex:none}
+.escola-mini .lg img{max-width:100%;max-height:100%;object-fit:contain}
+.escola-mini .t{flex:1;min-width:0;display:flex;flex-direction:column}
+.escola-mini .t b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.escola-mini .t span{font-size:.82rem;color:var(--muted)}
+.qdet{display:flex;flex-direction:column;gap:12px}
+.qdet[open]>summary{margin-bottom:12px}
+.qdet summary{display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;list-style:none}
+.qdet summary::-webkit-details-marker{display:none}
+.qdet summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 6px 4px 0;flex:none;transition:transform .2s}
+.qdet[open] summary::after{transform:rotate(-135deg);margin-bottom:-4px}
+.qdet summary .small{flex:1;text-align:right}
+.qdet>.btn{margin-top:12px}
+.qrow .pill{padding:2px 7px;font-size:.7rem}
+.qrow .b{flex-wrap:nowrap}
+.qrow .c{flex:1;min-width:0}
+.qrows{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.qrow{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-top:1px solid var(--line)}
+.qrow:first-child{border-top:0}
+.qrow .n{font-family:var(--display);font-weight:800;min-width:22px;color:var(--primary);font-variant-numeric:tabular-nums}
+.qrow .b{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center}
+.qrow .c{font-weight:700;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.qrow .gl{font-weight:800;width:28px;height:28px;border-radius:8px;background:var(--ok-soft);color:var(--ok);display:grid;place-items:center;flex:none}
+.p3{display:flex;flex-direction:column;gap:18px}
+.p3-ctrl{gap:18px}
+@media (min-width:1000px){
+  main:has(.p3){max-width:1280px}
+  .p3{display:grid;grid-template-columns:minmax(330px,400px) 1fr;align-items:start}
+  .p3-prev{position:sticky;top:calc(76px + env(safe-area-inset-top,0px));max-height:calc(100vh - 170px);overflow:auto;border-radius:8px}
+}
+.info{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);font:700 12px/1 var(--body);display:inline-grid;place-items:center;cursor:pointer;flex:none;padding:0;vertical-align:middle;margin-left:4px;transition:all .15s;position:relative}
+.info::before{content:"";position:absolute;inset:-11px}
+.info:hover,.info[aria-expanded="true"]{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
+.dica-txt{display:block;flex-basis:100%;width:100%;font-size:.84rem;font-weight:400;line-height:1.45;color:var(--ink);background:var(--surface-2);border-radius:10px;padding:8px 11px;margin-top:6px;text-transform:none;letter-spacing:0;animation:dica .18s ease-out}
+.dica-txt[hidden]{display:none!important}
+@keyframes dica{from{opacity:0;transform:translateY(-3px)}}
+.th{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.th>svg{width:20px;height:20px;color:var(--warn)}
+label.f{flex-direction:row;flex-wrap:wrap;align-items:center;column-gap:2px}
+label.f>*:not(.info){flex-basis:100%}
+.opcao{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:6px;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:2px 12px 2px 0}
+.opcao .switch{border:0;background:none;padding:10px 12px}
+.opcao .dica-txt{grid-column:1/-1;margin:0 0 10px 12px;width:auto}
+.aviso{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 12px;border-radius:12px;background:var(--warn-soft);font-size:.88rem;font-weight:700}
+.aviso>svg{width:18px;height:18px;flex:none}
+.aviso .dica-txt{background:color-mix(in srgb,var(--surface) 55%,transparent)}
+.aeebox{padding:14px 16px}
+.aeebox>summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;flex-wrap:wrap}
+.aeebox>summary::-webkit-details-marker{display:none}
+.aeebox>summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:auto;transition:transform .2s}
+.aeebox[open]>summary::after{transform:rotate(-135deg)}
+.aeebox[open]>summary{margin-bottom:12px}
+.hero{gap:4px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.hr{height:1px;background:var(--line);border:0;margin:4px 0}
+</style>
+
+<div class="app">
+  <header class="topbar"><div class="topbar-in">
+    <div class="brand"><div class="brand-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div>
+      <div>SENOV Provas<small>SENOV Educacional</small></div></div>
+    <div class="spacer"></div>
+    <div class="who" id="who"></div>
+  </div></header>
+  <main id="main" aria-live="polite"></main>
+  <nav class="nav" aria-label="Menu principal"><div class="nav-in" id="nav"></div></nav>
+</div>
+<div id="layer"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+/* ============ Constantes ============ */
+const DISCIPLINAS=["Língua Portuguesa","Matemática","Ciências","História","Geografia","Arte","Educação Física","Língua Inglesa","Ensino Religioso","Biologia","Física","Química","Filosofia","Sociologia"];
+const SERIES={EF:["1º ano","2º ano","3º ano","4º ano","5º ano","6º ano","7º ano","8º ano","9º ano"],EM:["1ª série","2ª série","3ª série"]};
+const NIVEL_NOME={EF:"Ensino Fundamental",EM:"Ensino Médio"};
+const NALT={EF:4,EM:5};
+const LET="ABCDE";
+const DIF={1:"Fácil",2:"Médio",3:"Difícil"};
+const BIM=["1º bimestre","2º bimestre","3º bimestre","4º bimestre"];
+const DISTR={equilibrada:{1:.3,2:.5,3:.2},faceis:{1:.6,2:.3,3:.1},desafio:{1:.2,2:.4,3:.4}};
+
+const I={
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+ bank:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>',
+ prova:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M12 12v6M9 15h6"/></svg>',
+ school:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/></svg>',
+ plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+ pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+ x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+ info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>',
+ down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>',
+ shuffle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>',
+ wand:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M12.2 6.2 11 5M3 21l9-9"/></svg>',
+ trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>',
+ image:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>',
+ chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/></svg>',
+ check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+ save:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v6h8M7 21v-7h10v7"/></svg>'
+};
+
+/* ============ Estado ============ */
+const S={
+  db:null, user:null, uid:null, isOwner:false, canWrite:null, dl:null, ready:false,
+  questoes:[], perfil:{escola:"",logo:"",logoR:1,professor:"",termoAceitoEm:null},
+  provas:[], tab:"inicio",
+  f:{nivel:"",disciplina:"",dif:"",aee:false,minhas:false,busca:""},
+  prova:null, passo:1, auto:{conteudos:[],qtd:10,distr:"equilibrada",mesmaSerie:true}
+};
+try{const t=localStorage.getItem("senov.tab"); if(t) S.tab=t; const f=JSON.parse(localStorage.getItem("senov.f")||"null"); if(f) Object.assign(S.f,f);}catch(e){}
+function lembrar(){try{localStorage.setItem("senov.tab",S.tab);localStorage.setItem("senov.f",JSON.stringify(S.f));}catch(e){}}
+
+/* ============ Utilidades ============ */
+/* Explicações ficam escondidas atrás de um botão "?" e abrem só quando o professor toca */
+const DICAS=new Set();
+const dh=k=>DICAS.has(k)?"":"hidden";
+function ajuda(k,txt){return `<button type="button" class="info" data-a="dica" data-k="${k}" aria-expanded="${DICAS.has(k)}" aria-label="Explicação">?</button><span class="dica-txt" data-k="${k}" ${dh(k)}>${txt}</span>`;}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const uniq=a=>[...new Set(a.filter(Boolean))].sort((x,y)=>x.localeCompare(y,"pt-BR"));
+const agora=()=>new Date().toISOString();
+const dataBR=iso=>{try{return new Date(iso).toLocaleDateString("pt-BR")}catch(e){return ""}};
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2800);}
+function dots(d){return `<span class="dots">${[1,2,3].map(i=>`<i class="${i<=d?"on":""}"></i>`).join("")}</span>`;}
+function difPill(d){return `<span class="pill d${d}">${dots(d)} ${DIF[d]}</span>`;}
+S._banco=[];S._privadas=[];
+function juntar(){S.questoes=[...S._banco,...S._privadas];render();}
+const colPrivadas=()=>S.db.doc(`data/users/${S.uid}/perfil`).collection("minhas");
+function mine(q){return S.uid && q.autorId===S.uid;}
+function todasDisciplinas(){return uniq([...DISCIPLINAS,...S.questoes.map(q=>q.disciplina)]);}
+function conteudosDe(disc,nivel,serie){return uniq(S.questoes.filter(q=>(!disc||q.disciplina===disc)&&(!nivel||q.nivel===nivel)&&(!serie||q.serie===serie)).map(q=>q.conteudo));}
+
+/* ============ Dados (db) ============ */
+async function iniciar(){
+  render();
+  const c=window.claude;
+  if(!c||!c.use){S.ready=true;render();return;}
+  const [db,user,dl,sm]=await Promise.all([c.use("db"),c.use("user"),c.use("downloads"),c.use("sample")]);
+  S.db=db;S.user=user;S.dl=dl;S.sample=sm;
+  if(user){S.uid=await user.id();S.isOwner=await user.isOwner();S.canWrite=await user.can("data.write");}
+  S.ready=true;
+  if(db){
+    db.collection("questoes").onSnapshot(snap=>{S._banco=snap.docs.map(d=>({id:d.id,...d.data()}));juntar();},e=>{console.warn(e);toast("Não foi possível carregar o banco de questões.");});
+    if(S.uid){
+      db.doc(`data/users/${S.uid}/perfil`).onSnapshot(s=>{if(s.exists)S.perfil={...S.perfil,...s.data()};render();});
+      db.doc(`data/users/${S.uid}/perfil`).collection("minhas").onSnapshot(snap=>{S._privadas=snap.docs.map(d=>({id:d.id,...d.data(),privada:true}));juntar();});
+      db.doc(`data/users/${S.uid}/perfil`).collection("provas").onSnapshot(snap=>{S.provas=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.atualizadoEm||"").localeCompare(a.atualizadoEm||""));render();});
+    }
+  }
+  render();
+}
+let salvandoPerfil=Promise.resolve();
+function salvarPerfil(patch){
+  Object.assign(S.perfil,patch);
+  if(!S.db||!S.uid){render();return Promise.resolve();}
+  const body={...S.perfil};
+  salvandoPerfil=salvandoPerfil.then(()=>S.db.doc(`data/users/${S.uid}/perfil`).set(body)).catch(e=>{console.warn(e);toast("Não foi possível salvar seus dados.");});
+  return salvandoPerfil;
+}
+function podeGravar(){return !!(S.db&&S.uid&&S.canWrite!==false);}
+
+/* ============ Termo de autorização ============ */
+function exigirTermo(){
+  return new Promise(res=>{
+    if(S.perfil.termoAceitoEm) return res(true);
+    abrirSheet(`
+      <div class="sheet-h"><h2>Autorização de compartilhamento</h2></div>
+      <p>Para montar provas com o SENOV Provas, você precisa autorizar o compartilhamento das questões que cadastrar.</p>
+      <div class="notice info">${I.info}<div class="stack" style="gap:6px">
+        <span>As questões que você cadastrar passam a fazer parte do <b>banco de questões da SENOV Educacional</b>, que pode usá-las e organizá-las.</span>
+        <span>Você <b>continua com acesso</b> a todas as suas questões, pode editá-las e usá-las em suas provas sempre que quiser.</span>
+        <span>O banco reúne questões de todos os professores participantes, organizadas por conteúdo e dificuldade.</span>
+        <span>Antes de entrar no banco, cada questão passa por uma <b>revisão da IA</b>, que corrige o texto mudando o mínimo e garante que não haja dúvida sobre a resposta. Você vê cada ajuste antes de enviar.</span></div></div>
+      <label class="switch" for="termo-ok"><input type="checkbox" id="termo-ok"><span class="t"><b>Li e autorizo o compartilhamento</b><span>Você pode ler este termo novamente em Escola.</span></span></label>
+      <div class="row"><button class="btn" data-a="termo-nao" style="flex:1">Agora não</button><button class="btn primary" data-a="termo-sim" style="flex:1" disabled id="termo-btn">Autorizar</button></div>`);
+    $("#termo-ok").onchange=e=>{$("#termo-btn").disabled=!e.target.checked;};
+    S._termoRes=res;
+  });
+}
+
+/* ============ Revisão por IA antes do banco ============ */
+function descreverMidia(d){
+  if(d.grafico){const g=d.grafico;return `\nA questão tem um ${g.tipo==="tabela"?"quadro/tabela":"gráfico de "+g.tipo}${g.titulo?` intitulado "${g.titulo}"`:""} com os dados: ${g.linhas.map(l=>`${l[0]} = ${l[1]}${g.unidade?" "+g.unidade:""}`).join("; ")}.${g.eixoX?` Eixo/coluna 1: ${g.eixoX}.`:""}${g.eixoY?` Eixo/coluna 2: ${g.eixoY}.`:""}`;}
+  if(d.temFoto)return `\nA questão tem uma imagem que você NÃO consegue ver${d.legenda?` (legenda: "${d.legenda}")`:""}. Considere que a imagem traz as informações necessárias; não bloqueie por falta de dados que possam estar nela.`;
+  return "";
+}
+function textoQuestao(d,comGabarito){
+  return `Etapa: ${d.serie} do ${NIVEL_NOME[d.nivel]}. Disciplina: ${d.disciplina}. Conteúdo: ${d.conteudo}.${d.aee?" Questão para estudantes público do AEE (linguagem simples).":""}${d.fixarOrdem?" As alternativas têm ordem fixa.":""}${descreverMidia(d)}
+Enunciado: ${d.enunciado}
+${d.alternativas.map((a,i)=>`${LET[i]}) ${a}`).join("\n")}${comGabarito?`\nGabarito indicado pelo professor: ${LET[d.correta]}`:""}`;
+}
+async function revisarIA(d){
+  const n=NALT[d.nivel];
+  const pedido=`Você é revisor(a) pedagógico(a) de um banco de questões de múltipla escolha da educação básica brasileira. Revise a questão abaixo antes de ela entrar no banco compartilhado.
+
+OBJETIVO: a questão precisa ficar correta e SEM AMBIGUIDADE — o estudante não pode ter dúvida sobre o que se pede nem sobre qual é a única alternativa correta.
+
+REGRAS DE AJUSTE (mude o MÍNIMO possível):
+1. Corrija ortografia, acentuação, pontuação, concordância e regência.
+2. Resolva a questão você mesmo. Deve existir exatamente UMA alternativa correta e as outras devem ser claramente incorretas.
+3. Elimine ambiguidades: comando vago ("melhor", "principal", "mais adequada" sem critério), dupla negação, termos com dois sentidos, dados ou unidades faltando, alternativas que se sobrepõem ou que também poderiam ser defendidas como corretas.
+4. Se o comando pedir a alternativa falsa/incorreta/exceto, escreva essa palavra em MAIÚSCULAS.
+5. Preserve o estilo, o vocabulário, o nível de dificuldade, o conteúdo, a ORDEM das alternativas e a letra do gabarito. Não reescreva trechos que já estão bons. Não acrescente informação nova além do necessário para tirar a dúvida.
+6. Se uma alternativa incorreta também puder ser considerada correta, ajuste só essa alternativa para que fique claramente incorreta.
+
+QUANDO BLOQUEAR (status "bloqueada", sem inventar correção):
+- o gabarito indicado está errado (explique qual seria a resposta e por quê);
+- há erro de conteúdo (conceito errado) que exige o professor decidir;
+- faltam dados que não dá para completar sem mudar a questão;
+- seria preciso reescrever a questão quase inteira.
+
+QUESTÃO:
+${textoQuestao(d,true)}
+
+Responda SOMENTE com JSON neste formato:
+{"status":"ok"|"ajustada"|"bloqueada","enunciado":string,"alternativas":[${n} strings sem a letra],"correta":número de 0 a ${n-1},"alteracoes":[{"onde":"Enunciado" ou "Alternativa A".."E","motivo":frase curta}],"problemas":[frases curtas explicando o bloqueio, vazio se não bloqueada]}
+Use "ok" quando nada precisar mudar (repita o texto original exatamente).`;
+  const r=await S.sample.json(pedido,{modelTier:"complex"});
+  if(!r||!["ok","ajustada","bloqueada"].includes(r.status))throw {code:"formato"};
+  if(r.status!=="bloqueada"&&(typeof r.enunciado!=="string"||!Array.isArray(r.alternativas)||r.alternativas.length!==n||r.alternativas.some(a=>typeof a!=="string"||!a.trim())))throw {code:"formato"};
+  r.alteracoes=Array.isArray(r.alteracoes)?r.alteracoes.filter(a=>a&&a.motivo):[];r.problemas=Array.isArray(r.problemas)?r.problemas.filter(Boolean):[];
+  if(r.status!=="bloqueada"){r.enunciado=r.enunciado.trim();r.alternativas=r.alternativas.map(a=>String(a).replace(/^\s*[A-E]\)\s*/,"").trim());r.correta=d.correta;
+    if(r.enunciado===d.enunciado.trim()&&r.alternativas.every((a,i)=>a===d.alternativas[i].trim()))r.status="ok";}
+  return r;
+}
+/* Segunda verificação: outra leitura resolve a questão já revisada SEM ver o gabarito */
+async function conferirIA(q){
+  const pedido=`Resolva a questão de múltipla escolha abaixo como um(a) professor(a) especialista, sem saber o gabarito. Depois avalie se um estudante bem preparado poderia ficar em dúvida entre alternativas.
+
+${textoQuestao(q,false)}
+
+Responda SOMENTE com JSON: {"resposta":"letra","unica":true|false,"duvida":"se unica for false, explique em uma frase qual outra alternativa também pode ser defendida e por quê; senão vazio"}`;
+  const r=await S.sample.json(pedido);
+  const letra=String(r&&r.resposta||"").trim().toUpperCase().charAt(0);
+  return {letra,unica:r&&r.unica!==false,duvida:(r&&r.duvida)||""};
+}
+function difPalavras(a,b){
+  const A=String(a).split(/(\s+)/),B=String(b).split(/(\s+)/);
+  if(A.length*B.length>90000)return a===b?esc(b):`<del>${esc(a)}</del> <ins>${esc(b)}</ins>`;
+  const L=Array.from({length:A.length+1},()=>new Int32Array(B.length+1));
+  for(let i=A.length-1;i>=0;i--)for(let j=B.length-1;j>=0;j--)L[i][j]=A[i]===B[j]?L[i+1][j+1]+1:Math.max(L[i+1][j],L[i][j+1]);
+  let i=0,j=0,out="";
+  while(i<A.length&&j<B.length){if(A[i]===B[j]){out+=esc(A[i]);i++;j++;}else if(L[i+1][j]>=L[i][j+1]){if(A[i].trim())out+=`<del>${esc(A[i])}</del>`;else out+=esc(A[i]);i++;}else{if(B[j].trim())out+=`<ins>${esc(B[j])}</ins>`;else out+=esc(B[j]);j++;}}
+  while(i<A.length){if(A[i].trim())out+=`<del>${esc(A[i])}</del>`;i++;}
+  while(j<B.length){out+=B[j].trim()?`<ins>${esc(B[j])}</ins>`:esc(B[j]);j++;}
+  return out;
+}
+async function iniciarRevisao(){
+  const d=S._ed.d;const orig={enunciado:d.enunciado,alternativas:d.alternativas.slice(),correta:d.correta};
+  abrirSheet(`<div class="sheet-h"><h2>Revisão antes do banco</h2></div>
+    <div class="revload"><div class="spin" aria-hidden="true"></div><div><b id="rev-etapa">Revisando o texto e a resposta…</b><p class="small muted">A IA corrige o mínimo necessário e confere se só existe uma resposta certa. Leva até um minuto.</p></div></div>`);
+  let r,c=null;
+  try{
+    r=await revisarIA(d);
+    if(r.status!=="bloqueada"){
+      const e=$("#rev-etapa");if(e)e.textContent="Conferindo se há uma única resposta…";
+      const q={...d,enunciado:r.enunciado,alternativas:r.alternativas};
+      c=await conferirIA(q);
+      const certa=LET[d.correta];
+      if(c.letra!==certa||!c.unica){
+        r.status="bloqueada";
+        r.problemas=[c.letra!==certa?`Na conferência, a resposta encontrada foi ${c.letra||"nenhuma"}, e não ${certa}. Verifique o gabarito ou o enunciado.`:"A conferência encontrou mais de uma alternativa que pode ser defendida.",...(c.duvida?[c.duvida]:[])];
+      }
+    }
+  }catch(e){
+    S._rev=null;
+    if(e&&e.code==="not_granted"){S.sample=null;}
+    abrirSheet(`<div class="sheet-h"><h2>Revisão indisponível agora</h2></div>
+      <p>${e&&e.code==="rate_limited"?"Muitas revisões seguidas. Tente de novo em alguns minutos.":e&&e.code==="not_granted"?"A revisão por IA não foi autorizada nesta visualização.":"Não foi possível concluir a revisão."}</p>
+      <div class="notice info">${I.info}<span>A questão pode ficar guardada <b>só para você</b> e ser usada nas suas provas. Ela entra no banco compartilhado depois de revisada.</span></div>
+      <div class="row"><button class="btn" data-a="rev-editar" style="flex:1">Voltar à questão</button><button class="btn primary" data-a="rev-privada" style="flex:1">Guardar só para mim</button></div>`);
+    S._rev={orig,falhou:true};return;
+  }
+  S._rev={orig,r,c};
+  desenharRevisao();
+}
+function desenharRevisao(){
+  const {orig,r}=S._rev;const bloq=r.status==="bloqueada";
+  const alt=bloq?orig.alternativas:r.alternativas,en=bloq?orig.enunciado:r.enunciado;
+  abrirSheet(`<div class="sheet-h"><h2>Revisão antes do banco</h2><button class="iconbtn" data-a="rev-editar" aria-label="Voltar à questão">${I.x}</button></div>
+    ${bloq?`<div class="notice bad">${I.info}<div class="stack" style="gap:4px"><b>A questão precisa de uma decisão sua antes de ir ao banco</b>${r.problemas.map(x=>`<span>${esc(x)}</span>`).join("")}</div></div>`
+      :r.status==="ok"?`<div class="notice okk">${I.check}<span><b>Nenhum ajuste necessário.</b> O texto está claro e só existe uma resposta correta.</span></div>`
+      :`<div class="notice info">${I.check}<span><b>${r.alteracoes.length||"Alguns"} ${r.alteracoes.length===1?"ajuste":"ajustes"}.</b> A resposta correta continua a mesma e foi conferida. Veja o que mudou:</span></div>`}
+    <div class="revdoc"><p>${bloq?esc(en):difPalavras(orig.enunciado,en)}</p>
+      <ol>${alt.map((a,i)=>`<li class="${i===orig.correta?"ok":""}"><b>${LET[i]})</b> <span>${bloq?esc(a):difPalavras(orig.alternativas[i],a)}</span></li>`).join("")}</ol></div>
+    ${!bloq&&r.alteracoes.length?`<div class="stack" style="gap:6px"><h3>Motivos</h3>${r.alteracoes.map(a=>`<div class="small"><b>${esc(a.onde||"")}</b> · ${esc(a.motivo)}</div>`).join("")}</div>`:""}
+    ${bloq?`<div class="row"><button class="btn" data-a="rev-privada" style="flex:1">Guardar só para mim</button><button class="btn primary" data-a="rev-editar" style="flex:1">${I.pen} Corrigir a questão</button></div>`
+      :`<button class="btn primary block" data-a="rev-enviar">${I.check} ${r.status==="ok"?"Enviar ao banco":"Aceitar ajustes e enviar ao banco"}</button>
+        <div class="row"><button class="btn" data-a="rev-editar-ajustada" style="flex:1">${I.pen} Editar</button><button class="btn" data-a="rev-privada" style="flex:1">Guardar só para mim</button></div>
+        <div class="th">${ajuda("rev","Para ir ao banco, a questão precisa passar pela revisão. Se você mudar o texto, ela é revisada de novo. Em “Guardar só para mim” ela fica só nas suas provas.")}</div>`}`);
+}
+async function gravarQuestao(destino){
+  const d=S._ed.d,rv=S._rev;
+  const final=destino==="banco"&&rv&&rv.r&&rv.r.status!=="bloqueada"?{enunciado:rv.r.enunciado,alternativas:rv.r.alternativas}:{enunciado:d.enunciado,alternativas:d.alternativas};
+  const ant=S._ed.id?S.questoes.find(x=>x.id===S._ed.id):null;
+  const body={autorId:ant&&ant.autorId||S.uid,...(ant&&ant.exemplo?{exemplo:true}:{}),nivel:d.nivel,serie:d.serie,disciplina:d.disciplina,conteudo:d.conteudo,dificuldade:d.dificuldade,aee:d.aee,...final,correta:d.correta,fixarOrdem:d.fixarOrdem,...(d.origemId?{origemId:d.origemId}:{}),autorizado:true,criadoEm:d.criadoEm||agora(),atualizadoEm:agora()};
+  body.grafico=d.grafico||null;body.temFoto=!d.grafico&&!!(d.temFoto||S._ed.foto);body.legenda=(body.grafico||body.temFoto)?(d.legenda||""):"";body.tituloImg=body.temFoto?(d.tituloImg||""):"";
+  if(destino==="banco"){
+    body.revisao={status:rv.r.status,em:agora(),alteracoes:rv.r.alteracoes.slice(0,12),...(rv.r.status==="ajustada"?{original:{enunciado:rv.orig.enunciado,alternativas:rv.orig.alternativas}}:{})};
+  }else{
+    body.revisao={status:rv&&rv.r&&rv.r.status==="bloqueada"?"bloqueada":"pendente",em:agora(),problemas:rv&&rv.r?rv.r.problemas.slice(0,6):[]};
+  }
+  let id;
+  if(destino==="banco"){
+    if(ant&&!ant.privada){id=ant.id;await S.db.doc("questoes/"+id).set(body);}
+    else{id=(await S.db.collection("questoes").add(body)).id;if(ant&&ant.privada){try{await colPrivadas().doc(ant.id).delete();}catch(e){}}}
+  }else{
+    if(ant&&ant.privada){id=ant.id;await colPrivadas().doc(id).set(body);}
+    else id=(await colPrivadas().add({...body,autorId:S.uid})).id;
+  }
+  const foto=S._ed.foto||(d.origemId&&S.fotos[d.origemId])||(ant&&S.fotos[ant.id])||null;if(body.temFoto&&foto)S.fotos[id]=foto;
+  if(S._ed.destinoProva&&S.prova){const it=S.prova.itens,k=d.origemId?it.findIndex(x=>x.id===d.origemId):it.findIndex(x=>ant&&x.id===ant.id);if(k>=0)it[k]={id,...body};else it.push({id,...body});S.prova.montagem=null;}
+  fecharSheet();S._rev=null;
+  toast(destino==="banco"?(d.origemId?"Adaptação revisada, enviada ao banco e colocada na prova.":"Questão revisada e enviada ao banco."):(ant&&!ant.privada?"A versão do banco não mudou. Sua versão editada ficou só para você.":"Questão guardada só para você."));
+  render();
+}
+
+/* ============ Seleção automática e organização ============ */
+function filtrarBase(p,mesmaSerie,conteudos){
+  return S.questoes.filter(q=>q.nivel===p.nivel&&q.disciplina===p.disciplina&&(!mesmaSerie||q.serie===p.serie)&&(!conteudos.length||conteudos.includes(q.conteudo))&&Array.isArray(q.alternativas)&&q.alternativas.length===NALT[p.nivel]);
+}
+function montarAuto(){
+  const p=S.prova,a=S.auto;
+  let base=filtrarBase(p,a.mesmaSerie,a.conteudos);
+  if(p.aee){
+    const perfil=base.filter(q=>q.aee||q.dificuldade===1);
+    if(!perfil.length) return {erro:"aee"};
+    const pri=shuffle(perfil.filter(q=>q.aee)), sec=shuffle(perfil.filter(q=>!q.aee));
+    const sel=[...pri,...sec].slice(0,a.qtd);
+    return {sel,falta:Math.max(0,a.qtd-sel.length)};
+  }
+  if(!base.length) return {erro:"vazio"};
+  const alvo=DISTR[a.distr]; const b={1:shuffle(base.filter(q=>q.dificuldade===1)),2:shuffle(base.filter(q=>q.dificuldade===2)),3:shuffle(base.filter(q=>q.dificuldade===3))};
+  const sel=[];
+  [1,2,3].forEach(d=>{const n=Math.round(a.qtd*alvo[d]);sel.push(...b[d].splice(0,n));});
+  const resto=shuffle([...b[1],...b[2],...b[3]]);
+  while(sel.length<a.qtd&&resto.length) sel.push(resto.shift());
+  return {sel:sel.slice(0,a.qtd),falta:Math.max(0,a.qtd-sel.length)};
+}
+/* Sequência do gabarito: equilibrada, sem letras repetidas em seguida, sem padrões ABAB nem ABC/CBA */
+function sequenciaGabarito(n,k,fixos){
+  const valido=(seq,i,c,relax)=>{
+    if(i>0&&seq[i-1]===c) return false;
+    if(fixos[i+1]!=null&&fixos[i+1]===c) return false;
+    if(relax) return true;
+    if(i>2&&seq[i-2]===c&&seq[i-1]===seq[i-3]) return false;
+    if(i>1){const x=seq[i-2],y=seq[i-1];if((y-x===1&&c-y===1)||(x-y===1&&y-c===1))return false;}
+    return true;
+  };
+  for(let t=0;t<4000;t++){
+    const relax=t>3000;
+    const cnt=Array(k).fill(Math.floor(n/k));
+    shuffle([...Array(k).keys()]).slice(0,n%k).forEach(i=>cnt[i]++);
+    fixos.forEach(f=>{if(f!=null)cnt[f]--;});
+    let neg=0;cnt.forEach((v,i)=>{if(v<0){neg-=v;cnt[i]=0;}});
+    while(neg>0){let m=cnt.indexOf(Math.max(...cnt));if(cnt[m]<=0)break;cnt[m]--;neg--;}
+    const seq=[];let ok=true;
+    for(let i=0;i<n;i++){
+      if(fixos[i]!=null){seq[i]=fixos[i];continue;}
+      const cand=[];cnt.forEach((v,c)=>{if(v>0&&valido(seq,i,c,relax))for(let w=0;w<v;w++)cand.push(c);});
+      if(!cand.length){ok=false;break;}
+      const c=cand[Math.floor(Math.random()*cand.length)];seq[i]=c;cnt[c]--;
+    }
+    if(ok) return seq;
+  }
+  return Array.from({length:n},(_,i)=>fixos[i]??(i%k));
+}
+function entrada(q,pos){
+  let ordem;
+  if(q.fixarOrdem||pos==null) ordem=q.alternativas.map((_,j)=>j);
+  else{const outros=shuffle(q.alternativas.map((_,j)=>j).filter(j=>j!==q.correta));ordem=[];let o=0;for(let p=0;p<q.alternativas.length;p++)ordem[p]=p===pos?q.correta:outros[o++];}
+  return {qid:q.id,grafico:q.grafico||null,temFoto:!!q.temFoto,legenda:q.legenda||"",tituloImg:q.tituloImg||"",enunciado:q.enunciado,alternativas:ordem.map(j=>q.alternativas[j]),correta:ordem.indexOf(q.correta),dificuldade:q.dificuldade,conteudo:q.conteudo};
+}
+/* Refaz só as letras do gabarito, mantendo a ordem das questões */
+function reletrar(lista,nivel){
+  const fixos=lista.map(q=>q.fixarOrdem?q.correta:null);
+  const seq=sequenciaGabarito(lista.length,NALT[nivel],fixos);
+  return lista.map((q,i)=>entrada(q,seq[i]));
+}
+function organizar(itens,nivel){
+  const ordemCont=[];itens.forEach(q=>{if(!ordemCont.includes(q.conteudo))ordemCont.push(q.conteudo);});
+  const emb=shuffle(itens);
+  emb.sort((a,b)=>(a.dificuldade-b.dificuldade)||(ordemCont.indexOf(a.conteudo)-ordemCont.indexOf(b.conteudo)));
+  return reletrar(emb,nivel);
+}
+function itemDe(qid){return (S.prova&&S.prova.itens.find(q=>q.id===qid))||S.questoes.find(q=>q.id===qid);}
+function candidatosTroca(qid){
+  const p=S.prova,atual=itemDe(qid);if(!atual)return [];
+  const usados=new Set(p.itens.map(q=>q.id));
+  let c=S.questoes.filter(q=>!usados.has(q.id)&&q.nivel===p.nivel&&q.disciplina===p.disciplina&&Array.isArray(q.alternativas)&&q.alternativas.length===NALT[p.nivel]);
+  if(p.aee)c=c.filter(q=>q.aee||q.dificuldade===1);
+  const nota=q=>(q.serie===p.serie?4:0)+(q.conteudo===atual.conteudo?3:0)+(q.dificuldade===atual.dificuldade?2:0)+(p.aee&&q.aee?1:0)+Math.random()*.5;
+  return c.map(q=>[nota(q),q]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);
+}
+function trocarQuestao(qid){
+  const p=S.prova,c=candidatosTroca(qid);
+  if(!c.length){toast("Não há outra questão parecida no banco para trocar.");return;}
+  const nova=c[0],k=p.itens.findIndex(q=>q.id===qid);
+  if(k>=0)p.itens[k]=nova;
+  const ordem=p.montagem.map(m=>m.qid===qid?nova:itemDe(m.qid)).filter(Boolean);
+  p.montagem=reletrar(ordem,p.nivel);
+  toast(nova.conteudo===(itemDe(qid)||{}).conteudo?"Questão trocada por outra do mesmo conteúdo.":"Questão trocada.");
+}
+function removerDaProva(qid){
+  const p=S.prova;p.itens=p.itens.filter(q=>q.id!==qid);
+  const ordem=p.montagem.filter(m=>m.qid!==qid).map(m=>itemDe(m.qid)).filter(Boolean);
+  p.montagem=ordem.length?reletrar(ordem,p.nivel):null;
+}
+function distribuicao(m,nivel){const c=Array(NALT[nivel]).fill(0);m.forEach(x=>c[x.correta]++);return c;}
+
+/* ============ Imagens e gráficos ============ */
+/* Fotos: ficam só na memória desta sessão e vão para o PDF. Nunca são gravadas no banco.
+   Gráficos: o banco guarda só os dados (rótulos e números); a imagem é desenhada na hora. */
+S.fotos={};const cacheGraf={};
+const qidDe=q=>q.qid||q.id;
+function midia(q){
+  if(!q)return null;
+  if(q.grafico){const k=JSON.stringify(q.grafico);if(!cacheGraf[k]){const cv=desenharGrafico(q.grafico,{semTitulo:true});cacheGraf[k]=comprimir(cv,cv.width,cv.height,true);}return cacheGraf[k];}
+  if(q.temFoto)return S.fotos[qidDe(q)]||null;
+  return null;
+}
+const precisaFoto=q=>!!(q&&q.temFoto&&!q.grafico&&!S.fotos[qidDe(q)]);
+function midiaHTML(q,cls){
+  const m=midia(q);
+  if(m)return `<img src="${m.data}" class="${cls||""}" alt="${q.grafico?"Gráfico da questão":"Imagem da questão"}">`;
+  if(q.temFoto)return `<div class="fotofalta ${cls||""}">${I.image}<span>Imagem não anexada</span></div>`;
+  return "";
+}
+const fonteLimpa=t=>String(t||"").trim().replace(/^fonte\s*:\s*/i,"");
+function tipoFig(m){return m.grafico?(m.grafico.tipo==="tabela"?"Tabela":"Gráfico"):"Figura";}
+function tituloFig(m){return ((m.grafico?m.grafico.titulo:m.tituloImg)||"").trim();}
+function fonteFig(m){const f=fonteLimpa(m.legenda);return f||(m.grafico?"Elaborado pelo(a) professor(a).":"");}
+function numerarFiguras(mont){const c={};return mont.map(m=>{if(!(m.grafico||m.temFoto))return null;const t=tipoFig(m);c[t]=(c[t]||0)+1;return `${t} ${c[t]}`;});}
+function anexarBtn(q){return precisaFoto(q)?`<button class="btn sm" data-a="anexar" data-id="${esc(qidDe(q))}">${I.image} Anexar imagem</button>`:"";}
+const LIM_IMG=230000;
+function comprimir(fonte,w,h,png){
+  let max=1100,q=.86,data="";
+  for(let t=0;t<8;t++){
+    const r=Math.min(1,max/Math.max(w,h)),cw=Math.round(w*r),ch=Math.round(h*r);
+    const c=document.createElement("canvas");c.width=cw;c.height=ch;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,cw,ch);x.drawImage(fonte,0,0,cw,ch);
+    if(png&&t===0){data=c.toDataURL("image/png");if(data.length<=LIM_IMG)return {data,r:cw/ch};}
+    data=c.toDataURL("image/jpeg",q);if(data.length<=LIM_IMG)return {data,r:cw/ch};
+    if(q>.6)q-=.1;else max*=.8;
+  }
+  return {data,r:w/h};
+}
+function arquivoParaImagem(file){
+  return new Promise((res,rej)=>{
+    if(!file||!/^image\//.test(file.type))return rej(new Error("tipo"));
+    const fr=new FileReader();fr.onerror=rej;
+    fr.onload=()=>{const im=new Image();im.onerror=rej;im.onload=()=>res(comprimir(im,im.naturalWidth,im.naturalHeight,/png|gif/.test(file.type)));im.src=fr.result;};
+    fr.readAsDataURL(file);
+  });
+}
+/* Gráficos para impressão: fundo branco, marcas finas, rótulos sempre visíveis */
+const CAT=["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4","#008300","#4a3aa7","#e34948"];
+const PB=[{bg:"#333"},{bg:"#fff",h:45},{bg:"#9a9a9a"},{bg:"#fff",h:135},{bg:"#d0d0d0"},{bg:"#fff",h:"x"},{bg:"#666"},{bg:"#fff",h:"dot"}];
+const TIPOS_GR=[["colunas","Colunas"],["barras","Barras"],["linha","Linha"],["setores","Setores"],["tabela","Tabela"]];
+function numero(v){const n=parseFloat(String(v).replace(/\./g,"").replace(",","."));return isFinite(n)?n:null;}
+function fmtNum(n){return Number.isInteger(n)?n.toLocaleString("pt-BR"):n.toLocaleString("pt-BR",{maximumFractionDigits:2});}
+function escalaBonita(min,max){
+  const span=(max-min)||Math.abs(max)||1;const passoBruto=span/5;const mag=Math.pow(10,Math.floor(Math.log10(passoBruto)));
+  const passo=[1,2,2.5,5,10].map(m=>m*mag).find(v=>v>=passoBruto);
+  return {min:Math.floor(min/passo)*passo,max:Math.ceil(max/passo)*passo,passo};
+}
+function padrao(ctx,f){
+  if(!f.h)return f.bg;const c=document.createElement("canvas");c.width=c.height=18;const x=c.getContext("2d");
+  x.fillStyle=f.bg;x.fillRect(0,0,18,18);x.strokeStyle="#222";x.fillStyle="#222";x.lineWidth=2.2;
+  const lin=a=>{x.save();x.translate(9,9);x.rotate(a*Math.PI/180);for(let k=-27;k<=27;k+=9){x.beginPath();x.moveTo(k,-20);x.lineTo(k,20);x.stroke();}x.restore();};
+  if(f.h==="dot"){[[4.5,4.5],[13.5,13.5]].forEach(([a,b])=>{x.beginPath();x.arc(a,b,2.2,0,7);x.fill();});}
+  else if(f.h==="x"){lin(45);lin(135);}else lin(f.h);
+  return ctx.createPattern(c,"repeat");
+}
+function linhasTexto(ctx,t,w){const pal=String(t).split(/\s+/);const out=[];let l="";pal.forEach(p=>{const tt=l?l+" "+p:p;if(ctx.measureText(tt).width>w&&l){out.push(l);l=p;}else l=tt;});if(l)out.push(l);return out;}
+function desenharGrafico(g,op){op=op||{};if(op.semTitulo)g={...g,titulo:""};
+  const dados=g.linhas.map(([r,v])=>[String(r||"").trim(),numero(v)]).filter(([r,v])=>r||v!=null);
+  const W=1200,FONT='"Atkinson Hyperlegible",Arial,sans-serif',INK="#1b1b1b",MUTED="#555",GRID="#d6d6d6";
+  const cor=g.pb?"#3a3a3a":CAT[0];
+  let H=g.tipo==="tabela"?(g.titulo?90:30)+62*(dados.length+1)+24:720;
+  const c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
+  x.fillStyle="#fff";x.fillRect(0,0,W,H);x.textBaseline="alphabetic";
+  let top=36;
+  if(g.titulo){x.fillStyle=INK;x.font=`700 38px ${FONT}`;x.textAlign="center";linhasTexto(x,g.titulo,W-80).slice(0,2).forEach((l,i)=>x.fillText(l,W/2,58+i*44));top=g.titulo.length>50?130:96;}
+  const vals=dados.map(d=>d[1]??0);
+  if(!dados.length){x.fillStyle=MUTED;x.font=`28px ${FONT}`;x.textAlign="center";x.fillText("Preencha os dados",W/2,H/2);return c;}
+  if(g.tipo==="tabela"){
+    const tw=W-80,cx=40,rh=62,y0=top-6,col2=cx+tw*.62;
+    const linhas=[[g.eixoX||"Item",g.eixoY||"Valor"],...dados.map(d=>[d[0],d[1]==null?"":fmtNum(d[1])+(g.unidade?" "+g.unidade:"")])];
+    x.strokeStyle="#111";
+    linhas.forEach((cel,i)=>{const yy=y0+i*rh;x.fillStyle=INK;x.font=`${i===0?700:400} 30px ${FONT}`;x.textAlign="left";x.fillText(String(cel[0]).slice(0,44),cx+14,yy+41);x.textAlign="center";x.fillText(String(cel[1]).slice(0,20),col2+(cx+tw-col2)/2,yy+41);});
+    const lin=(yy,w)=>{x.lineWidth=w;x.beginPath();x.moveTo(cx,yy);x.lineTo(cx+tw,yy);x.stroke();};
+    lin(y0,3.5);lin(y0+rh,2);lin(y0+rh*linhas.length,3.5);
+    x.lineWidth=1.5;x.beginPath();x.moveTo(col2,y0);x.lineTo(col2,y0+rh*linhas.length);x.stroke();
+    return c;
+  }
+  if(g.tipo==="setores"){
+    const pos=dados.filter(d=>d[1]>0).slice(0,8),tot=pos.reduce((a,d)=>a+d[1],0)||1;
+    const r=Math.min(260,(H-top-40)/2),cx=40+r+20,cy=top+(H-top)/2-10;let a=-Math.PI/2;
+    pos.forEach((d,i)=>{const b=a+d[1]/tot*Math.PI*2;x.beginPath();x.moveTo(cx,cy);x.arc(cx,cy,r,a,b);x.closePath();x.fillStyle=g.pb?padrao(x,PB[i]):CAT[i];x.fill();x.lineWidth=g.pb?2.5:4;x.strokeStyle=g.pb?"#111":"#fff";x.stroke();a=b;});
+    const lx=cx+r+60,lh=Math.min(62,(H-top-20)/Math.max(1,pos.length));let ly=cy-(pos.length*lh)/2+lh/2;
+    pos.forEach((d,i)=>{x.fillStyle=g.pb?padrao(x,PB[i]):CAT[i];x.fillRect(lx,ly-24,34,34);x.lineWidth=2;x.strokeStyle=g.pb?"#111":"#fff";x.strokeRect(lx,ly-24,34,34);
+      x.fillStyle=INK;x.font=`30px ${FONT}`;x.textAlign="left";const pc=Math.round(d[1]/tot*1000)/10;
+      x.fillText(`${d[0].slice(0,26)}  ${g.valores?`${fmtNum(pc)}%`:""}`,lx+48,ly+3);ly+=lh;});
+    return c;
+  }
+  const horiz=g.tipo==="barras";
+  const sc=escalaBonita(Math.min(0,...vals),Math.max(0,...vals));
+  x.font=`26px ${FONT}`;
+  const labW=horiz?Math.min(320,Math.max(...dados.map(d=>x.measureText(d[0]).width))+24):0;
+  const L=horiz?40+labW:110,R=50,T=top+10,B=H-(g.eixoX&&!horiz?120:84);
+  const pw=W-L-R,ph=B-T,n=dados.length,band=(horiz?ph:pw)/n;
+  const V=v=>horiz?L+(v-sc.min)/(sc.max-sc.min)*pw:B-(v-sc.min)/(sc.max-sc.min)*ph;
+  // grade e eixo de valores
+  x.lineWidth=1.5;x.font=`24px ${FONT}`;x.fillStyle=MUTED;
+  for(let t=sc.min;t<=sc.max+1e-9;t+=sc.passo){const p=V(t);x.strokeStyle=Math.abs(t)<1e-9?"#222":GRID;x.lineWidth=Math.abs(t)<1e-9?2.5:1.5;x.beginPath();
+    if(horiz){x.moveTo(p,T);x.lineTo(p,B);x.stroke();x.textAlign="center";x.fillText(fmtNum(+t.toFixed(6)),p,B+34);}
+    else{x.moveTo(L,p);x.lineTo(L+pw,p);x.stroke();x.textAlign="right";x.fillText(fmtNum(+t.toFixed(6)),L-14,p+8);}}
+  // títulos dos eixos
+  x.fillStyle=INK;x.font=`700 26px ${FONT}`;
+  if(g.eixoY){if(horiz){x.textAlign="center";x.fillText(g.eixoY,L+pw/2,H-18);}else{x.save();x.translate(30,T+ph/2);x.rotate(-Math.PI/2);x.textAlign="center";x.fillText(g.eixoY,0,0);x.restore();}}
+  if(g.eixoX&&!horiz){x.textAlign="center";x.fillText(g.eixoX,L+pw/2,H-18);}
+  // rótulos das categorias
+  x.font=`${n>8?22:26}px ${FONT}`;x.fillStyle=INK;
+  dados.forEach((d,i)=>{const m=(i+.5)*band;
+    if(horiz){x.textAlign="right";const ls=linhasTexto(x,d[0],labW-20).slice(0,2);ls.forEach((l,k)=>x.fillText(l,L-14,T+m+9-(ls.length-1)*14+k*28));}
+    else{x.textAlign="center";const ls=linhasTexto(x,d[0],band-8).slice(0,2);ls.forEach((l,k)=>x.fillText(l,L+m,B+36+k*28));}});
+  const z=V(0),tv=v=>fmtNum(v)+(g.unidade?" "+g.unidade:"");
+  x.font=`700 26px ${FONT}`;
+  if(g.tipo==="linha"){
+    const pts=dados.map((d,i)=>[L+(i+.5)*band,V(d[1]??0)]);
+    x.strokeStyle=cor;x.lineWidth=5;x.lineJoin="round";x.beginPath();pts.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b));x.stroke();
+    pts.forEach(([a,b],i)=>{x.beginPath();x.arc(a,b,10,0,7);x.fillStyle="#fff";x.fill();x.lineWidth=5;x.strokeStyle=cor;x.stroke();
+      if(g.valores&&dados[i][1]!=null){x.fillStyle=INK;x.textAlign="center";x.fillText(tv(dados[i][1]),a,b-22);}});
+    return c;
+  }
+  const esp=Math.min(band*.62,150);
+  dados.forEach((d,i)=>{const v=d[1]??0,m=(i+.5)*band,p=V(v);x.fillStyle=cor;x.beginPath();
+    if(horiz){const y0=T+m-esp/2,x0=Math.min(z,p),w=Math.abs(p-z);x.roundRect?x.roundRect(x0,y0,Math.max(w,1),esp,v>=0?[0,6,6,0]:[6,0,0,6]):x.rect(x0,y0,w,esp);x.fill();
+      if(g.valores&&d[1]!=null){x.fillStyle=INK;x.textAlign=v>=0?"left":"right";x.fillText(tv(v),p+(v>=0?12:-12),T+m+9);}}
+    else{const x0=L+m-esp/2,y0=Math.min(z,p),h=Math.abs(p-z);x.roundRect?x.roundRect(x0,y0,esp,Math.max(h,1),v>=0?[6,6,0,0]:[0,0,6,6]):x.rect(x0,y0,esp,h);x.fill();
+      if(g.valores&&d[1]!=null){x.fillStyle=INK;x.textAlign="center";x.fillText(tv(v),L+m,v>=0?p-12:p+34);}}
+  });
+  return c;
+}
+function abrirGrafico(){
+  lerEditor();
+  S._gr=S._gr||{tipo:"colunas",titulo:"",eixoX:"",eixoY:"",unidade:"",pb:true,valores:true,linhas:[["Janeiro","12"],["Fevereiro","18"],["Março","9"],["Abril","15"]]};
+  desenharSheetGrafico();
+}
+function lerGrafico(){
+  const g=S._gr;if(!g||!$("#gr-tit"))return;
+  g.titulo=$("#gr-tit").value;g.eixoX=$("#gr-x").value;g.eixoY=$("#gr-y").value;g.unidade=$("#gr-un").value;g.pb=$("#gr-pb").checked;g.valores=$("#gr-val").checked;
+  g.linhas=g.linhas.map((_,i)=>[$("#gr-r"+i).value,$("#gr-v"+i).value]);
+}
+function atualizarPrevGrafico(){const e=$("#gr-prev");if(e)e.src=desenharGrafico(S._gr,{semTitulo:true}).toDataURL("image/png");const c=$("#gr-cap");if(c)c.textContent=`${S._gr.tipo==="tabela"?"Tabela":"Gráfico"} 1 – ${S._gr.titulo||"(sem título)"}`;}
+function desenharSheetGrafico(){
+  const g=S._gr,tab=g.tipo==="tabela",set=g.tipo==="setores";
+  abrirSheet(`<div class="sheet-h"><h2>Gráfico ou tabela</h2><button class="iconbtn" data-a="gr-cancelar" aria-label="Voltar para a questão">${I.x}</button></div>
+   <div class="seg" role="group" aria-label="Tipo">${TIPOS_GR.map(([k,n])=>`<button data-a="gr-tipo" data-v="${k}" aria-pressed="${g.tipo===k}">${n}</button>`).join("")}</div>
+   <div class="gr-prev"><span id="gr-cap" class="gr-cap"></span><img id="gr-prev" alt="Prévia do gráfico"><span class="gr-cap">Fonte: elaborado pelo(a) professor(a).</span></div>
+   <label class="f" for="gr-tit">Título<input class="in" id="gr-tit" value="${esc(g.titulo)}" placeholder="Ex.: Livros lidos pela turma em 2026"></label>
+   <div class="f"><span>Dados ${ajuda("gr-dados",set?"Até 8 partes; os valores viram porcentagens.":"Um rótulo e um número por linha.")}</span>
+     <div class="gr-rows">${g.linhas.map((l,i)=>`<div class="gr-row"><input class="in" id="gr-r${i}" value="${esc(l[0])}" placeholder="Rótulo" aria-label="Rótulo ${i+1}"><input class="in" id="gr-v${i}" value="${esc(l[1])}" placeholder="Valor" inputmode="decimal" aria-label="Valor ${i+1}"><button class="iconbtn" data-a="gr-rem" data-i="${i}" aria-label="Remover linha">${I.x}</button></div>`).join("")}</div>
+     <button class="btn sm" data-a="gr-add" style="align-self:flex-start" ${g.linhas.length>=(set?8:15)?"disabled":""}>${I.plus} Adicionar linha</button></div>
+   <div class="grid2" ${set?"hidden":""}>
+     <label class="f" for="gr-x">${tab?"Nome da 1ª coluna":"Título do eixo horizontal"}<input class="in" id="gr-x" value="${esc(g.eixoX)}" placeholder="${tab?"Ex.: Mês":"Ex.: Mês (opcional)"}"></label>
+     <label class="f" for="gr-y">${tab?"Nome da 2ª coluna":"Título do eixo dos valores"}<input class="in" id="gr-y" value="${esc(g.eixoY)}" placeholder="${tab?"Ex.: Quantidade":"Ex.: Quantidade (opcional)"}"></label>
+   </div>
+   <label class="f" for="gr-un" ${set?"hidden":""}>Unidade ${ajuda("gr-un","Aparece junto aos valores. Ex.: kg, °C, R$")}<input class="in" id="gr-un" value="${esc(g.unidade)}"></label>
+   <div class="opcao" ${tab?"hidden":""}><label class="switch" for="gr-pb"><input type="checkbox" id="gr-pb" ${g.pb?"checked":""}><span class="t"><b>Preto e branco</b></span></label>${ajuda("gr-pb",`Para impressão comum. Setores usam tons de cinza e hachuras.`)}</div>
+   <div class="opcao" ${tab?"hidden":""}><label class="switch" for="gr-val"><input type="checkbox" id="gr-val" ${g.valores?"checked":""}><span class="t"><b>Mostrar valores no gráfico</b></span></label>${ajuda("gr-val",`Desligue quando a questão pede para o estudante ler o gráfico.`)}</div>
+   <div class="row"><button class="btn" data-a="gr-cancelar" style="flex:1">Voltar</button><button class="btn primary" data-a="gr-usar" style="flex:1">Usar na questão</button></div>`);
+  atualizarPrevGrafico();
+}
+
+/* ============ Render ============ */
+function render(){
+  const tabs=[["inicio","Início",I.home],["banco","Banco",I.bank],["prova","Nova prova",I.prova],["escola","Escola",I.school]];
+  $("#nav").innerHTML=tabs.map(([k,n,ic])=>`<button data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span class="ico">${ic}</span>${n}</button>`).join("");
+  $("#who").innerHTML=S.isOwner?`<span class="pill aee">Administrador</span>`:"";
+  const m=$("#main");
+  const foco=document.activeElement&&document.activeElement.id; const pos=foco&&document.activeElement.selectionStart;
+  if(S.tab==="inicio") m.innerHTML=vInicio();
+  else if(S.tab==="banco") m.innerHTML=vBanco();
+  else if(S.tab==="prova") m.innerHTML=vProva();
+  else m.innerHTML=vEscola();
+  if(foco){const el=document.getElementById(foco);if(el&&el!==document.body){el.focus();try{if(pos!=null)el.setSelectionRange(pos,pos);}catch(e){}}}
+}
+function avisoModo(){
+  if(!S.ready) return `<div class="notice info">${I.info}<span>Conectando ao banco de questões…</span></div>`;
+  if(!S.db) return `<div class="aviso">${I.info}<span>Modo demonstração</span>${ajuda("demo","O banco compartilhado não está disponível nesta visualização. Abra o aplicativo pelo link do claude.ai para salvar questões e provas.")}</div>`;
+  if(S.canWrite===false) return `<div class="aviso">${I.info}<span>Somente consulta</span>${ajuda("ro","Você pode consultar o banco, mas ainda não pode cadastrar questões. Peça ao administrador da SENOV acesso de <b>Colaborador</b>.")}</div>`;
+  return "";
+}
+
+function vInicio(){
+  const minhas=S.questoes.filter(mine).length;
+  const rec=S.provas.slice(0,5);
+  return `${avisoModo()}
+  <section class="hero"><span class="eyebrow">Provas adaptadas</span><h1>${S.perfil.professor?`Olá, ${esc(S.perfil.professor.split(" ")[0])}.`:"Monte provas organizadas em minutos."}</h1>
+</section>
+  <div class="stats"><div class="stat"><b>${S.questoes.length}</b><span>questões no banco</span></div><div class="stat"><b>${minhas}</b><span>cadastradas por você</span></div><div class="stat"><b>${S.provas.length}</b><span>provas salvas</span></div></div>
+  <button class="cta" data-a="nova-prova"><span class="cta-ico">${I.wand}</span><span class="cta-t"><b>Criar prova rápida</b><span>Pronta em poucos toques</span></span><span class="cta-seta" aria-hidden="true">→</span></button>
+  <div class="actions">
+    <button class="bigact" data-a="nova-questao">${I.plus}<b>Cadastrar questão</b><span>Revisada pela IA</span></button>
+    <button class="bigact" data-a="personalizar">${I.pen}<b>Prova personalizada</b><span>Passo a passo</span></button>
+  </div>
+  <section class="stack"><div class="row" style="justify-content:space-between"><h2>Minhas provas</h2></div>
+  ${rec.length?`<div class="qlist">${rec.map(p=>`<button class="qcard" data-a="abrir-prova" data-id="${esc(p.id)}"><div class="qhead"><b>${esc(p.disciplina)} · ${esc(p.serie)}</b><span class="pill">${esc(p.bimestre)}</span></div><div class="meta">${p.aee?'<span class="pill aee">AEE</span>':""}${p.bastao?'<span class="pill">Letra bastão</span>':""}<span class="pill">${(p.montagem||[]).length} questões</span><span class="pill mine">${dataBR(p.atualizadoEm)}</span></div><span class="small muted">${esc(p.escola||"Escola não informada")}</span></button>`).join("")}</div>`
+  :`<div class="empty"><b>Nenhuma prova salva ainda</b><button class="btn primary" data-a="nova-prova">${I.plus} Criar a primeira prova</button></div>`}
+  </section>`;
+}
+
+function filtrosBanco(){
+  const f=S.f;
+  return S.questoes.filter(q=>(!f.nivel||q.nivel===f.nivel)&&(!f.disciplina||q.disciplina===f.disciplina)&&(!f.dif||String(q.dificuldade)===f.dif)&&(!f.aee||q.aee)&&(!f.minhas||mine(q))&&(!f.busca||(q.enunciado+" "+q.conteudo).toLowerCase().includes(f.busca.toLowerCase())));
+}
+function selo(q){
+  if(q.privada)return q.revisao&&q.revisao.status==="bloqueada"?'<span class="pill d3">Só minha · revisar</span>':'<span class="pill mine">Só minha · aguardando revisão</span>';
+  if(q.revisao)return '<span class="pill d1">Revisada</span>';
+  return S.isOwner?'<span class="pill mine">Sem revisão</span>':"";
+}
+function qCard(q,extra=""){
+  return `<button class="qcard ${extra}" data-a="ver-questao" data-id="${esc(q.id)}">
+    <div class="meta"><span class="pill">${esc(q.disciplina)}</span><span class="pill">${esc(q.serie)}</span>${difPill(q.dificuldade)}${q.aee?'<span class="pill aee">AEE</span>':""}${q.grafico?'<span class="pill">Gráfico</span>':q.temFoto?'<span class="pill">Imagem</span>':""}${mine(q)&&!q.privada?'<span class="pill mine">Minha</span>':""}${selo(q)}${q.exemplo?'<span class="pill mine">Exemplo</span>':""}</div>
+    <b class="small">${esc(q.conteudo)}</b><p class="txt">${esc(q.enunciado)}</p></button>`;
+}
+function vBanco(){
+  const f=S.f,lista=filtrosBanco();
+  return `${avisoModo()}
+  <section class="hero"><span class="eyebrow">Banco de questões</span><h1>Questões por conteúdo</h1></section>
+  <div class="row" style="flex-wrap:nowrap"><input class="in" id="busca" placeholder="Buscar no enunciado ou conteúdo" value="${esc(f.busca)}" aria-label="Buscar"><button class="btn primary" data-a="nova-questao" aria-label="Cadastrar questão">${I.plus}</button></div>
+  <div class="filters" role="group" aria-label="Filtros">
+    <select id="f-nivel" aria-label="Nível"><option value="">Todos os níveis</option><option value="EF" ${f.nivel==="EF"?"selected":""}>Fundamental (A–D)</option><option value="EM" ${f.nivel==="EM"?"selected":""}>Médio (A–E)</option></select>
+    <select id="f-disc" aria-label="Disciplina"><option value="">Todas as disciplinas</option>${todasDisciplinas().map(d=>`<option ${f.disciplina===d?"selected":""}>${esc(d)}</option>`).join("")}</select>
+    <select id="f-dif" aria-label="Dificuldade"><option value="">Qualquer dificuldade</option>${[1,2,3].map(d=>`<option value="${d}" ${f.dif==d?"selected":""}>${DIF[d]}</option>`).join("")}</select>
+  </div>
+  <div class="chips"><button class="chip" data-a="f-aee" aria-pressed="${f.aee}">Adequadas ao AEE</button><button class="chip" data-a="f-minhas" aria-pressed="${f.minhas}">Só as minhas</button></div>
+  <p class="small muted">${lista.length} ${lista.length===1?"questão encontrada":"questões encontradas"}</p>
+  ${lista.length?`<div class="qlist">${lista.map(q=>qCard(q)).join("")}</div>`:`<div class="empty"><b>Nenhuma questão com esses filtros</b><span>Cadastre uma questão ou limpe os filtros.</span><button class="btn" data-a="limpar-f">Limpar filtros</button></div>`}`;
+}
+
+/* ---------- Nova prova ---------- */
+let RAP={disciplina:"",nivel:"EF",serie:"6º ano",bimestre:BIM[0],qtd:10,aee:false};
+try{const r=JSON.parse(localStorage.getItem("senov.rap")||"null");if(r)Object.assign(RAP,r);}catch(e){}
+function lembrarRap(){try{localStorage.setItem("senov.rap",JSON.stringify(RAP));}catch(e){}}
+function disciplinasDoBanco(){const c={};S.questoes.forEach(q=>{if(q.disciplina)c[q.disciplina]=(c[q.disciplina]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"pt-BR"));}
+function contar(f){return S.questoes.filter(f).length;}
+function vRapida(){
+  const r=RAP,pf=S.perfil,discs=disciplinasDoBanco();
+  if(r.disciplina&&!discs.some(d=>d[0]===r.disciplina))r.disciplina="";
+  const nEF=r.disciplina?contar(q=>q.disciplina===r.disciplina&&q.nivel==="EF"):0,nEM=r.disciplina?contar(q=>q.disciplina===r.disciplina&&q.nivel==="EM"):0;
+  const disp=r.disciplina?contar(q=>q.disciplina===r.disciplina&&q.nivel===r.nivel&&q.serie===r.serie&&(!r.aee||q.aee||q.dificuldade===1)):0;
+  return `${avisoModo()}
+  <section class="hero"><span class="eyebrow">Nova prova</span><div class="th"><h1>Prova rápida</h1>${ajuda("rap","Escolha as opções e toque em Gerar. O app escolhe as questões, organiza por dificuldade e monta o gabarito.")}</div></section>
+  <div class="card escola-mini">
+    ${pf.escola?`<div class="lg">${pf.logo?`<img src="${pf.logo}" alt="">`:I.school}</div><div class="t"><b>${esc(pf.escola)}</b><span>${esc(pf.professor||"Professor(a) não informado")}</span></div><button class="btn ghost sm" data-tab="escola">Alterar</button>`
+    :`<div class="stack" style="flex:1"><div class="th"><b>Dados do cabeçalho</b>${ajuda("r-cab","Ficam salvos para as próximas provas. A logo pode ser enviada em Escola.")}</div><div class="grid2"><label class="f" for="r-escola">Escola<input class="in" id="r-escola" placeholder="Nome da escola"></label><label class="f" for="r-prof">Professor(a)<input class="in" id="r-prof" placeholder="Seu nome" value="${esc(pf.professor||"")}"></label></div></div>`}
+  </div>
+  ${discs.length?`<div class="card stack rapida">
+    <div class="f"><span>Disciplina</span><div class="chips">${discs.map(([d,n])=>`<button class="chip" data-a="r-disc" data-v="${esc(d)}" aria-pressed="${r.disciplina===d}">${esc(d)} <small>${n}</small></button>`).join("")}</div></div>
+    ${r.disciplina?`
+    <div class="f"><span>Nível</span><div class="seg"><button data-a="r-nivel" data-v="EF" aria-pressed="${r.nivel==="EF"}">Fundamental <small>${nEF}</small></button><button data-a="r-nivel" data-v="EM" aria-pressed="${r.nivel==="EM"}">Médio <small>${nEM}</small></button></div></div>
+    <div class="f"><span>Série/ano</span><div class="chips">${SERIES[r.nivel].map(se=>{const n=contar(q=>q.disciplina===r.disciplina&&q.nivel===r.nivel&&q.serie===se);return `<button class="chip ${n?"":"vazio"}" data-a="r-serie" data-v="${se}" aria-pressed="${r.serie===se}">${se}${n?` <small>${n}</small>`:""}</button>`;}).join("")}</div></div>
+    <div class="f"><span>Bimestre</span><div class="seg">${BIM.map(b=>`<button data-a="r-bim" data-v="${b}" aria-pressed="${r.bimestre===b}">${b.replace(" bimestre","")}</button>`).join("")}</div></div>
+    <div class="f"><span>Quantas questões</span><div class="seg">${[5,10,15,20].map(n=>`<button data-a="r-qtd" data-v="${n}" aria-pressed="${r.qtd===n}">${n}</button>`).join("")}</div></div>
+    <div class="opcao"><label class="switch" for="r-aee"><input type="checkbox" id="r-aee" ${r.aee?"checked":""}><span class="t"><b>Prova adaptada (AEE)</b></span></label>${ajuda("r-aee",`Questões adequadas ao AEE e fáceis, em letra bastão.`)}</div>
+    <div class="th"><span class="pill ${disp>=r.qtd?"d1":"d2"}">${disp} ${disp===1?"disponível":"disponíveis"}</span>${disp<r.qtd?ajuda("r-falta","Se faltar, o app completa com questões de outras séries do mesmo nível e avisa."):""}</div>`:`<p class="small muted">Escolha a disciplina para continuar.</p>`}
+    ${S._msgRap?`<div class="notice bad">${I.info}<span>${S._msgRap}</span></div>`:""}
+  </div>`:`<div class="empty"><b>O banco ainda não tem questões</b><span>Cadastre questões ou monte a prova escrevendo as suas.</span><button class="btn primary" data-a="nova-questao">${I.plus} Cadastrar questão</button></div>`}
+  <button class="btn ghost" data-a="personalizar" style="align-self:center">${I.pen} Prefiro montar passo a passo</button>
+  <div class="bar"><button class="btn primary" data-a="gerar-rapida" ${r.disciplina?"":"disabled"}>${I.wand} Gerar prova</button></div>`;
+}
+function gerarRapida(){
+  const r=RAP;
+  const e=$("#r-escola"),pr=$("#r-prof");
+  if(e&&e.value.trim()){salvarPerfil({escola:e.value.trim(),professor:pr?pr.value.trim():S.perfil.professor||""});}
+  novaProva();const p=S.prova;
+  Object.assign(p,{escola:S.perfil.escola||"",professor:S.perfil.professor||"",disciplina:r.disciplina,nivel:r.nivel,serie:r.serie,bimestre:r.bimestre,aee:r.aee,bastao:r.aee});
+  S.auto={conteudos:[],qtd:r.qtd,distr:"equilibrada",mesmaSerie:true};
+  let res=montarAuto();S._aviso3=null;
+  if(res.erro||res.falta){S.auto.mesmaSerie=false;const r2=montarAuto();
+    if(!r2.erro&&r2.sel.length>((res.sel&&res.sel.length)||0)){res=r2;S._aviso3=`Não havia questões suficientes do ${r.serie}; o app completou com questões de outras séries do ${NIVEL_NOME[r.nivel]}.`;}else S.auto.mesmaSerie=true;}
+  if(res.erro){S._msgRap=r.aee?"Ainda não há questões para o perfil do AEE nesta disciplina. Use “Prefiro montar passo a passo” para adaptar questões do banco.":"Não há questões desta disciplina neste nível.";render();return;}
+  S._msgRap=null;p.itens=res.sel;p.montagem=organizar(p.itens,p.nivel);
+  if(res.falta)S._aviso3=`Foram encontradas ${res.sel.length} de ${r.qtd} questões pedidas.`;
+  S.passo=3;render();window.scrollTo(0,0);
+}
+function novaProva(){
+  S.prova={id:null,escola:S.perfil.escola||"",logo:S.perfil.logo||"",logoR:S.perfil.logoR||1,professor:S.perfil.professor||"",disciplina:"",bimestre:BIM[0],nivel:"EF",serie:SERIES.EF[5],instrucoes:"",aee:false,bastao:false,incluirGab:true,colunas:1,itens:[],montagem:null};
+  S.auto={conteudos:[],qtd:10,distr:"equilibrada",mesmaSerie:true};S.passo=0;S._msg=null;S._aviso3=null;
+}
+function vProva(){
+  if(!S.prova) novaProva();
+  const p=S.prova,st=S.passo;
+  if(st===0)return vRapida();
+  const nomes=["Cabeçalho","Questões","Revisar e baixar"];
+  return `${avisoModo()}
+  <section class="hero"><span class="eyebrow">${p.id?"Editando prova":"Nova prova"}</span><h1>${nomes[st-1]}</h1></section>
+  <div class="steps">${nomes.map((n,i)=>`<button class="step ${i+1<st?"done":""} ${i+1===st?"cur":""}" data-a="passo" data-n="${i+1}">${i+1}. ${n}</button>`).join("")}</div>
+  ${st===1?vPasso1():st===2?vPasso2():vPasso3()}`;
+}
+function vPasso1(){
+  const p=S.prova;
+  return `<div class="card stack">
+    <div class="logo-drop" role="button" tabindex="0" data-a="logo-prova"><div class="lg">${p.logo?`<img src="${p.logo}" alt="Logo da escola">`:I.school}</div><div><b>${p.logo?"Trocar logo da escola":"Adicionar logo da escola"}</b><div class="small muted">PNG ou JPG. Fica no canto do cabeçalho.</div></div></div>
+    <input type="file" id="logo-file" accept="image/*" hidden>
+    <label class="f" for="p-escola">Nome da escola<input class="in" id="p-escola" value="${esc(p.escola)}" placeholder="Ex.: EEMTI Professora Maria José"></label>
+    <div class="grid2">
+      <label class="f" for="p-disc">Disciplina<input class="in" id="p-disc" list="dl-disc" value="${esc(p.disciplina)}" placeholder="Ex.: Matemática"></label>
+      <label class="f" for="p-bim">Bimestre<select class="in" id="p-bim">${BIM.map(b=>`<option ${p.bimestre===b?"selected":""}>${b}</option>`).join("")}</select></label>
+    </div>
+    <datalist id="dl-disc">${todasDisciplinas().map(d=>`<option value="${esc(d)}">`).join("")}</datalist>
+    <div class="f"><span>Nível de ensino</span><div class="seg" role="group"><button data-a="p-nivel" data-v="EF" aria-pressed="${p.nivel==="EF"}">Fundamental · A–D</button><button data-a="p-nivel" data-v="EM" aria-pressed="${p.nivel==="EM"}">Médio · A–E</button></div></div>
+    <label class="f" for="p-serie">Série/ano<select class="in" id="p-serie">${SERIES[p.nivel].map(s=>`<option ${p.serie===s?"selected":""}>${s}</option>`).join("")}</select></label>
+    <label class="f" for="p-prof">Nome do professor(a) ${ajuda("p-prof","Deixe em branco para preencher à mão na folha.")}<input class="in" id="p-prof" value="${esc(p.professor)}" placeholder="Ex.: Prof. Vones Santos"></label>
+    <label class="f" for="p-instr">Instruções (opcional)<textarea class="in" id="p-instr" placeholder="Ex.: Leia com atenção e marque apenas uma alternativa.">${esc(p.instrucoes)}</textarea></label>
+  </div>
+  <div class="bar"><button class="btn primary" data-a="ir2">Continuar para questões</button></div>`;
+}
+function vPasso2(){
+  const p=S.prova,a=S.auto;
+  const conts=conteudosDe(p.disciplina,p.nivel,a.mesmaSerie?p.serie:"");
+  const base=filtrarBase(p,a.mesmaSerie,a.conteudos);
+  const msg=S._msg;
+  return `<div class="card stack">
+    <div class="row" style="justify-content:space-between"><h3>Montar automaticamente</h3><span class="small muted">${esc(p.disciplina||"Sem disciplina")} · ${esc(p.serie)}</span></div>
+    <div class="opcao"><label class="switch" for="p-aee"><input type="checkbox" id="p-aee" ${p.aee?"checked":""}><span class="t"><b>Prova para o público do AEE</b></span></label>${ajuda("p-aee",`Seleciona questões marcadas como adequadas ao AEE e as de nível fácil.`)}</div>
+    <div class="f"><span>Conteúdos ${ajuda("a-cont","Nenhum marcado = todos os conteúdos.")}</span>
+      ${conts.length?`<div class="chips">${conts.map(c=>`<button class="chip" data-a="toggle-cont" data-v="${esc(c)}" aria-pressed="${a.conteudos.includes(c)}">${esc(c)}</button>`).join("")}</div>`:`<span class="small muted" style="font-weight:400">Ainda não há conteúdos cadastrados para esta disciplina e série.</span>`}</div>
+    <div class="opcao"><label class="switch" for="a-serie"><input type="checkbox" id="a-serie" ${a.mesmaSerie?"checked":""}><span class="t"><b>Somente questões do ${esc(p.serie)}</b></span></label>${ajuda("a-serie",`Desmarque para usar questões de outras séries do mesmo nível.`)}</div>
+    <div class="grid2">
+      <label class="f" for="a-qtd">Quantidade de questões<input class="in" type="number" id="a-qtd" min="1" max="60" value="${a.qtd}"></label>
+      ${p.aee?"":`<div class="f"><span>Dificuldade</span><div class="seg" role="group"><button data-a="distr" data-v="faceis" aria-pressed="${a.distr==="faceis"}">Mais fáceis</button><button data-a="distr" data-v="equilibrada" aria-pressed="${a.distr==="equilibrada"}">Equilibrada</button><button data-a="distr" data-v="desafio" aria-pressed="${a.distr==="desafio"}">Desafio</button></div></div>`}
+    </div>
+    <p class="small muted">${base.length} ${base.length===1?"questão disponível":"questões disponíveis"} com esses filtros.</p>
+    ${msg?`<div class="notice ${msg.tipo}">${I.info}<span>${msg.txt}</span></div>`:""}
+    ${painelAEE(2)}
+    <div class="row"><button class="btn primary" data-a="montar" style="flex:1">${I.wand} Montar automaticamente</button></div>
+    <hr class="hr">
+    <div class="row"><button class="btn" data-a="add-banco" style="flex:1">${I.bank} Escolher do banco</button><button class="btn" data-a="nova-questao-prova" style="flex:1">${I.pen} Escrever nova questão</button></div>
+  </div>
+  <section class="stack"><div class="row" style="justify-content:space-between"><h2>Selecionadas (${p.itens.length})</h2>${p.itens.length?`<button class="btn ghost sm" data-a="limpar-sel">Limpar</button>`:""}</div>
+  ${p.itens.length?`<div class="stack" style="gap:8px">${p.itens.map((q,i)=>`<div class="selitem"><span class="n">${i+1}</span><div class="body"><div class="meta row" style="gap:6px;margin-bottom:4px">${difPill(q.dificuldade)}${q.aee?'<span class="pill aee">AEE</span>':""}<span class="pill">${esc(q.conteudo)}</span>${q.grafico?'<span class="pill">Gráfico</span>':q.temFoto?'<span class="pill">Imagem</span>':""}</div><p class="small">${esc(q.enunciado)}</p>${anexarBtn(q)}</div><button class="iconbtn" data-a="rem-item" data-i="${i}" aria-label="Remover questão">${I.x}</button></div>`).join("")}</div>`
+  :`<div class="empty"><b>Nenhuma questão selecionada</b><span>Use a montagem automática, escolha do banco ou escreva uma questão nova.</span></div>`}
+  </section>
+  <input type="file" id="anexar-file" accept="image/*" hidden>
+  <div class="bar"><button class="btn" data-a="passo" data-n="1">Voltar</button><button class="btn primary" data-a="ir3" ${p.itens.length?"":"disabled"}>Organizar prova</button></div>`;
+}
+const ORIENT_AEE=[
+ ["Uma habilidade por questão","Cobre só um passo de raciocínio. Divida questões longas em duas."],
+ ["Comando curto e no início","Comece pelo verbo: “Marque”, “Qual é”, “Quanto é”. Evite “exceto”, “incorreta” e dupla negação."],
+ ["Frases curtas e vocabulário do dia a dia","Ordem direta (sujeito, verbo, complemento). Troque termos técnicos por palavras conhecidas ou explique-os."],
+ ["Texto-base reduzido","Deixe só o trecho necessário para responder. Destaque a palavra-chave em MAIÚSCULAS."],
+ ["Exemplos concretos","Use situações do cotidiano do estudante: escola, casa, lanche, dinheiro, jogos."],
+ ["Alternativas curtas e bem diferentes","Evite alternativas parecidas ou pegadinhas e não use “todas as anteriores”."],
+ ["Números pequenos e uma operação por vez","Em Matemática, reduza os valores e evite contas encadeadas."],
+ ["Apoio na aplicação","Indique na instrução se o estudante pode usar material concreto, leitura em voz alta ou tempo ampliado."]
+];
+function orientacoesAEE(aberto){
+  return `<details class="orient" ${aberto?"open":""}><summary>Orientações para adaptar questões ao AEE</summary><ol>${ORIENT_AEE.map(([t,d])=>`<li><b>${t}.</b> ${d}</li>`).join("")}</ol></details>`;
+}
+function faltaAEE(){
+  const p=S.prova;if(!p||!p.aee)return null;
+  const pedidas=S.passo===2?S.auto.qtd:Math.max(S.auto.qtd,p.itens.length);
+  const adapt=p.itens.filter(q=>q.aee).length;
+  const semAdapt=p.itens.length-adapt;
+  const faltam=Math.max(0,pedidas-p.itens.length);
+  const nenhuma=S._msg&&S._msg.aee;
+  if(!faltam&&!semAdapt&&!nenhuma)return null;
+  return {pedidas,adapt,semAdapt,faltam,nenhuma};
+}
+function painelAEE(passo){
+  const f=faltaAEE();if(!f)return "";
+  if(passo===2&&!f.nenhuma&&!S.prova.itens.length)return "";
+  const p=S.prova;
+  const origem=filtrarBase(p,S.auto.mesmaSerie,S.auto.conteudos).filter(q=>!q.aee&&!p.itens.some(i=>i.id===q.id||i.origemId===q.id)).length;
+  const partes=[];
+  if(f.faltam) partes.push(`faltam <b>${f.faltam}</b> ${f.faltam===1?"questão":"questões"} para chegar às ${f.pedidas} pedidas`);
+  if(f.semAdapt) partes.push(`<b>${f.semAdapt}</b> ${f.semAdapt===1?"questão selecionada é fácil, mas não foi adaptada":"questões selecionadas são fáceis, mas não foram adaptadas"} para o AEE`);
+  return `<details class="card aeebox" ${DICAS.has("aee-painel")?"open":""}><summary><span class="pill aee">AEE</span><b>Poucas questões adaptadas</b><span class="pill d2">${f.nenhuma?"nenhuma":(f.faltam?"faltam "+f.faltam:f.semAdapt+" sem adaptação")}</span></summary>
+    <div class="stack">
+    <p class="small">${f.nenhuma?"Ainda não há questões para o perfil do AEE com esses filtros.":"Nesta prova, "+partes.join(" e ")+"."} Você pode completar assim:</p>
+    <div class="stack" style="gap:8px">
+      <button class="opt" data-a="aee-adaptar" ${origem?"":"disabled"}>${I.wand}<span><b>Adaptar uma questão do banco</b><span>${origem?`${origem} ${origem===1?"questão":"questões"} deste conteúdo podem ser simplificadas. A original continua no banco.`:"Não há outras questões deste conteúdo para adaptar."}</span></span></button>
+      <button class="opt" data-a="aee-escrever">${I.pen}<span><b>Escrever uma questão adaptada</b><span>Editor já marcado como AEE e fácil</span></span></button>
+      ${passo===2&&S.auto.mesmaSerie?`<button class="opt" data-a="aee-series">${I.bank}<span><b>Buscar em outras séries</b><span>Inclui questões do AEE e fáceis de outras séries do ${NIVEL_NOME[p.nivel]}.</span></span></button>`:""}
+    </div>
+    ${orientacoesAEE(false)}
+  </div></details>`;
+}
+function escolherParaAdaptar(){
+  const p=S.prova;
+  const lista=filtrarBase(p,S.auto.mesmaSerie,S.auto.conteudos).filter(q=>!q.aee&&!p.itens.some(i=>i.origemId===q.id)).sort((a,b)=>a.dificuldade-b.dificuldade);
+  abrirSheet(`<div class="sheet-h"><h2>Qual questão adaptar?</h2><button class="iconbtn" data-a="fechar" aria-label="Fechar">${I.x}</button></div>
+   <div class="th"><span class="small muted">As mais fáceis primeiro</span>${ajuda("adp","Você reescreve uma versão simplificada, que entra no banco como adequada ao AEE. A original continua no banco.")}</div>
+   <div class="qlist">${lista.map(q=>`<button class="qcard" data-a="adaptar-esta" data-id="${esc(q.id)}"><div class="meta"><span class="pill">${esc(q.serie)}</span>${difPill(q.dificuldade)}${p.itens.some(i=>i.id===q.id)?'<span class="pill mine">Na prova</span>':""}</div><b class="small">${esc(q.conteudo)}</b><p class="txt">${esc(q.enunciado)}</p></button>`).join("")}</div>`);
+}
+function editorAdaptar(q){
+  const d={nivel:q.nivel,serie:q.serie,disciplina:q.disciplina,conteudo:q.conteudo,dificuldade:1,aee:true,enunciado:q.enunciado,alternativas:q.alternativas.slice(),correta:q.correta,fixarOrdem:!!q.fixarOrdem,origemId:q.id,grafico:q.grafico?JSON.parse(JSON.stringify(q.grafico)):null,temFoto:!!q.temFoto,legenda:q.legenda||"",tituloImg:q.tituloImg||""};
+  S._ed={d,id:null,destinoProva:true,origem:q,foto:S.fotos[q.id]||null};S._gr=null;
+  desenharEditor();
+}
+async function sugerirAdaptacao(btn){
+  const {d,origem}=S._ed;if(!S.sample||!origem)return;
+  lerEditor();btn.disabled=true;const txt=btn.innerHTML;btn.innerHTML="Pensando…";
+  const n=NALT[d.nivel];
+  const pedido=`Você é professor(a) do Atendimento Educacional Especializado (AEE) no Brasil. Adapte a questão de múltipla escolha abaixo para estudantes público do AEE (${d.serie}, ${NIVEL_NOME[d.nivel]}, ${d.disciplina}, conteúdo: ${d.conteudo}).
+Regras: mantenha a MESMA habilidade e a mesma resposta correta; uma habilidade por questão; comando curto e no início, começando pelo verbo; frases curtas em ordem direta; vocabulário do dia a dia; texto-base reduzido ao essencial; destaque a palavra-chave em MAIÚSCULAS; não use "exceto", "incorreta", dupla negação nem "todas as anteriores"; exatamente ${n} alternativas curtas e bem diferentes entre si; números menores quando for Matemática. Escreva em português do Brasil.
+Questão original:
+Enunciado: ${origem.enunciado}
+Alternativas: ${origem.alternativas.map((a,i)=>LET[i]+") "+a).join(" | ")}
+Correta: ${LET[origem.correta]}${origem.grafico||origem.temFoto?"\nA questão tem uma imagem ou gráfico que continuará na versão adaptada: faça o enunciado se referir a ela (\"Observe a imagem\"), sem descrevê-la de novo.":""}
+Responda só com JSON: {"enunciado": string, "alternativas": [${n} strings, sem a letra], "correta": índice de 0 a ${n-1}}`;
+  try{
+    const r=await S.sample.json(pedido);
+    if(!r||typeof r.enunciado!=="string"||!Array.isArray(r.alternativas)||r.alternativas.length!==n||!Number.isInteger(r.correta)||r.correta<0||r.correta>=n) throw {code:"formato"};
+    d.enunciado=r.enunciado.trim();d.alternativas=r.alternativas.map(x=>String(x).replace(/^[A-E]\)\s*/,"").trim());d.correta=r.correta;
+    desenharEditor();toast("Sugestão pronta. Revise antes de salvar.");
+  }catch(e){
+    btn.disabled=false;btn.innerHTML=txt;
+    if(e&&e.code==="not_granted"){S.sample=null;desenharEditor();toast("Sugestão automática não autorizada.");}
+    else if(e&&e.code==="rate_limited")toast("Muitos pedidos seguidos. Tente em alguns minutos.");
+    else toast("Não foi possível gerar a sugestão. Adapte manualmente com as orientações.");
+  }
+}
+function vPasso3(){
+  const p=S.prova;
+  if(!p.montagem) p.montagem=organizar(p.itens,p.nivel);
+  const d=distribuicao(p.montagem,p.nivel);
+  return `<div class="p3"><div class="p3-ctrl stack">
+  ${S._aviso3?`<div class="notice">${I.info}<span>${S._aviso3}</span></div>`:""}
+  <details class="card qdet" id="qdet" ${S._qopen??(innerWidth>=1000)?"open":""}><summary><h3>Questões da prova</h3><span class="small muted">${p.montagem.length} questões</span></summary>
+    <div class="qrows">${p.montagem.map((m,i)=>`<div class="qrow"><span class="n">${i+1}</span><div class="b"><span class="pill d${m.dificuldade}" title="${DIF[m.dificuldade]}" aria-label="${DIF[m.dificuldade]}">${dots(m.dificuldade)}</span><span class="c">${esc(m.conteudo)}</span></div><span class="gl">${LET[m.correta]}</span><button class="iconbtn" data-a="trocar-q" data-id="${esc(m.qid)}" aria-label="Trocar questão ${i+1}" title="Trocar por outra parecida">${I.shuffle}</button><button class="iconbtn" data-a="remover-q" data-id="${esc(m.qid)}" aria-label="Remover questão ${i+1}">${I.x}</button></div>`).join("")}</div>
+    <button class="btn sm" data-a="passo" data-n="2" style="align-self:flex-start">${I.plus} Adicionar questões</button>
+  </details>
+  <div class="card stack">
+    <div class="row" style="justify-content:space-between"><div class="th"><h3>Gabarito</h3>${ajuda("gab","Questões em ordem crescente de dificuldade e agrupadas por conteúdo. As letras foram distribuídas por igual, sem repetir em seguida e sem sequências como A‑B‑A‑B ou A‑B‑C.")}</div><button class="btn sm" data-a="reorganizar">${I.shuffle} Reorganizar</button></div>
+    <div class="dist">${d.map((v,i)=>`<span>${LET[i]}: ${v}</span>`).join("")}</div>
+    <div class="dist" aria-label="Gabarito">${p.montagem.map((m,i)=>`<span>${i+1}-${LET[m.correta]}</span>`).join("")}</div>
+    <div class="opcao"><label class="switch" for="p-gab"><input type="checkbox" id="p-gab" ${p.incluirGab?"checked":""}><span class="t"><b>Gabarito em folha separada no final</b></span></label>${ajuda("p-gab",`Retire a última folha antes de imprimir para os estudantes.`)}</div>
+  </div>
+  ${(()=>{const f=p.montagem.map((m,i)=>[m,i]).filter(([m])=>precisaFoto(m));return f.length?`<div class="card stack"><div class="th">${I.image}<b>${f.length===1?"1 questão precisa de imagem":f.length+" questões precisam de imagem"}</b>${ajuda("foto3","As imagens não ficam guardadas no banco: anexe agora para irem no PDF. Sem anexar, o PDF sai com um espaço em branco para colar a imagem.")}</div>${f.map(([m,i])=>`<div class="row" style="justify-content:space-between"><span class="small"><b>Questão ${i+1}</b> · ${esc(m.conteudo)}</span>${anexarBtn(m)}</div>`).join("")}</div>`:""})()}
+  <input type="file" id="anexar-file" accept="image/*" hidden>
+  ${painelAEE(3)}
+  <div class="card stack"><h3>Adaptações e organização da folha</h3>
+    <div class="opcao"><label class="switch" for="p-bastao"><input type="checkbox" id="p-bastao" ${p.bastao?"checked":""}><span class="t"><b>Letra bastão</b></span></label>${ajuda("p-bastao",`Todo o texto em MAIÚSCULAS, com fonte maior e mais espaçamento.`)}</div>
+    <div class="f"><span>Colunas no PDF ${ajuda("cols","A ABNT usa uma coluna. Duas colunas economizam papel, mas para o AEE e letra bastão uma coluna é mais fácil de ler.")}</span><div class="seg" role="group"><button data-a="p-cols" data-v="1" aria-pressed="${p.colunas!==2}">1 coluna</button><button data-a="p-cols" data-v="2" aria-pressed="${p.colunas===2}">2 colunas · economiza papel</button></div>
+    </div>
+  </div>
+  </div><div class="p3-prev"><div class="paper-wrap">${previewPapel(p)}</div></div></div>
+  <div class="bar"><button class="btn" data-a="salvar-prova">${I.save} Salvar</button><button class="btn primary" data-a="pdf">${I.down} Baixar PDF</button></div>`;
+}
+function previewPapel(p){
+  const up=s=>esc(s),rot=numerarFiguras(p.montagem);
+  const campo=(r,v,cls)=>`<div class="ph-line ${cls||""}"><b>${r}</b><span class="l">${esc(v||"")}</span></div>`;
+  return `<article lang="pt-BR" class="paper ${p.bastao?"bastao":""} ${p.colunas===2?"cols2":""}" aria-label="Prévia da prova">
+   <span class="pnum">1</span>
+   <header class="ph"><div class="ph-top">${p.logo?`<div class="ph-logo"><img src="${p.logo}" alt=""></div>`:""}<div><div class="ph-escola">${esc((p.escola||"Nome da escola").toLocaleUpperCase("pt-BR"))}</div>
+     <div class="ph-meta">${esc(p.disciplina)} · ${esc(p.bimestre)}<br>${esc(p.serie)} – ${NIVEL_NOME[p.nivel]}</div></div></div>
+     <div class="ph-lines">${campo("Professor(a):",p.professor)}${campo("Estudante:","")}<div class="ph-row">${campo("Turma:","")}${campo("Data:","")}${campo("Nota:","")}</div></div></header>
+   <h2 class="ptit">${esc(("Avaliação de "+p.disciplina+" – "+p.bimestre).toLocaleUpperCase("pt-BR"))}</h2>
+   ${p.instrucoes?`<p class="p-instr"><b>Instruções:</b> ${up(p.instrucoes)}</p>`:""}
+   <div class="qs">${p.montagem.map((m,i)=>`<div class="pq"><div class="en"><b>${i+1}.</b><span>${up(m.enunciado)}</span></div>${m.grafico||m.temFoto?`<figure class="pimg"><figcaption>${esc(rot[i])}${tituloFig(m)?" – "+up(tituloFig(m)):""}</figcaption>${midiaHTML(m)}${fonteFig(m)?`<figcaption>Fonte: ${up(fonteFig(m))}</figcaption>`:""}</figure>`:""}<ol>${m.alternativas.map((a,j)=>`<li><b>${LET[j]})</b><span>${up(a)}</span></li>`).join("")}</ol></div>`).join("")}</div>
+   ${p.incluirGab?`<div class="pgab"><h3>GABARITO</h3><span class="small">Folha separada, no final do PDF · uso exclusivo do(a) professor(a)</span><div class="gabgrid">${p.montagem.map((m,i)=>`<div><span>${String(i+1).padStart(2,"0")}</span><b>${LET[m.correta]}</b></div>`).join("")}</div></div>`:""}
+  </article>`;
+}
+
+/* ---------- Escola / perfil ---------- */
+function vEscola(){
+  const pf=S.perfil;
+  return `${avisoModo()}
+  <section class="hero"><span class="eyebrow">Escola e professor</span><div class="th"><h1>Cabeçalho</h1>${ajuda("esc","Usados como padrão em todas as novas provas.")}</div></section>
+  <div class="card stack">
+    <div class="logo-drop" role="button" tabindex="0" data-a="logo-perfil"><div class="lg">${pf.logo?`<img src="${pf.logo}" alt="Logo da escola">`:I.school}</div><div><b>${pf.logo?"Trocar logo":"Enviar logo da escola"}</b><div class="small muted">A imagem é reduzida automaticamente.</div></div></div>
+    <input type="file" id="logo-file" accept="image/*" hidden>
+    ${pf.logo?`<button class="btn ghost sm" data-a="rem-logo" style="align-self:flex-start">Remover logo</button>`:""}
+    <label class="f" for="e-escola">Nome da escola<input class="in" id="e-escola" value="${esc(pf.escola)}" placeholder="Ex.: EEMTI Professora Maria José"></label>
+    <label class="f" for="e-prof">Seu nome<input class="in" id="e-prof" value="${esc(pf.professor)}" placeholder="Como deve aparecer na prova"></label>
+    <button class="btn primary" data-a="salvar-escola">Salvar dados</button>
+  </div>
+  <div class="card stack"><h3>Autorização de compartilhamento</h3>
+    ${pf.termoAceitoEm?`<p class="small">Você autorizou o compartilhamento em <b>${dataBR(pf.termoAceitoEm)}</b>. Suas questões continuam disponíveis para você no banco.</p>`:`<p class="small muted">Você ainda não autorizou. A autorização é necessária para cadastrar questões e montar provas.</p><button class="btn" data-a="ver-termo">Ler e autorizar</button>`}
+  </div>
+  ${window.SENOV_LOCAL?vIALocal():""}
+  ${S.isOwner?vAdmin():""}`;
+}
+function vIALocal(){
+  let c={};try{c=JSON.parse(localStorage.getItem("senov.ia")||"null")||{};}catch(e){}
+  return `<div class="card stack"><div class="th"><h3>Revisão por IA</h3><span class="pill ${c.chave?"d1":"mine"}">${c.chave?"ligada":"desligada"}</span>${ajuda("ia-local","Nesta versão de teste, a revisão usa uma chave da API da Anthropic (console.anthropic.com). A chave fica só neste aparelho e cada revisão é cobrada na sua conta da API. Sem chave, as questões ficam guardadas “só para mim”.")}</div>
+    <label class="f" for="ia-chave">Chave da API<input class="in" id="ia-chave" type="password" autocomplete="off" value="${esc(c.chave||"")}" placeholder="sk-ant-..."></label>
+    <label class="f" for="ia-modelo">Modelo ${ajuda("ia-modelo","Padrão: claude-sonnet-5-5. Pode trocar por outro modelo disponível na sua conta.")}<input class="in" id="ia-modelo" value="${esc(c.modelo||"claude-sonnet-5-5")}"></label>
+    <div class="row"><button class="btn primary" data-a="ia-salvar" style="flex:1">Salvar</button>${c.chave?`<button class="btn danger" data-a="ia-remover" style="flex:1">Remover chave</button>`:""}</div></div>`;
+}
+function vAdmin(){
+  const q=S._banco;const semRev=q.filter(x=>!x.revisao).length;const autores=uniq(q.filter(x=>!x.exemplo).map(x=>x.autorId)).length;
+  const porDisc={};q.forEach(x=>{porDisc[x.disciplina]=(porDisc[x.disciplina]||0)+1;});
+  const lin=Object.entries(porDisc).sort((a,b)=>b[1]-a[1]);const max=Math.max(1,...lin.map(l=>l[1]));
+  const ex=q.filter(x=>x.exemplo).length;
+  return `<section class="card stack"><div class="row" style="justify-content:space-between"><h2>Painel SENOV</h2><span class="pill aee">Somente você vê</span></div>
+    <div class="stats"><div class="stat"><b>${q.length}</b><span>questões</span></div><div class="stat"><b>${autores}</b><span>professores</span></div><div class="stat"><b>${q.filter(x=>x.aee).length}</b><span>adequadas ao AEE</span></div></div>
+    ${semRev?`<div class="notice">${I.info}<span><b>${semRev}</b> ${semRev===1?"questão entrou":"questões entraram"} no banco antes da revisão por IA. Abra cada uma no Banco (etiqueta “Sem revisão”) e toque em <b>Revisar com IA</b>.</span></div>`:""}
+    <h3>Questões por disciplina</h3>
+    ${lin.length?`<div class="barchart">${lin.map(([d,v])=>`<div class="r"><span>${esc(d)}</span><span class="t"><i style="width:${v/max*100}%"></i></span><span class="v">${v}</span></div>`).join("")}</div>`:`<p class="small muted">Sem questões ainda.</p>`}
+    <div class="row">${window.SENOV_LOCAL?`<button class="btn" data-a="imp-json" style="flex:1">${I.plus} Importar banco (JSON)</button><input type="file" id="imp-file" accept=".json,application/json" hidden>`:""}<button class="btn" data-a="exp-json" style="flex:1">${I.down} Exportar banco (JSON)</button><button class="btn" data-a="exp-csv" style="flex:1">${I.down} Exportar (CSV)</button></div>
+    ${ex?`<button class="btn danger" data-a="rem-exemplos">${I.trash} Remover ${ex} questões de exemplo</button>`:""}
+  </section>`;
+}
+
+/* ============ Sheets ============ */
+function abrirSheet(html){
+  $("#layer").innerHTML=`<div class="scrim" data-a="fechar-scrim"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+  const f=$("#layer .sheet input, #layer .sheet textarea, #layer .sheet button");if(f)f.focus({preventScroll:true});
+}
+function fecharSheet(){$("#layer").innerHTML="";}
+
+function verQuestao(id){
+  const q=S.questoes.find(x=>x.id===id);if(!q)return;
+  abrirSheet(`<div class="sheet-h"><h2>${esc(q.conteudo)}</h2><button class="iconbtn" data-a="fechar" aria-label="Fechar">${I.x}</button></div>
+   <div class="meta row" style="gap:6px"><span class="pill">${esc(q.disciplina)}</span><span class="pill">${esc(q.serie)}</span>${difPill(q.dificuldade)}${q.aee?'<span class="pill aee">AEE</span>':""}${q.fixarOrdem?'<span class="pill">Ordem fixa</span>':""}${selo(q)}</div>
+   ${q.privada?`<div class="notice ${q.revisao&&q.revisao.status==="bloqueada"?"bad":""}">${I.info}<div class="stack" style="gap:4px"><span><b>Só você vê esta questão.</b> Ela entra no banco depois de passar pela revisão.</span>${(q.revisao&&q.revisao.problemas||[]).map(x=>`<span class="small">${esc(x)}</span>`).join("")}</div></div>`:""}
+   <p style="white-space:pre-wrap">${esc(q.enunciado)}</p>
+   ${q.grafico?midiaHTML(q,"qimg"):q.temFoto?(S.fotos[q.id]?midiaHTML(q,"qimg"):`<div class="notice info">${I.image}<span>Esta questão usa uma imagem. As imagens não ficam guardadas no banco: ela é anexada na hora de montar a prova.</span></div>`):""}
+   ${(q.grafico||q.temFoto)&&q.legenda?`<span class="small muted" style="font-style:italic">${esc(q.legenda)}</span>`:""}
+   <div class="stack" style="gap:6px">${q.alternativas.map((a,i)=>`<div class="alt-row"><span class="lt" aria-pressed="${i===q.correta}">${LET[i]}</span><span>${esc(a)}</span></div>`).join("")}</div>
+   <div class="row">${mine(q)?`<button class="btn" data-a="editar-questao" data-id="${esc(q.id)}" style="flex:1">${I.pen} Editar</button>`:""}${mine(q)||S.isOwner?`<button class="btn danger" data-a="excluir-questao" data-id="${esc(q.id)}" style="flex:1">${I.trash} Excluir</button>`:""}</div>
+   ${q.privada||(S.isOwner&&!q.revisao)?`<button class="btn primary" data-a="revisar-questao" data-id="${esc(q.id)}">${I.check} ${q.privada?"Revisar e enviar ao banco":"Revisar com IA"}</button>`:""}
+   ${S.isOwner&&q.revisao&&q.revisao.original?`<details class="orient"><summary>Ver texto original enviado pelo professor</summary><div class="revdoc" style="margin-top:8px"><p>${difPalavras(q.revisao.original.enunciado,q.enunciado)}</p><ol>${q.alternativas.map((a,i)=>`<li><b>${LET[i]})</b> <span>${difPalavras((q.revisao.original.alternativas||[])[i]||"",a)}</span></li>`).join("")}</ol></div>${(q.revisao.alteracoes||[]).map(x=>`<div class="small"><b>${esc(x.onde||"")}</b> · ${esc(x.motivo)}</div>`).join("")}</details>`:""}
+   ${!mine(q)&&!S.isOwner?`<p class="small muted">De outro professor · pode usar nas suas provas</p>`:""}`);
+}
+function editorQuestao(q,destinoProva){
+  const p=S.prova;
+  const d=q?{...q,alternativas:q.alternativas.slice()}:{nivel:destinoProva?p.nivel:(S.f.nivel||"EF"),serie:destinoProva?p.serie:"",disciplina:destinoProva?p.disciplina:(S.f.disciplina||""),conteudo:"",dificuldade:1,aee:destinoProva?p.aee:false,enunciado:"",alternativas:[],correta:0,fixarOrdem:false};
+  if(!d.serie) d.serie=SERIES[d.nivel][0];
+  while(d.alternativas.length<NALT[d.nivel]) d.alternativas.push("");
+  d.alternativas=d.alternativas.slice(0,NALT[d.nivel]);
+  d.legenda=d.legenda||"";d.grafico=d.grafico?JSON.parse(JSON.stringify(d.grafico)):null;d.temFoto=!!d.temFoto;
+  S._ed={d,id:q?q.id:null,destinoProva:!!destinoProva,foto:q&&S.fotos[q.id]||null};S._gr=null;
+  desenharEditor();
+}
+function desenharEditor(){
+  const {d,id}=S._ed;
+  const o=S._ed.origem;
+  abrirSheet(`<div class="sheet-h"><h2>${o?"Adaptar para o AEE":id?"Editar questão":"Nova questão"}</h2><button class="iconbtn" data-a="fechar" aria-label="Fechar">${I.x}</button></div>
+   ${o?`<div class="origbox"><span class="eyebrow">Questão original</span><p>${esc(o.enunciado)}</p>${o.grafico||S.fotos[o.id]?midiaHTML(o,"qthumb"):""}<ol>${o.alternativas.map((a,i)=>`<li${i===o.correta?' class="ok"':""}><b>${LET[i]})</b> ${esc(a)}</li>`).join("")}</ol></div>
+     ${S.sample?`<button class="btn" data-a="ed-sugerir">${I.wand} Sugerir versão adaptada</button><div class="th" style="margin-top:-6px"><span class="small muted">Gerada pelo Claude</span>${ajuda("sug","Preenche os campos abaixo com uma versão simplificada. Revise antes de salvar.")}</div>`:""}`:""}
+   ${d.aee?orientacoesAEE(!!o):""}
+   <div class="f" ${o?"hidden":""}><span>Nível de ensino</span><div class="seg"><button data-a="ed-nivel" data-v="EF" aria-pressed="${d.nivel==="EF"}">Fundamental · A–D</button><button data-a="ed-nivel" data-v="EM" aria-pressed="${d.nivel==="EM"}">Médio · A–E</button></div></div>
+   <div class="grid2">
+     <label class="f" for="ed-disc">Disciplina<input class="in" id="ed-disc" list="dl-disc2" value="${esc(d.disciplina)}"></label>
+     <label class="f" for="ed-serie">Série/ano<select class="in" id="ed-serie">${SERIES[d.nivel].map(s=>`<option ${d.serie===s?"selected":""}>${s}</option>`).join("")}</select></label>
+   </div>
+   <datalist id="dl-disc2">${todasDisciplinas().map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
+   <label class="f" for="ed-cont">Conteúdo ${ajuda("ed-cont","Ex.: Frações, Interpretação de texto, Sistema solar.")}<input class="in" id="ed-cont" list="dl-cont" value="${esc(d.conteudo)}"></label>
+   <datalist id="dl-cont">${conteudosDe(d.disciplina,"","").map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
+   <div class="f"><span>Dificuldade</span><div class="seg">${[1,2,3].map(n=>`<button data-a="ed-dif" data-v="${n}" aria-pressed="${d.dificuldade===n}">${DIF[n]}</button>`).join("")}</div></div>
+   <div class="opcao"><label class="switch" for="ed-aee"><input type="checkbox" id="ed-aee" ${d.aee?"checked":""}><span class="t"><b>Adequada ao público do AEE</b></span></label>${ajuda("ed-aee",`Linguagem simples, comando direto, poucas etapas.`)}</div>
+   <label class="f" for="ed-en">Enunciado<textarea class="in" id="ed-en" placeholder="Escreva o texto-base e o comando da questão">${esc(d.enunciado)}</textarea></label>
+   <div class="f"><span>Imagem ou gráfico ${ajuda("ed-img","Opcional. Aparece depois do enunciado. Foto: câmera, galeria ou colar um print; ela <b>não fica guardada</b> no banco e vai só para o PDF desta prova. Gráfico: o banco guarda só os dados. Use imagens próprias ou cite a fonte.")}</span>
+     ${d.grafico||S._ed.foto||d.temFoto?`<div class="imgbox">${d.grafico?midiaHTML(d):S._ed.foto?`<img src="${S._ed.foto.data}" alt="Imagem da questão">`:`<div class="fotofalta">${I.image}<span>Imagem não anexada</span></div>`}<button class="iconbtn" data-a="ed-img-rem" aria-label="Remover imagem">${I.trash}</button></div>
+       ${!d.grafico?`<label class="f" for="ed-tit" style="font-weight:400">Título da figura ${ajuda("ed-tit","Aparece acima da imagem, como pede a ABNT. Opcional.")}<input class="in" id="ed-tit" value="${esc(d.tituloImg||"")}" placeholder="Ex.: Mapa do Brasil"></label>`:""}
+       <label class="f" for="ed-leg" style="font-weight:400">Fonte ${ajuda("ed-leg",d.grafico?"Se ficar em branco: “Elaborado pelo(a) professor(a)”.":"Obrigatória pela ABNT. Ex.: IBGE, 2022 · Acervo do(a) professor(a).")}<input class="in" id="ed-leg" value="${esc(fonteLimpa(d.legenda))}" placeholder="${d.grafico?"Elaborado pelo(a) professor(a)":"Ex.: IBGE, 2022"}"></label>`:""}
+
+     <div class="row"><button class="btn sm" data-a="ed-img" style="flex:1">${I.image} ${S._ed.foto?"Trocar imagem":"Foto ou imagem"}</button><button class="btn sm" data-a="ed-graf" style="flex:1">${I.chart} ${d.grafico?"Editar gráfico":"Criar gráfico ou tabela"}</button></div>
+     <input type="file" id="ed-img-file" accept="image/*" hidden></div>
+   <div class="f"><span>Alternativas <small class="muted" style="font-weight:400">· toque na letra certa</small></span>
+     ${d.alternativas.map((a,i)=>`<div class="alt-row"><button class="lt" data-a="ed-correta" data-i="${i}" aria-pressed="${d.correta===i}" aria-label="Marcar ${LET[i]} como correta">${LET[i]}</button><input class="in" id="ed-alt-${i}" value="${esc(a)}" placeholder="Alternativa ${LET[i]}"></div>`).join("")}</div>
+   <div class="opcao"><label class="switch" for="ed-fixa"><input type="checkbox" id="ed-fixa" ${d.fixarOrdem?"checked":""}><span class="t"><b>Manter a ordem das alternativas</b></span></label>${ajuda("ed-fixa",`Use quando houver “todas as anteriores” ou alternativas em sequência numérica.`)}</div>
+   <div id="ed-erro"></div>
+   <button class="btn primary block" data-a="ed-salvar">${I.save} ${o?"Revisar adaptação e usar na prova":S._ed.destinoProva?"Revisar e adicionar à prova":"Revisar e enviar ao banco"}</button>`);
+}
+function lerEditor(){
+  const d=S._ed.d;
+  d.disciplina=$("#ed-disc").value.trim();d.serie=$("#ed-serie").value;d.conteudo=$("#ed-cont").value.trim();d.aee=$("#ed-aee").checked;
+  d.enunciado=$("#ed-en").value.trim();d.fixarOrdem=$("#ed-fixa").checked;const lg=$("#ed-leg");if(lg)d.legenda=fonteLimpa(lg.value);const ti=$("#ed-tit");if(ti)d.tituloImg=ti.value.trim();
+  d.alternativas=d.alternativas.map((_,i)=>$("#ed-alt-"+i).value.trim());
+}
+function escolherDoBanco(){
+  const p=S.prova;
+  const lista=S.questoes.filter(q=>q.nivel===p.nivel&&(!p.disciplina||q.disciplina===p.disciplina)&&q.alternativas&&q.alternativas.length===NALT[p.nivel]);
+  const sel=new Set(p.itens.map(q=>q.id));
+  S._pick=sel;
+  abrirSheet(`<div class="sheet-h"><h2>Escolher do banco</h2><button class="btn primary sm" data-a="pick-ok">Concluir</button></div>
+   <p class="small muted">${esc(p.disciplina||"Todas as disciplinas")} · ${NIVEL_NOME[p.nivel]}. Toque para marcar.</p>
+   ${lista.length?`<div class="qlist">${lista.sort((a,b)=>a.dificuldade-b.dificuldade).map(q=>`<button class="qcard ${sel.has(q.id)?"sel":""}" data-a="pick" data-id="${esc(q.id)}"><div class="meta"><span class="pill">${esc(q.serie)}</span>${difPill(q.dificuldade)}${q.aee?'<span class="pill aee">AEE</span>':""}</div><b class="small">${esc(q.conteudo)}</b><p class="txt">${esc(q.enunciado)}</p></button>`).join("")}</div>`:`<div class="empty"><b>Não há questões para esta disciplina e nível</b><span>Escreva uma questão nova para começar o banco.</span></div>`}`);
+}
+function confirmar(titulo,texto,botao,cb){
+  abrirSheet(`<div class="sheet-h"><h2>${titulo}</h2></div><p>${texto}</p><div class="row"><button class="btn" data-a="fechar" style="flex:1">Cancelar</button><button class="btn primary" data-a="confirmar-ok" style="flex:1">${botao}</button></div>`);
+  S._conf=cb;
+}
+
+/* ============ Logo ============ */
+function lerLogo(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();fr.onerror=rej;
+    fr.onload=()=>{const img=new Image();img.onerror=rej;img.onload=()=>{
+      const max=360,r=Math.min(1,max/Math.max(img.width,img.height));const w=Math.round(img.width*r),h=Math.round(img.height*r);
+      const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);
+      res({logo:c.toDataURL("image/jpeg",.88),logoR:w/h});};img.src=fr.result;};
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ============ PDF ============ */
+function gerarPDF(p,midiaFn){midiaFn=midiaFn||midia;
+  /* ABNT NBR 14724: A4, margens 3 cm (sup./esq.) e 2 cm (inf./dir.), fonte 12, entrelinha 1,5,
+     numeração no canto superior direito, ilustrações com identificação acima e fonte abaixo (tamanho menor). */
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});
+  const PW=210,PH=297,ML=30,MR=20,MT=30,MB=20,W=PW-ML-MR,B=p.bastao,pt=.3528;
+  const up=s=>B?String(s).toLocaleUpperCase("pt-BR"):String(s);
+  const fs=B?14:12,lh=fs*pt*1.5,fsP=B?11:10,lhP=fsP*pt*1.25;
+  const quebrar=(t,w)=>{const out=[];String(t).split(/\n/).forEach(par=>{const ls=doc.splitTextToSize(par,w);if(!ls.length)ls.push("");ls.forEach((l,i)=>out.push({t:l,ult:i===ls.length-1}));});return out;};
+  const justificar=(l,x,yy,w)=>{const pal=l.t.trim().split(/\s+/).filter(Boolean);
+    if(l.ult||pal.length<2){doc.text(l.t,x,yy);return;}
+    const larg=pal.reduce((s,q)=>s+doc.getTextWidth(q),0);const esp=(w-larg)/(pal.length-1);
+    if(esp>doc.getTextWidth(" ")*4){doc.text(l.t,x,yy);return;}
+    let cx=x;pal.forEach(q=>{doc.text(q,cx,yy);cx+=doc.getTextWidth(q)+esp;});};
+  let y=MT;
+  /* ---- Cabeçalho institucional ---- */
+  const lw=p.logo?22:0,tx=ML+(p.logo?27:0),tw=W-(p.logo?27:0);
+  if(p.logo){let w=22,h=22/(p.logoR||1);if(h>22){h=22;w=22*(p.logoR||1);}try{doc.addImage(p.logo,"JPEG",ML+(22-w)/2,y-4+(22-h)/2,w,h);}catch(e){}}
+  doc.setFont("helvetica","bold");doc.setFontSize(12);
+  const nome=doc.splitTextToSize(String(p.escola||"").toLocaleUpperCase("pt-BR"),tw).slice(0,2);
+  doc.text(nome,tx,y+1);let hy=y+1+nome.length*5;
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(85);
+  doc.text(`${p.disciplina}  ·  ${p.bimestre}`,tx,hy+.5);doc.text(`${p.serie} – ${NIVEL_NOME[p.nivel]}`,tx,hy+5.3);doc.setTextColor(0);
+  y=Math.max(y+lw-2,hy+9);
+  doc.setDrawColor(20);doc.setLineWidth(.6);doc.line(ML,y,ML+W,y);
+  y+=8;doc.setFontSize(10);
+  const campo=(rot,x,yy,w,val)=>{doc.setFont("helvetica","bold");doc.text(rot,x,yy);const t=doc.getTextWidth(rot)+2;doc.setDrawColor(120);doc.setLineWidth(.2);doc.line(x+t,yy+1.2,x+w,yy+1.2);if(val){doc.setFont("helvetica","normal");doc.text(up(val),x+t+1,yy);}};
+  campo("Professor(a):",ML,y,W,p.professor);y+=8.5;
+  campo("Estudante:",ML,y,W,"");y+=8.5;
+  const c3=(W-12)/3;campo("Turma:",ML,y,c3,"");campo("Data:",ML+c3+6,y,c3,"");campo("Nota:",ML+2*(c3+6),y,c3,"");
+  y+=5;doc.setDrawColor(20);doc.setLineWidth(.25);doc.line(ML,y,ML+W,y);
+  /* ---- Título (sem indicativo numérico: centralizado, negrito) ---- */
+  y+=11;doc.setFont("helvetica","bold");doc.setFontSize(fs);
+  const tit=doc.splitTextToSize(`AVALIAÇÃO DE ${p.disciplina} – ${p.bimestre}`.toLocaleUpperCase("pt-BR"),W);
+  tit.forEach(l=>{doc.text(l,ML+W/2,y,{align:"center"});y+=lh;});
+  if(p.instrucoes){doc.setFontSize(fsP);doc.setFont("helvetica","bold");doc.text(up("Instruções:"),ML,y);doc.setFont("helvetica","normal");
+    const ins=quebrar(up(p.instrucoes),W);ins.forEach(l=>{y+=lhP;justificar(l,ML,y,W);});y+=lh;}
+  else y+=lh*.3;
+  doc.setFontSize(fs);
+  /* ---- Questões ---- */
+  const C2=p.colunas===2,gap=8,colW=C2?(W-gap)/2:W,lim=PH-MB;
+  let col=0,topo=y;const topos={1:y};
+  const novaPag=()=>{doc.addPage();y=MT;topo=y;topos[doc.getNumberOfPages()]=y;doc.setFontSize(fs);};
+  const avancar=()=>{if(C2&&col===0){col=1;y=topo;}else{col=0;novaPag();}};
+  const X=()=>ML+(col?colW+gap:0);
+  const ind=B?9:7,indA=B?8:7;
+  const rot=numerarFiguras(p.montagem);
+  p.montagem.forEach((m,i)=>{
+    doc.setFontSize(fs);doc.setFont("helvetica","normal");
+    const en=quebrar(up(m.enunciado),colW-ind);
+    const alts=m.alternativas.map(a=>quebrar(up(a),colW-ind-indA));
+    const md=(m.grafico||m.temFoto)?midiaFn(m):null,im=md&&md.data,vazio=m.temFoto&&!im;
+    let fig=null;
+    if(im||vazio){
+      const cw=colW-ind;let iw,ih;
+      if(im){const r=md.r||1.5,maxW=Math.min(cw,C2?cw:125),maxH=C2?68:85;iw=maxW;ih=iw/r;if(ih>maxH){ih=maxH;iw=ih*r;}}else{iw=Math.min(cw,110);ih=35;}
+      doc.setFontSize(fsP);
+      const t=tituloFig(m),fo=fonteFig(m);
+      const capT=doc.splitTextToSize(up(`${rot[i]}${t?" – "+t:""}`),Math.max(iw,60));
+      const capF=fo?doc.splitTextToSize(up("Fonte: "+fo),Math.max(iw,60)):[];
+      doc.setFontSize(fs);
+      fig={iw,ih,capT,capF,alt:capT.length*lhP+2+ih+2+capF.length*lhP+2};
+    }
+    const h=en.length*lh+(fig?fig.alt:0)+lh*.25+alts.reduce((s,a)=>s+a.length*lh,0)+lh*.6;
+    if(y+h-lh>lim&&y>topo+2)avancar();
+    const escreve=(linhas,dx,w)=>{linhas.forEach(l=>{if(y>lim)avancar();justificar(l,X()+dx,y,w);y+=lh;});};
+    doc.setFont("helvetica","bold");doc.text(`${i+1}.`,X(),y);doc.setFont("helvetica","normal");escreve(en,ind,colW-ind);
+    if(fig){
+      let top=y-lh+lhP+1;
+      if(top+fig.alt>lim+2){avancar();top=y-fs*pt;}
+      const fx=X()+ind+(colW-ind-fig.iw)/2;
+      doc.setFontSize(fsP);fig.capT.forEach((l,k)=>{doc.setFont("helvetica",k===0?"normal":"normal");doc.text(l,fx,top+k*lhP);});
+      let iy=top+(fig.capT.length-1)*lhP+2;
+      if(im){try{doc.addImage(im,im.startsWith("data:image/png")?"PNG":"JPEG",fx,iy,fig.iw,fig.ih,"q"+(m.qid||i),"FAST");}catch(e){console.warn(e);}}
+      else{doc.setDrawColor(150);doc.setLineWidth(.3);doc.setLineDashPattern([1.5,1.5],0);doc.rect(fx,iy,fig.iw,fig.ih);doc.setLineDashPattern([],0);doc.setTextColor(140);doc.text("Espaço para a imagem",fx+fig.iw/2,iy+fig.ih/2+1,{align:"center"});doc.setTextColor(0);doc.setDrawColor(0);}
+      let fy=iy+fig.ih+lhP;fig.capF.forEach(l=>{doc.text(l,fx,fy);fy+=lhP;});
+      doc.setFontSize(fs);y=fy-lhP+lh;
+    }
+    y+=lh*.25;
+    alts.forEach((a,j)=>{if(y>lim)avancar();doc.setFont("helvetica","bold");doc.text(`${LET[j]})`,X()+ind,y);doc.setFont("helvetica","normal");escreve(a,ind+indA,colW-ind-indA);});
+    y+=lh*.6;
+  });
+  const nProva=doc.getNumberOfPages();
+  if(C2){doc.setDrawColor(170);doc.setLineWidth(.25);for(let pg=1;pg<=nProva;pg++){doc.setPage(pg);const xm=ML+colW+gap/2;doc.line(xm,(topos[pg]||MT)-5,xm,lim);}doc.setPage(nProva);}
+  /* ---- Gabarito em folha separada ---- */
+  if(p.incluirGab){
+    doc.addPage();y=MT;
+    doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text("GABARITO",ML+W/2,y,{align:"center"});
+    doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(90);doc.text("Uso exclusivo do(a) professor(a). Retire esta folha antes de imprimir para os estudantes.",ML+W/2,y+6,{align:"center"});doc.setTextColor(0);
+    y+=16;doc.setFontSize(10);
+    [p.escola||"",`${p.disciplina} · ${p.bimestre} · ${p.serie} (${NIVEL_NOME[p.nivel]})${p.aee?" · Adaptada (AEE)":""}`,p.professor?`Professor(a): ${p.professor}`:""].filter(Boolean).forEach(l=>{doc.text(doc.splitTextToSize(l,W)[0],ML,y);y+=5;});
+    y+=5;const cols=5,cw=W/cols,rh=9,porCol=Math.ceil(p.montagem.length/cols);
+    p.montagem.forEach((m,i)=>{const c=Math.floor(i/porCol),r=i%porCol;const x=ML+c*cw,yy=y+r*rh;
+      doc.setDrawColor(150);doc.setLineWidth(.25);doc.roundedRect(x+1,yy,cw-2,rh-1.8,1.2,1.2);
+      doc.setFont("helvetica","normal");doc.setFontSize(10.5);doc.text(String(i+1).padStart(2,"0"),x+4,yy+5.1);
+      doc.setFont("helvetica","bold");doc.setFontSize(12.5);doc.text(LET[m.correta],x+cw-6,yy+5.4,{align:"right"});});
+    const d=distribuicao(p.montagem,p.nivel);
+    doc.setFont("helvetica","normal");doc.setFontSize(9.5);doc.setTextColor(90);doc.text("Distribuição das respostas: "+d.map((v,i)=>`${LET[i]} = ${v}`).join("   "),ML,y+porCol*rh+5);doc.setTextColor(0);
+  }
+  /* ---- Numeração (canto superior direito, 2 cm das bordas) e marca discreta ---- */
+  const tot=doc.getNumberOfPages();
+  for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFont("helvetica","normal");
+    if(i<=nProva){doc.setFontSize(10);doc.setTextColor(0);doc.text(String(i),PW-MR,20,{align:"right"});}
+    doc.setFontSize(7.5);doc.setTextColor(150);doc.text("SENOV Educacional",ML+W/2,PH-9,{align:"center"});doc.setTextColor(0);}
+  return doc.output("blob");
+}
+function nomeArquivo(p){return ("Prova "+[p.disciplina,p.serie,p.bimestre].join(" ")).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w\- ]+/g,"").replace(/\s+/g,"_")+".pdf";}
+async function baixar(nome,data){
+  if(!S.dl){toast("O download não está disponível nesta visualização.");return;}
+  try{await S.dl.save({filename:nome,data});toast("Arquivo salvo.");}
+  catch(e){if(e&&e.code==="declined")return;toast(e&&e.code==="rate_limited"?"Aguarde um instante e tente de novo.":"Não foi possível baixar o arquivo.");}
+}
+
+/* ============ Ações ============ */
+function lerPasso1(){
+  const p=S.prova;if(!$("#p-escola"))return;
+  p.escola=$("#p-escola").value.trim();p.disciplina=$("#p-disc").value.trim();p.bimestre=$("#p-bim").value;p.serie=$("#p-serie").value;
+  p.professor=$("#p-prof").value.trim();p.instrucoes=$("#p-instr").value.trim();
+}
+function lerPasso2(){const q=$("#a-qtd");if(q)S.auto.qtd=Math.max(1,Math.min(60,parseInt(q.value)||10));const s=$("#a-serie");if(s)S.auto.mesmaSerie=s.checked;}
+
+document.addEventListener("click",async ev=>{
+  const tb=ev.target.closest("[data-tab]");
+  if(tb){if(S.tab==="prova"){if(S.passo===1)lerPasso1();if(S.passo===2)lerPasso2();}S.tab=tb.dataset.tab;lembrar();render();window.scrollTo(0,0);return;}
+  const el=ev.target.closest("[data-a]");if(!el)return;
+  const a=el.dataset.a;
+  if(a==="fechar-scrim"){if(ev.target===el)fecharSheet();return;}
+  const p=S.prova;
+  switch(a){
+    case "dica":{const k=el.dataset.k,ab=!DICAS.has(k);ab?DICAS.add(k):DICAS.delete(k);el.setAttribute("aria-expanded",ab);document.querySelectorAll(`.dica-txt[data-k="${k}"]`).forEach(x=>x.hidden=!ab);break;}
+    case "fechar":fecharSheet();break;
+    case "nova-prova":novaProva();S.tab="prova";lembrar();render();window.scrollTo(0,0);break;
+    case "nova-questao":
+      if(!podeGravar()){toast(S.db?"Você não tem permissão para cadastrar questões.":"Abra pelo claude.ai para cadastrar questões.");break;}
+      if(!(await exigirTermo()))break;editorQuestao(null,false);break;
+    case "nova-questao-prova":
+      if(p&&S.passo===2)lerPasso2();
+      if(!podeGravar()){toast("Não é possível cadastrar questões nesta visualização.");break;}
+      if(!(await exigirTermo()))break;editorQuestao(null,true);break;
+    case "termo-sim":fecharSheet();await salvarPerfil({termoAceitoEm:agora()});toast("Autorização registrada.");S._termoRes&&S._termoRes(true);S._termoRes=null;break;
+    case "termo-nao":fecharSheet();S._termoRes&&S._termoRes(false);S._termoRes=null;break;
+    case "ver-termo":exigirTermo().then(()=>render());break;
+    case "ver-questao":verQuestao(el.dataset.id);break;
+    case "editar-questao":{const q=S.questoes.find(x=>x.id===el.dataset.id);if(q)editorQuestao(q,false);break;}
+    case "excluir-questao":{const id=el.dataset.id;confirmar("Excluir questão?","A questão sai do banco. Provas já salvas continuam com a cópia que usaram.","Excluir",async()=>{try{const q=S.questoes.find(x=>x.id===id);await (q&&q.privada?colPrivadas().doc(id):S.db.doc("questoes/"+id)).delete();delete S.fotos[id];toast("Questão excluída.");}catch(e){toast("Não foi possível excluir.");}});break;}
+    case "confirmar-ok":fecharSheet();S._conf&&S._conf();S._conf=null;break;
+    case "ed-nivel":lerEditor();{const d=S._ed.d;d.nivel=el.dataset.v;if(!SERIES[d.nivel].includes(d.serie))d.serie=SERIES[d.nivel][0];while(d.alternativas.length<NALT[d.nivel])d.alternativas.push("");d.alternativas=d.alternativas.slice(0,NALT[d.nivel]);if(d.correta>=NALT[d.nivel])d.correta=0;}desenharEditor();break;
+    case "ed-dif":lerEditor();S._ed.d.dificuldade=+el.dataset.v;desenharEditor();break;
+    case "ed-correta":lerEditor();S._ed.d.correta=+el.dataset.i;desenharEditor();break;
+    case "ed-img":lerEditor();$("#ed-img-file").click();break;
+    case "ed-img-rem":lerEditor();S._ed.foto=null;S._ed.d.grafico=null;S._ed.d.temFoto=false;S._ed.d.legenda="";desenharEditor();break;
+    case "ed-graf":if(S._ed.d.grafico)S._gr=JSON.parse(JSON.stringify(S._ed.d.grafico));abrirGrafico();break;
+    case "anexar":S._anexarId=el.dataset.id;$("#anexar-file").click();break;
+    case "gr-tipo":lerGrafico();S._gr.tipo=el.dataset.v;if(S._gr.tipo==="setores")S._gr.linhas=S._gr.linhas.slice(0,8);desenharSheetGrafico();break;
+    case "gr-add":lerGrafico();S._gr.linhas.push(["",""]);desenharSheetGrafico();{const n=$("#gr-r"+(S._gr.linhas.length-1));n&&n.focus();}break;
+    case "gr-rem":lerGrafico();S._gr.linhas.splice(+el.dataset.i,1);if(!S._gr.linhas.length)S._gr.linhas.push(["",""]);desenharSheetGrafico();break;
+    case "gr-cancelar":lerGrafico();desenharEditor();break;
+    case "gr-usar":{lerGrafico();const g=S._gr;if(!g.linhas.some(l=>numero(l[1])!=null)){toast("Preencha pelo menos um valor.");break;}
+      S._ed.d.grafico={tipo:g.tipo,titulo:g.titulo.trim(),eixoX:g.eixoX.trim(),eixoY:g.eixoY.trim(),unidade:g.unidade.trim(),pb:!!g.pb,valores:!!g.valores,linhas:g.linhas.filter(l=>String(l[0]).trim()||numero(l[1])!=null).map(l=>[String(l[0]).trim(),String(l[1]).trim()])};
+      S._ed.foto=null;S._ed.d.temFoto=false;desenharEditor();toast("Gráfico colocado na questão.");break;}
+    case "ed-sugerir":sugerirAdaptacao(el);break;
+    case "aee-adaptar":if(S.passo===2)lerPasso2();if(!podeGravar()){toast("Não é possível cadastrar questões nesta visualização.");break;}if(!(await exigirTermo()))break;escolherParaAdaptar();break;
+    case "adaptar-esta":{const q=S.questoes.find(x=>x.id===el.dataset.id);if(q)editorAdaptar(q);break;}
+    case "aee-escrever":if(S.passo===2)lerPasso2();if(!podeGravar()){toast("Não é possível cadastrar questões nesta visualização.");break;}if(!(await exigirTermo()))break;editorQuestao(null,true);S._ed.d.aee=true;S._ed.d.dificuldade=1;desenharEditor();break;
+    case "aee-series":{lerPasso2();S.auto.mesmaSerie=false;const r=montarAuto();if(r.erro){S._msg={tipo:"bad",aee:true,txt:"Mesmo em outras séries não há questões para o perfil do AEE. Adapte ou escreva questões abaixo."};}else{p.itens=r.sel;p.montagem=null;S._msg=r.falta?{tipo:"",txt:`Com outras séries foram encontradas ${r.sel.length} de ${S.auto.qtd} questões.`}:{tipo:"info",txt:`${r.sel.length} questões selecionadas, incluindo outras séries.`};}render();break;}
+    case "ed-salvar":{
+      lerEditor();const d=S._ed.d;const falta=[];
+      if(!d.disciplina)falta.push("disciplina");if(!d.conteudo)falta.push("conteúdo");if(!d.enunciado)falta.push("enunciado");
+      if(d.alternativas.some(x=>!x))falta.push("todas as alternativas");
+      if(!d.grafico&&(d.temFoto||S._ed.foto)&&!d.legenda)falta.push("a fonte da imagem (ABNT)");
+      if(falta.length){$("#ed-erro").innerHTML=`<div class="notice bad">${I.info}<span>Preencha: ${falta.join(", ")}.</span></div>`;break;}
+      if(S._ed.id){const ant=S.questoes.find(x=>x.id===S._ed.id);if(ant&&!ant.privada&&ant.revisao&&ant.revisao.status!=="pendente"&&ant.enunciado===d.enunciado&&ant.alternativas.every((x,i)=>x===d.alternativas[i])&&ant.correta===d.correta){
+        S._rev={orig:{enunciado:d.enunciado,alternativas:d.alternativas.slice(),correta:d.correta},r:{status:"ok",enunciado:d.enunciado,alternativas:d.alternativas.slice(),alteracoes:[],problemas:[]}};
+        try{await gravarQuestao("banco");}catch(e){toast("Não foi possível salvar.");}break;}}
+      if(!S.sample){S._rev={orig:{enunciado:d.enunciado,alternativas:d.alternativas.slice(),correta:d.correta},falhou:true};
+        abrirSheet(`<div class="sheet-h"><h2>Revisão indisponível</h2></div><p>A revisão por IA não está disponível nesta visualização. A questão pode ficar guardada só para você e ser usada nas suas provas.</p><div class="row"><button class="btn" data-a="rev-editar" style="flex:1">Voltar</button><button class="btn primary" data-a="rev-privada" style="flex:1">Guardar só para mim</button></div>`);break;}
+      await iniciarRevisao();
+      break;}
+    case "rev-editar":desenharEditor();if(S._rev&&S._rev.r&&S._rev.r.problemas.length){const e=$("#ed-erro");if(e)e.innerHTML=`<div class="notice bad">${I.info}<div class="stack" style="gap:4px"><b>Apontado na revisão</b>${S._rev.r.problemas.map(x=>`<span>${esc(x)}</span>`).join("")}</div></div>`;}break;
+    case "rev-editar-ajustada":{const r=S._rev.r;S._ed.d.enunciado=r.enunciado;S._ed.d.alternativas=r.alternativas.slice();desenharEditor();toast("Texto revisado carregado. Ao salvar, passa por nova revisão.");break;}
+    case "rev-enviar":case "rev-privada":el.disabled=true;try{await gravarQuestao(a==="rev-enviar"?"banco":"privada");}catch(e){el.disabled=false;toast(e&&e.code==="quota_exceeded"?"O banco atingiu o limite. Avise o administrador.":"Não foi possível salvar. Verifique a conexão.");}break;
+    case "revisar-questao":{const q=S.questoes.find(x=>x.id===el.dataset.id);if(!q)break;editorQuestao(q,false);if(!S.sample){toast("A revisão por IA não está disponível nesta visualização.");break;}await iniciarRevisao();break;}
+    case "f-aee":S.f.aee=!S.f.aee;lembrar();render();break;
+    case "f-minhas":S.f.minhas=!S.f.minhas;lembrar();render();break;
+    case "limpar-f":S.f={nivel:"",disciplina:"",dif:"",aee:false,minhas:false,busca:""};lembrar();render();break;
+    case "passo":{if(S.passo===1)lerPasso1();if(S.passo===2)lerPasso2();const n=+el.dataset.n;if(n>=2&&!validarP1())break;if(n===3&&!p.itens.length)break;S.passo=n;render();window.scrollTo(0,0);break;}
+    case "p-nivel":lerPasso1();if(p.nivel!==el.dataset.v){p.nivel=el.dataset.v;p.serie=SERIES[p.nivel][0];p.itens=[];p.montagem=null;S.auto.conteudos=[];}render();break;
+    case "logo-prova":case "logo-perfil":S._logoAlvo=a;$("#logo-file").click();break;
+    case "rem-logo":salvarPerfil({logo:"",logoR:1});render();break;
+    case "ir2":lerPasso1();if(!validarP1())break;
+      if(!S.perfil.termoAceitoEm&&S.db){if(!(await exigirTermo()))break;}
+      S.passo=2;S._msg=null;render();window.scrollTo(0,0);break;
+    case "toggle-cont":{const c=el.dataset.v,l=S.auto.conteudos;const i=l.indexOf(c);i>=0?l.splice(i,1):l.push(c);lerPasso2();render();break;}
+    case "distr":lerPasso2();S.auto.distr=el.dataset.v;render();break;
+    case "montar":{
+      lerPasso2();const r=montarAuto();
+      if(r.erro==="aee"){S._msg={tipo:"bad",aee:true,txt:"Não há questões cadastradas que atendam ao perfil do AEE com esses filtros."};}
+      else if(r.erro==="vazio"){S._msg={tipo:"bad",txt:"Não há questões cadastradas para esses filtros. Escreva novas questões ou amplie os filtros."};}
+      else{p.itens=r.sel;p.montagem=null;S._msg=r.falta?{tipo:"",txt:(p.aee?`Foram encontradas ${r.sel.length} de ${S.auto.qtd} questões para o AEE.`:`Foram encontradas ${r.sel.length} de ${S.auto.qtd} questões pedidas. Complete escrevendo novas questões ou ampliando os filtros.`)}:{tipo:"info",txt:`${r.sel.length} questões selecionadas.`};}
+      render();break;}
+    case "add-banco":lerPasso2();escolherDoBanco();break;
+    case "pick":{const id=el.dataset.id;S._pick.has(id)?S._pick.delete(id):S._pick.add(id);el.classList.toggle("sel");break;}
+    case "pick-ok":{const manter=p.itens.filter(q=>S._pick.has(q.id));const ids=new Set(manter.map(q=>q.id));S.questoes.forEach(q=>{if(S._pick.has(q.id)&&!ids.has(q.id))manter.push(q);});p.itens=manter;p.montagem=null;fecharSheet();render();break;}
+    case "rem-item":p.itens.splice(+el.dataset.i,1);p.montagem=null;render();break;
+    case "limpar-sel":p.itens=[];p.montagem=null;render();break;
+    case "ir3":lerPasso2();if(!p.itens.length)break;p.montagem=null;S.passo=3;render();window.scrollTo(0,0);break;
+    case "p-cols":if(S.passo===1)lerPasso1();p.colunas=+el.dataset.v;render();break;
+    case "r-disc":RAP.disciplina=el.dataset.v;{const ef=contar(q=>q.disciplina===RAP.disciplina&&q.nivel==="EF"),em=contar(q=>q.disciplina===RAP.disciplina&&q.nivel==="EM");if(!ef&&em)RAP.nivel="EM";if(ef&&!em)RAP.nivel="EF";
+      if(!SERIES[RAP.nivel].includes(RAP.serie)||!contar(q=>q.disciplina===RAP.disciplina&&q.nivel===RAP.nivel&&q.serie===RAP.serie)){const top=SERIES[RAP.nivel].map(se=>[se,contar(q=>q.disciplina===RAP.disciplina&&q.nivel===RAP.nivel&&q.serie===se)]).sort((a,b)=>b[1]-a[1])[0];RAP.serie=top[0];}}
+      S._msgRap=null;lembrarRap();render();break;
+    case "r-nivel":RAP.nivel=el.dataset.v;if(!SERIES[RAP.nivel].includes(RAP.serie))RAP.serie=SERIES[RAP.nivel][0];S._msgRap=null;lembrarRap();render();break;
+    case "r-serie":RAP.serie=el.dataset.v;S._msgRap=null;lembrarRap();render();break;
+    case "r-bim":RAP.bimestre=el.dataset.v;lembrarRap();render();break;
+    case "r-qtd":RAP.qtd=+el.dataset.v;lembrarRap();render();break;
+    case "gerar-rapida":gerarRapida();break;
+    case "personalizar":if(!S.prova||S.passo===0){novaProva();}S.passo=1;S.tab="prova";lembrar();render();window.scrollTo(0,0);break;
+    case "trocar-q":trocarQuestao(el.dataset.id);render();break;
+    case "remover-q":removerDaProva(el.dataset.id);if(!p.itens.length){S.passo=2;}render();break;
+    case "reorganizar":p.montagem=organizar(p.itens,p.nivel);render();toast("Prova reorganizada.");break;
+    case "pdf":{
+      if(!window.jspdf){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
+      el.disabled=true;try{const falt=p.montagem.filter(precisaFoto).length;if(falt)toast(`${falt} ${falt===1?"questão sem imagem anexada saiu":"questões sem imagem anexada saíram"} com espaço em branco.`);const blob=gerarPDF(p);await baixar(nomeArquivo(p),blob);}catch(e){console.error(e);toast("Não foi possível gerar o PDF.");}el.disabled=false;break;}
+    case "salvar-prova":{
+      if(!S.db||!S.uid){toast("Abra pelo claude.ai para salvar provas.");break;}
+      const body={escola:p.escola,logo:p.logo,logoR:p.logoR,professor:p.professor,disciplina:p.disciplina,bimestre:p.bimestre,nivel:p.nivel,serie:p.serie,instrucoes:p.instrucoes,aee:p.aee,bastao:p.bastao,incluirGab:p.incluirGab,colunas:p.colunas,itens:p.itens.map(q=>({id:q.id,nivel:q.nivel,serie:q.serie,disciplina:q.disciplina,conteudo:q.conteudo,dificuldade:q.dificuldade,aee:!!q.aee,enunciado:q.enunciado,alternativas:q.alternativas,correta:q.correta,fixarOrdem:!!q.fixarOrdem,grafico:q.grafico||null,temFoto:!!q.temFoto,legenda:q.legenda||"",tituloImg:q.tituloImg||"",...(q.origemId?{origemId:q.origemId}:{})})),montagem:p.montagem,atualizadoEm:agora()};
+      el.disabled=true;
+      try{const col=S.db.doc(`data/users/${S.uid}/perfil`).collection("provas");
+        if(!S.perfil.termoAceitoEm&&!(await S.db.doc(`data/users/${S.uid}/perfil`).get()).exists) await salvarPerfil({});
+        if(p.id) await col.doc(p.id).set(body); else {const r=await col.add(body);p.id=r.id;}
+        toast("Prova salva em Minhas provas.");}
+      catch(e){toast("Não foi possível salvar a prova.");}
+      el.disabled=false;break;}
+    case "abrir-prova":{const pv=S.provas.find(x=>x.id===el.dataset.id);if(!pv)break;
+      S.prova={id:pv.id,escola:pv.escola||"",logo:pv.logo||"",logoR:pv.logoR||1,professor:pv.professor||"",disciplina:pv.disciplina,bimestre:pv.bimestre,nivel:pv.nivel,serie:pv.serie,instrucoes:pv.instrucoes||"",aee:!!pv.aee,bastao:!!pv.bastao,incluirGab:pv.incluirGab!==false,colunas:pv.colunas===2?2:1,itens:(pv.itens||[]).slice(),montagem:pv.montagem};
+      S.auto={conteudos:[],qtd:Math.max(1,S.prova.itens.length),distr:"equilibrada",mesmaSerie:true};S.passo=3;S.tab="prova";lembrar();render();window.scrollTo(0,0);break;}
+    case "salvar-escola":await salvarPerfil({escola:$("#e-escola").value.trim(),professor:$("#e-prof").value.trim()});toast("Dados salvos.");break;
+    case "ia-salvar":{const k=$("#ia-chave").value.trim(),m=$("#ia-modelo").value.trim()||"claude-sonnet-5-5";try{localStorage.setItem("senov.ia",JSON.stringify({chave:k,modelo:m}));}catch(e){}S.sample=window.claude?await window.claude.use("sample"):null;toast(k?"Revisão por IA ligada.":"Chave removida.");render();break;}
+    case "ia-remover":try{localStorage.removeItem("senov.ia");}catch(e){}S.sample=null;toast("Chave removida.");render();break;
+    case "imp-json":$("#imp-file").click();break;
+    case "exp-json":await baixar("banco-senov-questoes.json",JSON.stringify(S._banco,null,2));break;
+    case "exp-csv":{const cols=["id","disciplina","nivel","serie","conteudo","dificuldade","aee","enunciado","A","B","C","D","E","correta","autorId","criadoEm"];
+      const cel=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+      const lin=S._banco.map(q=>[q.id,q.disciplina,q.nivel,q.serie,q.conteudo,DIF[q.dificuldade],q.aee?"sim":"não",q.enunciado,...[0,1,2,3,4].map(i=>(q.alternativas||[])[i]||""),LET[q.correta],q.autorId,q.criadoEm].map(cel).join(";"));
+      await baixar("banco-senov-questoes.csv","﻿"+cols.join(";")+"\n"+lin.join("\n"));break;}
+    case "rem-exemplos":confirmar("Remover questões de exemplo?","As questões marcadas como Exemplo serão apagadas do banco.","Remover",async()=>{for(const q of S.questoes.filter(x=>x.exemplo)){try{await S.db.doc("questoes/"+q.id).delete();}catch(e){}}toast("Exemplos removidos.");});break;
+  }
+});
+function validarP1(){const p=S.prova;if(!p.disciplina){toast("Informe a disciplina.");const i=$("#p-disc");i&&i.focus();return false;}return true;}
+
+document.addEventListener("input",ev=>{
+  const t=ev.target;
+  if(t.id==="busca"){S.f.busca=t.value;lembrar();clearTimeout(S._bt);S._bt=setTimeout(render,250);}
+});
+document.addEventListener("change",async ev=>{
+  const t=ev.target;
+  if(t.id==="f-nivel"){S.f.nivel=t.value;lembrar();render();}
+  if(t.id==="f-disc"){S.f.disciplina=t.value;lembrar();render();}
+  if(t.id==="f-dif"){S.f.dif=t.value;lembrar();render();}
+  if(t.id==="a-serie"){lerPasso2();render();}
+  if(t.id==="p-gab"&&S.prova){S.prova.incluirGab=t.checked;render();}
+  if(t.id==="p-aee"&&S.prova){lerPasso2();S.prova.aee=t.checked;S._msg=null;if(S.prova.aee&&!S.prova.bastao){S.prova.bastao=true;toast("Letra bastão será usada na folha. Você pode mudar em Organizar.");}render();}
+  if(t.id==="r-aee"){RAP.aee=t.checked;S._msgRap=null;lembrarRap();render();}
+  if(t.id==="p-bastao"&&S.prova){S.prova.bastao=t.checked;render();}
+  if(t.id==="ed-aee"&&S._ed){lerEditor();desenharEditor();}
+  if(t.id==="ed-disc"&&S._ed){lerEditor();const dl=$("#dl-cont");if(dl)dl.innerHTML=conteudosDe(S._ed.d.disciplina,"","").map(x=>`<option value="${esc(x)}">`).join("");}
+  if(t.id==="ed-img-file"&&t.files&&t.files[0]&&S._ed){
+    lerEditor();try{const r=await arquivoParaImagem(t.files[0]);S._ed.foto=r;S._ed.d.grafico=null;S._ed.d.temFoto=true;desenharEditor();}catch(e){toast("Não foi possível ler a imagem. Use JPG ou PNG.");}
+  }
+  if(t.id==="imp-file"&&t.files&&t.files[0]&&S.db){
+    try{const arr=JSON.parse(await t.files[0].text());if(!Array.isArray(arr))throw 0;let n=0;
+      for(const q of arr){if(!q||typeof q.enunciado!=="string"||!Array.isArray(q.alternativas))continue;const {id,privada,...rest}=q;await S.db.doc("questoes/"+(id&&/^[\w-]+$/.test(id)?id:Date.now().toString(36)+n)).set(rest);n++;}
+      toast(n===1?"1 questão importada.":n+" questões importadas.");}catch(e){toast("Arquivo inválido. Use o JSON exportado pelo SENOV Provas.");}
+    t.value="";
+  }
+  if(t.id==="anexar-file"&&t.files&&t.files[0]&&S._anexarId){
+    try{S.fotos[S._anexarId]=await arquivoParaImagem(t.files[0]);toast("Imagem anexada a esta prova.");render();}catch(e){toast("Não foi possível ler a imagem. Use JPG ou PNG.");}
+    t.value="";
+  }
+  if(t.id==="logo-file"&&t.files&&t.files[0]){
+    try{const r=await lerLogo(t.files[0]);
+      if(S._logoAlvo==="logo-prova"&&S.prova){lerPasso1();Object.assign(S.prova,r);if(!S.perfil.logo)salvarPerfil(r);}else{await salvarPerfil(r);toast("Logo salva.");}
+      render();}catch(e){toast("Não foi possível ler a imagem.");}
+  }
+});
+document.addEventListener("input",ev=>{if(ev.target.id&&ev.target.id.startsWith("gr-")&&S._gr){lerGrafico();clearTimeout(S._gt);S._gt=setTimeout(atualizarPrevGrafico,200);}});
+document.addEventListener("change",ev=>{if((ev.target.id==="gr-pb"||ev.target.id==="gr-val")&&S._gr){lerGrafico();atualizarPrevGrafico();}});
+document.addEventListener("paste",async ev=>{
+  if(!S._ed||!$("#ed-en"))return;const it=[...(ev.clipboardData&&ev.clipboardData.items||[])].find(i=>i.type.startsWith("image/"));if(!it)return;
+  ev.preventDefault();lerEditor();try{const r=await arquivoParaImagem(it.getAsFile());S._ed.foto=r;S._ed.d.grafico=null;S._ed.d.temFoto=true;desenharEditor();toast("Imagem colada na questão.");}catch(e){toast("Não foi possível usar a imagem colada.");}
+});
+document.addEventListener("toggle",ev=>{if(ev.target.classList&&ev.target.classList.contains("aeebox")){ev.target.open?DICAS.add("aee-painel"):DICAS.delete("aee-painel");}if(ev.target.id==="qdet"){S._qopen=ev.target.open;}},true);
+document.addEventListener("keydown",ev=>{
+  if(ev.key==="Escape"&&$("#layer").innerHTML){fecharSheet();}
+  if((ev.key==="Enter"||ev.key===" ")&&ev.target.matches('[role="button"][data-a]')){ev.preventDefault();ev.target.click();}
+});
+iniciar();
+</script>

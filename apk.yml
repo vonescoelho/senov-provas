@@ -1,0 +1,75 @@
+# Gera o APK Android (SENOV-Provas.apk) a cada envio para a branch main
+# e publica em "Releases" do repositório, pronto para baixar no celular.
+name: Gerar APK Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Montar o app
+        run: |
+          npm install --no-audit --no-fund
+          pip install --quiet pillow
+          python3 tools/build.py node_modules
+
+      - name: Criar projeto Android
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Ícone e tela de abertura
+        continue-on-error: true
+        run: npx @capacitor/assets generate --android --iconBackgroundColor '#2447C6' --iconBackgroundColorDark '#2447C6' --splashBackgroundColor '#F2F4F9' --splashBackgroundColorDark '#0C1120'
+
+      - name: Número da versão
+        run: |
+          sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/" android/app/build.gradle
+          sed -i "s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
+          grep -n "versionCode\|versionName" android/app/build.gradle
+
+      - name: Chave fixa (para instalar atualizações por cima, sem perder os dados)
+        run: |
+          mkdir -p ~/.android
+          cp android-debug.keystore ~/.android/debug.keystore
+
+      - name: Compilar APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+          cp app/build/outputs/apk/debug/app-debug.apk ../SENOV-Provas.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SENOV-Provas-apk
+          path: SENOV-Provas.apk
+
+      - name: Publicar em Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-v${{ github.run_number }}
+          name: SENOV Provas — versão de teste ${{ github.run_number }}
+          body: |
+            APK de teste do SENOV Provas.
+            No celular: baixe **SENOV-Provas.apk** abaixo, abra o arquivo e permita "instalar apps desconhecidos".
+          prerelease: true
+          files: SENOV-Provas.apk
