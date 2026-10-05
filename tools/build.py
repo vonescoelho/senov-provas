@@ -4,7 +4,7 @@
 Uso: python3 tools/build.py <pasta node_modules com @fontsource, @capacitor/core e jspdf>
 O resultado (www/) é o que vai para o GitHub Pages e para dentro do APK.
 """
-import json, os, re, shutil, sys, time
+import json, os, re, shutil, subprocess, sys, time
 from PIL import Image, ImageDraw
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,6 +37,13 @@ open(os.path.join(WWW, "fonts.css"), "w", encoding="utf-8").write("\n".join(css)
 os.makedirs(os.path.join(WWW, "vendor"), exist_ok=True)
 shutil.copy(os.path.join(NM, "jspdf", "dist", "jspdf.umd.min.js"), os.path.join(WWW, "vendor", "jspdf.umd.min.js"))
 shutil.copy(os.path.join(NM, "@capacitor", "core", "dist", "capacitor.js"), os.path.join(WWW, "vendor", "capacitor.js"))
+# Firebase (login por e-mail, conversas, grupos e mural) empacotado num só arquivo: variável global FB
+subprocess.run([os.path.join(os.path.abspath(NM), ".bin", "esbuild"), os.path.join(RAIZ, "tools", "firebase-entry.js"), "--bundle", "--minify",
+                "--format=iife", "--global-name=FB", "--target=es2019", "--legal-comments=none",
+                "--outfile=" + os.path.join(WWW, "vendor", "firebase.js")], check=True, cwd=RAIZ)
+# módulos da rede social (só na versão aplicativo; no claude.ai o app segue sem eles)
+for arq in ("firebase-config.js", "social-extras.js", "social.js"):
+    shutil.copy(os.path.join(RAIZ, "app", arq), os.path.join(WWW, arq))
 
 # ---------- index.html ----------
 src = open(os.path.join(RAIZ, "app", "senov-provas.html"), encoding="utf-8").read()
@@ -44,7 +51,8 @@ titulo = re.search(r"<title>.*?</title>", src).group(0)
 corpo = src[src.index("<style>"):]
 corpo = corpo.replace(
     '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>',
-    '<script src="vendor/jspdf.umd.min.js"></script>\n<script src="vendor/capacitor.js"></script>\n<script src="local.js"></script>')
+    '<script src="vendor/jspdf.umd.min.js"></script>\n<script src="vendor/capacitor.js"></script>\n<script src="local.js"></script>\n'
+    '<script src="vendor/firebase.js"></script>\n<script src="firebase-config.js"></script>\n<script src="social-extras.js"></script>\n<script src="social.js"></script>')
 assert "vendor/jspdf.umd.min.js" in corpo, "script do jsPDF não encontrado"
 estilo, resto = corpo.split("</style>", 1)
 reset = """
@@ -61,12 +69,12 @@ html = f"""<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 {titulo}
-<meta name="description" content="Provas adaptadas com gabarito equilibrado, perfil AEE e PDF no padrão ABNT.">
+<meta name="description" content="Conversas, grupos, mural e provas para professores. Sem anúncios.">
 <meta name="theme-color" content="#F2F4F9" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0C1120" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="ChatSenov">
+<meta name="apple-mobile-web-app-title" content="ChatMil">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -124,9 +132,9 @@ for nome, cor in (("splash.png", (242, 244, 249)), ("splash-dark.png", (12, 17, 
 
 # ---------- manifest ----------
 manifest = {
-    "name": "ChatSenov",
-    "short_name": "ChatSenov",
-    "description": "Provas adaptadas com gabarito equilibrado, perfil AEE e PDF no padrão ABNT.",
+    "name": "ChatMil",
+    "short_name": "ChatMil",
+    "description": "Conversas, grupos, mural e provas para professores. Sem anúncios.",
     "id": "./",
     "start_url": "./",
     "scope": "./",
@@ -135,7 +143,7 @@ manifest = {
     "lang": "pt-BR",
     "background_color": "#F2F4F9",
     "theme_color": "#2447C6",
-    "categories": ["education", "productivity"],
+    "categories": ["education", "social", "productivity"],
     "icons": [
         {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
         {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
@@ -146,9 +154,10 @@ json.dump(manifest, open(os.path.join(WWW, "manifest.webmanifest"), "w", encodin
 
 # ---------- service worker (funciona offline) ----------
 arquivos = ["./", "index.html", "local.js", "fonts.css", "manifest.webmanifest", "vendor/jspdf.umd.min.js", "vendor/capacitor.js",
+            "vendor/firebase.js", "firebase-config.js", "social-extras.js", "social.js",
             "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/favicon-32.png", "icons/apple-touch-icon.png"]
 arquivos += ["fonts/" + f for f in sorted(os.listdir(os.path.join(WWW, "fonts")))]
-sw = f"""/* SENOV Provas — service worker: guarda o app no aparelho para abrir sem internet */
+sw = f"""/* ChatMil — service worker: guarda o app no aparelho para abrir sem internet */
 const CACHE = "senov-provas-{VERSAO}";
 const ARQUIVOS = {json.dumps(arquivos, ensure_ascii=False)};
 self.addEventListener("install", e => {{
