@@ -1,4 +1,4 @@
-# Gera o APK Android (SENOV-Provas.apk) a cada envio para a branch main
+# Gera o APK Android (ChatMil.apk) a cada envio para a branch main
 # e publica em "Releases" do repositório, pronto para baixar no celular.
 name: Gerar APK Android
 
@@ -76,20 +76,20 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace
-          cp app/build/outputs/apk/debug/app-debug.apk ../SENOV-Provas.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../ChatMil.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: SENOV-Provas-apk
-          path: SENOV-Provas.apk
+          name: ChatMil-apk
+          path: ChatMil.apk
 
       - name: Publicar em Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-v${{ github.run_number }}
-          name: SENOV Provas — versão de teste ${{ github.run_number }}
+          name: ChatMil — versão de teste ${{ github.run_number }}
           body: |
-            APK de teste do SENOV Provas.
-            No celular: baixe **SENOV-Provas.apk** abaixo, abra o arquivo e permita "instalar apps desconhecidos".
+            APK de teste do ChatMil.
+            No celular: baixe **ChatMil.apk** abaixo, abra o arquivo e permita "instalar apps desconhecidos".
           prerelease: true
-          files: SENOV-Provas.apk
+          files: ChatMil.apk
