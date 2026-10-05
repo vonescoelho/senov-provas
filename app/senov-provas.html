@@ -1,4 +1,4 @@
-<title>ChatSenov</title>
+<title>ChatMil</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400;0,700;1,400&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&display=swap">
@@ -348,7 +348,7 @@ label.f>*:not(.ajuda-btn){flex-basis:100%}
 <div class="app">
   <header class="topbar"><div class="topbar-in">
     <div class="brand"><div class="brand-mark" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg></div>
-      <div>ChatSenov</div></div>
+      <div>ChatMil</div></div>
     <div class="spacer"></div>
     <div class="who" id="who"></div>
   </div></header>
@@ -461,7 +461,7 @@ function exigirTermo(){
     if(termoOk()) return res(true);
     abrirSheet(`
       <div class="sheet-h"><h2>Autorização de compartilhamento</h2></div>
-      <p>Você usa o ChatSenov sem custo. Em troca, autoriza o compartilhamento das questões que cadastrar.</p>
+      <p>Você usa o ChatMil sem custo. Em troca, autoriza o compartilhamento das questões que cadastrar.</p>
       <div class="notice info">${I.info}<div class="stack" style="gap:6px">
         <span>As questões que você cadastrar passam a fazer parte do <b>banco de questões da SENOV Educacional</b>, que pode usá-las e organizá-las.</span>
         <span>Você <b>continua com acesso</b> a todas as suas questões, pode editá-las e usá-las em suas provas sempre que quiser.</span>
@@ -871,6 +871,7 @@ function desenharSheetGrafico(){
 
 /* ============ Render ============ */
 function render(){
+  if(window.SOCIAL&&window.SOCIAL.render())return;
   const tabs=[["inicio","Conversa",I.chat],["banco","Banco",I.bank],["prova","Nova prova",I.prova],["escola","Escola",I.school]];
   $("#nav").innerHTML=tabs.map(([k,n,ic])=>`<button data-tab="${k}" ${S.tab===k?'aria-current="page"':""}><span class="ico">${ic}</span>${n}</button>`).join("");
   $("#who").innerHTML="";
@@ -885,7 +886,7 @@ function render(){
 function avisoModo(){
   if(!S.ready) return `<div class="notice info">${I.info}<span>Conectando ao banco de questões…</span></div>`;
   if(!S.db) return `<div class="aviso">${I.info}<span>Modo demonstração</span>${ajuda("demo","O banco compartilhado não está disponível nesta visualização. Abra o aplicativo pelo link do claude.ai para salvar questões e provas.")}</div>`;
-  if(S.canWrite===false) return `<div class="aviso">${I.info}<span>Somente consulta</span>${ajuda("ro","Você pode consultar o banco, mas ainda não pode cadastrar questões. Peça ao administrador da SENOV acesso de <b>Colaborador</b>.")}</div>`;
+  if(S.canWrite===false) return `<div class="aviso">${I.info}<span>Somente consulta</span>${ajuda("ro","Você pode consultar o banco, mas ainda não pode cadastrar questões. Peça ao administrador do ChatMil acesso de <b>Colaborador</b>.")}</div>`;
   return "";
 }
 
@@ -1273,7 +1274,7 @@ function vAdmin(){
   const porDisc={};q.forEach(x=>{porDisc[x.disciplina]=(porDisc[x.disciplina]||0)+1;});
   const lin=Object.entries(porDisc).sort((a,b)=>b[1]-a[1]);const max=Math.max(1,...lin.map(l=>l[1]));
   const ex=q.filter(x=>x.exemplo).length;
-  return `<section class="card stack"><div class="row" style="justify-content:space-between"><h2>Painel SENOV</h2><span class="pill aee">Somente você vê</span></div>
+  return `<section class="card stack"><div class="row" style="justify-content:space-between"><h2>Painel do ChatMil</h2><span class="pill aee">Somente você vê</span></div>
     <div class="stats"><div class="stat"><b>${q.length}</b><span>questões</span></div><div class="stat"><b>${autores}</b><span>professores</span></div><div class="stat"><b>${q.filter(x=>x.aee).length}</b><span>adequadas ao AEE</span></div></div>
     ${semRev?`<div class="notice">${I.info}<span><b>${semRev}</b> ${semRev===1?"questão entrou":"questões entraram"} no banco antes da revisão por IA. Abra cada uma no Banco (etiqueta “Sem revisão”) e toque em <b>Revisar com IA</b>.</span></div>`:""}
     <h3>Questões por disciplina</h3>
@@ -1480,7 +1481,7 @@ function gerarPDF(p,midiaFn){midiaFn=midiaFn||midia;
   const tot=doc.getNumberOfPages();
   for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFont("helvetica","normal");
     if(i<=nProva){doc.setFontSize(10);doc.setTextColor(0);doc.text(String(i),PW-MR,20,{align:"right"});}
-    doc.setFontSize(7.5);doc.setTextColor(150);doc.text("ChatSenov",ML+W/2,PH-9,{align:"center"});doc.setTextColor(0);}
+    doc.setFontSize(7.5);doc.setTextColor(150);doc.text("ChatMil",ML+W/2,PH-9,{align:"center"});doc.setTextColor(0);}
   return doc.output("blob");
 }
 function nomeArquivo(p){return ("Prova "+[p.disciplina,p.serie,p.bimestre].join(" ")).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w\- ]+/g,"").replace(/\s+/g,"_")+".pdf";}
@@ -1627,11 +1628,11 @@ document.addEventListener("click",async ev=>{
     case "ia-salvar":{const k=$("#ia-chave").value.trim(),m=$("#ia-modelo").value.trim()||"claude-sonnet-5-5";try{localStorage.setItem("senov.ia",JSON.stringify({chave:k,modelo:m}));}catch(e){}S.sample=window.claude?await window.claude.use("sample"):null;toast(k?"Revisão por IA ligada.":"Chave removida.");render();break;}
     case "ia-remover":try{localStorage.removeItem("senov.ia");}catch(e){}S.sample=null;toast("Chave removida.");render();break;
     case "imp-json":$("#imp-file").click();break;
-    case "exp-json":await baixar("banco-senov-questoes.json",JSON.stringify(S._banco,null,2));break;
+    case "exp-json":await baixar("banco-chatmil-questoes.json",JSON.stringify(S._banco,null,2));break;
     case "exp-csv":{const cols=["id","disciplina","nivel","serie","conteudo","dificuldade","aee","enunciado","A","B","C","D","E","correta","autorId","criadoEm"];
       const cel=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
       const lin=S._banco.map(q=>[q.id,q.disciplina,q.nivel,q.serie,q.conteudo,DIF[q.dificuldade],q.aee?"sim":"não",q.enunciado,...[0,1,2,3,4].map(i=>(q.alternativas||[])[i]||""),LET[q.correta],q.autorId,q.criadoEm].map(cel).join(";"));
-      await baixar("banco-senov-questoes.csv","﻿"+cols.join(";")+"\n"+lin.join("\n"));break;}
+      await baixar("banco-chatmil-questoes.csv","﻿"+cols.join(";")+"\n"+lin.join("\n"));break;}
     case "rem-exemplos":confirmar("Remover questões de exemplo?","As questões marcadas como Exemplo serão apagadas do banco.","Remover",async()=>{for(const q of S.questoes.filter(x=>x.exemplo)){try{await S.db.doc("questoes/"+q.id).delete();}catch(e){}}toast("Exemplos removidos.");});break;
   }
 });
@@ -1659,7 +1660,7 @@ document.addEventListener("change",async ev=>{
   if(t.id==="imp-file"&&t.files&&t.files[0]&&S.db){
     try{const arr=JSON.parse(await t.files[0].text());if(!Array.isArray(arr))throw 0;let n=0;
       for(const q of arr){if(!q||typeof q.enunciado!=="string"||!Array.isArray(q.alternativas))continue;const {id,privada,...rest}=q;await S.db.doc("questoes/"+(id&&/^[\w-]+$/.test(id)?id:Date.now().toString(36)+n)).set(rest);n++;}
-      toast(n===1?"1 questão importada.":n+" questões importadas.");}catch(e){toast("Arquivo inválido. Use o JSON exportado pelo ChatSenov.");}
+      toast(n===1?"1 questão importada.":n+" questões importadas.");}catch(e){toast("Arquivo inválido. Use o JSON exportado pelo ChatMil.");}
     t.value="";
   }
   if(t.id==="anexar-file"&&t.files&&t.files[0]&&S._anexarId){
