@@ -459,7 +459,8 @@
     return `<div class="cs-cab"><div class="cs-marca"><span class="cs-logo sm" style="width:42px;height:42px;border-radius:14px;box-shadow:none">${K.chat}</span><h1>ChatMil</h1></div><div class="row" style="gap:6px">
         <button class="cs-ico-bt" data-s="buscar-pessoas" aria-label="Encontrar colegas">${K.addUser}</button></div></div>
       ${avisoEmail()}
-      <label class="cs-busca">${K.busca}<input id="cs-filtro" placeholder="Buscar conversa" value="${esc(SO.filtroChats)}" aria-label="Buscar conversa"></label>
+      <label class="cs-busca">${K.busca}<input id="cs-filtro" placeholder="Buscar conversa ou pessoa" value="${esc(SO.filtroChats)}" aria-label="Buscar conversa ou pessoa"></label>
+      ${f ? "" : `<div class="cs-atalhos"><button data-s="buscar-pessoas">${K.user}<span>Contatos</span></button><button data-s="novo-grupo">${K.grupo}<span>Novo grupo</span></button><button data-s="entrar-codigo">${K.codigo}<span>Entrar com código</span></button></div>`}
       <div class="cs-lista" role="list">
         ${assist ? `<button class="cs-item" data-s="assistente" role="listitem"><span class="cs-av bot" style="width:52px;height:52px">${K.varinha}</span>
           <span class="cs-item-t"><b>Assistente de provas <span class="pill">Fixo</span></b><span>Monte uma prova em poucos toques</span></span></button>` : ""}
@@ -468,6 +469,7 @@
             <span class="cs-item-t"><b>${esc(t.nome)}${t.selo || ""}</b><span>${esc(prevUltima(c))}</span></span>
             <span class="cs-item-m"><small>${horaCurta(c.atualizadoEm)}</small>${nl ? '<i class="cs-dot" aria-label="Não lida"></i>' : ""}</span></button>`; }).join("")}
       </div>
+      ${f ? `<h2 class="cs-sec">Pessoas</h2><div id="cs-res">${htmlResultados("ver-perfil")}</div>` : ""}
       ${!lista.length && !f ? `<div class="empty"><b>Comece uma conversa</b><span>Encontre colegas pelo @usuário ou crie um grupo, como “Área de Linguagens”.</span>
         <div class="row" style="justify-content:center"><button class="btn primary" data-s="buscar-pessoas">${K.addUser} Encontrar colegas</button><button class="btn" data-s="novo-grupo">${K.grupo} Criar grupo</button></div>
         <button class="btn ghost" data-s="entrar-codigo">${K.codigo} Tenho um código de grupo</button></div>` : ""}
@@ -766,8 +768,12 @@
   }
   function htmlResultados(acao) {
     if (SO.resultados == null) {
-      if (acao !== "ver-perfil" || !SO.novos) return "";
-      return `<h2 class="cs-sec">Novos no ChatMil</h2><div class="cs-lista">${SO.novos.filter(p => p.uid !== eu()).map(p => itemPessoa(p, acao)).join("")}</div>`;
+      if (acao !== "ver-perfil") return "";
+      const meus = [...SO.seguindo].filter(u => !SO.bloqueados.has(u)).map(u => ({ uid: u, ...P(u) }));
+      const novos = (SO.novos || []).filter(p => p.uid !== eu() && !SO.seguindo.has(p.uid) && !SO.bloqueados.has(p.uid));
+      return (meus.length ? `<h2 class="cs-sec">Seus contatos</h2><div class="cs-lista">${meus.map(p => itemPessoa(p, acao)).join("")}</div>`
+        : `<p class="small muted">Você ainda não tem contatos. Busque um colega pelo nome ou @usuário e toque em Seguir.</p>`)
+        + (novos.length ? `<h2 class="cs-sec">Novos no ChatMil</h2><div class="cs-lista">${novos.map(p => itemPessoa(p, acao)).join("")}</div>` : "");
     }
     if (!SO.resultados.length) return `<p class="small muted" style="padding:8px 2px">Ninguém encontrado. Confira a grafia do nome ou do @usuário.</p>`;
     return `<div class="cs-lista">${SO.resultados.filter(p => !SO.bloqueados.has(p.uid)).map(p => itemPessoa(p, acao)).join("")}</div>`;
@@ -775,12 +781,12 @@
   function itemPessoa(p, acao) {
     const seg = SO.seguindo.has(p.uid);
     return `<div class="cs-item"><button type="button" class="cs-quem" data-s="${acao}" data-id="${esc(p.uid)}">${av(p, 46, p.uid)}<span class="cs-item-t"><b>${esc(p.nome)}${seloHtml(p)}</b><span>@${esc(p.usuario)}${p.escola ? " · " + esc(p.escola) : ""}</span></span></button>
-      ${acao === "ver-perfil" ? `<button type="button" class="btn sm ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(p.uid)}">${seg ? "Seguindo" : "Seguir"}</button>` : `<button type="button" class="btn sm primary" data-s="${acao}" data-id="${esc(p.uid)}">Adicionar</button>`}</div>`;
+      ${acao === "ver-perfil" ? `<button type="button" class="cs-ico-bt" data-s="abrir-direto" data-id="${esc(p.uid)}" aria-label="Mandar mensagem para ${esc(p.nome)}">${K.chat}</button><button type="button" class="btn sm ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(p.uid)}">${seg ? "Seguindo" : "Seguir"}</button>` : `<button type="button" class="btn sm primary" data-s="${acao}" data-id="${esc(p.uid)}">Adicionar</button>`}</div>`;
   }
   function atualizarResultados() { const el = $("#cs-res"); if (el) { const t = topo(); el.innerHTML = htmlResultados(t && t.v === "novo-grupo" ? "g-add" : t && t.v === "add-membro" ? "m-add" : "ver-perfil"); } }
   function vBuscar() {
     if (!SO.novos) { SO.novos = []; fb.getDocs(fb.query(C("users"), fb.orderBy("criadoEm", "desc"), fb.limit(15))).then(s => { SO.novos = s.docs.map(d => ({ uid: d.id, ...d.data() })); SO.novos.forEach(p => SO.perfis[p.uid] = p); atualizarResultados(); }).catch(() => { }); }
-    return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Encontrar colegas</b></header>
+    return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Contatos</b></header>
       <div class="cs-pag stack"><label class="cs-busca grande">${K.busca}<input id="cs-p-busca" placeholder="Nome ou @usuário" autocomplete="off" autocapitalize="none" value="${esc(SO.busca)}" aria-label="Buscar pessoas"></label>
       <div id="cs-res">${htmlResultados("ver-perfil")}</div></div>`;
   }
@@ -1249,7 +1255,7 @@
     const el = ev.target, id = el.id; if (!id || !id.startsWith("cs-")) return;
     const t = topo(), ctx = t && t.v === "editar" ? SO.ed : SO.cad;
     switch (id) {
-      case "cs-filtro": SO.filtroChats = el.value; pintar(); break;
+      case "cs-filtro": SO.filtroChats = el.value; buscarPessoas(el.value); pintar(); break;
       case "cs-p-busca": case "cs-g-busca": buscarPessoas(el.value); break;
       case "cs-usu": { const l = limparUsuario(el.value); if (l !== el.value) el.value = l; SO.cad.usuario = l; checarUsuario(); break; }
       case "cs-nome": if (ctx) ctx.nome = el.value; break;
@@ -1346,6 +1352,10 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-seg-mini{margin-top:8px;display:flex;flex-wrap:nowrap}
 .cs-seg-mini button{font-size:.86rem;min-height:40px;padding:0 6px}
 .cs-sub{margin-top:-6px}
+.cs-atalhos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.cs-atalhos button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink);font-weight:700;font-size:.86rem;min-height:76px;text-align:center}
+.cs-atalhos button svg{width:24px;height:24px;color:var(--primary)}
+.cs-atalhos button:hover{background:var(--primary-soft)}
 .cs-chat-h{position:sticky;top:env(safe-area-inset-top,0px);z-index:22;display:flex;align-items:center;gap:4px;margin:calc(-10px - env(safe-area-inset-top,0px)) -16px 0;padding:calc(6px + env(safe-area-inset-top,0px)) 8px 6px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);min-height:64px}
 .cs-chat-h>b{flex:1;font-family:var(--display);font-size:1.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
 .cs-chat-quem{flex:1;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;cursor:pointer;min-width:0;color:inherit;padding:0}
