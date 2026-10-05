@@ -150,7 +150,12 @@
 
   /* ================= Pintura ================= */
   let pintarPend = false;
-  function pintar() { if (pintarPend) return; pintarPend = true; requestAnimationFrame(() => { pintarPend = false; window.render(); }); }
+  function pintar() {
+    if (pintarPend) return; pintarPend = true;
+    /* requestAnimationFrame para quando a tela está escondida; o setTimeout garante a atualização mesmo assim */
+    const fazer = () => { if (!pintarPend) return; pintarPend = false; window.render(); };
+    requestAnimationFrame(fazer); setTimeout(fazer, 120);
+  }
   function abrirTela(t) { SO.pilha.push(t); SO.figAberta = false; try { history.pushState({ cs: SO.pilha.length }, ""); } catch (e) { } pintar(); window.scrollTo(0, 0); }
   function voltar() { if (SO.pilha.length) { try { history.back(); } catch (e) { SO.pilha.pop(); pintar(); } } }
   window.addEventListener("popstate", ev => {
