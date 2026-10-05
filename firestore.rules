@@ -1,0 +1,152 @@
+rules_version = '2';
+// Regras de segurança do ChatMil (Firestore).
+// Cole este texto em Firebase > Firestore Database > Regras > Publicar.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function logado() { return request.auth != null; }
+    function eu() { return request.auth.uid; }
+    function mudou() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function textoOk(campo, max) {
+      return !(campo in request.resource.data) || request.resource.data[campo] == null
+        || (request.resource.data[campo] is string && request.resource.data[campo].size() <= max);
+    }
+    // Quem recebe mensagem direta: aceita de todos, ou só de quem segue; e não bloqueou quem envia
+    function podeReceber(outro) {
+      return !exists(/databases/$(database)/documents/users/$(outro)/bloqueados/$(request.auth.uid))
+        && (get(/databases/$(database)/documents/users/$(outro)).data.get('privMsg', 'todos') == 'todos'
+            || exists(/databases/$(database)/documents/users/$(outro)/seguindo/$(request.auth.uid)));
+    }
+
+    // Nomes de usuário únicos (@usuario)
+    match /usernames/{nome} {
+      allow read: if logado();
+      allow create: if logado() && request.resource.data.uid == eu()
+        && request.resource.data.keys().hasOnly(['uid'])
+        && nome.matches('^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$');
+      allow delete: if logado() && resource.data.uid == eu();
+    }
+
+    // Perfis
+    match /users/{uid} {
+      allow read: if logado();
+      allow create, update: if logado() && uid == eu()
+        && request.resource.data.usuario is string
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.usuario)).data.uid == eu()
+        && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 60
+        && textoOk('bio', 300) && textoOk('escola', 100) && textoOk('foto', 150000)
+        && (request.resource.data.get('inst', false) == false
+            || (request.auth.token.email_verified == true && request.auth.token.email.matches('.*[.](gov|edu)[.]br$')))
+        && request.resource.data.get('privMsg', 'todos') in ['todos', 'seguindo'];
+      allow delete: if logado() && uid == eu();
+
+      match /seguindo/{outro} {
+        allow read: if logado();
+        allow write: if logado() && uid == eu();
+      }
+      match /seguidores/{outro} {
+        allow read: if logado();
+        allow create, delete: if logado() && outro == eu();
+      }
+      match /bloqueados/{outro} {
+        allow read, write: if logado() && uid == eu();
+      }
+      match /leituras/{chatId} {
+        allow read, write: if logado() && uid == eu();
+      }
+    }
+
+    // Conversas (diretas e grupos)
+    match /chats/{chatId} {
+      allow read: if logado() && eu() in resource.data.membros;
+
+      allow create: if logado() && request.resource.data.criadoPor == eu()
+        && eu() in request.resource.data.membros
+        && (
+          (request.resource.data.tipo == 'direto'
+            && request.resource.data.membros.size() == 2
+            && chatId == request.resource.data.membros[0] + '_' + request.resource.data.membros[1]
+            && (request.resource.data.membros[0] == eu() || podeReceber(request.resource.data.membros[0]))
+            && (request.resource.data.membros[1] == eu() || podeReceber(request.resource.data.membros[1])))
+          ||
+          (request.resource.data.tipo == 'grupo'
+            && request.resource.data.admins == [eu()]
+            && request.resource.data.membros.size() <= 512
+            && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 60
+            && textoOk('descricao', 300) && textoOk('foto', 150000))
+        );
+
+      allow update: if logado() && (
+        // mensagem nova: atualiza só a prévia da última mensagem
+        (eu() in resource.data.membros && mudou().hasOnly(['ultima', 'atualizadoEm']))
+        // administrador edita o grupo
+        || (resource.data.tipo == 'grupo' && eu() in resource.data.admins
+            && mudou().hasOnly(['nome', 'descricao', 'foto', 'membros', 'admins', 'codigo', 'soAdmins', 'atualizadoEm'])
+            && request.resource.data.membros.size() <= 512
+            && request.resource.data.admins.toSet().difference(request.resource.data.membros.toSet()).size() == 0
+            && request.resource.data.nome is string && request.resource.data.nome.size() > 0 && request.resource.data.nome.size() <= 60
+            && textoOk('descricao', 300) && textoOk('foto', 150000))
+        // participante sai do grupo
+        || (resource.data.tipo == 'grupo' && eu() in resource.data.membros && !(eu() in resource.data.admins)
+            && mudou().hasOnly(['membros', 'atualizadoEm'])
+            && request.resource.data.membros.toSet() == resource.data.membros.toSet().difference([eu()].toSet()))
+        // entrada com código de convite
+        || (resource.data.tipo == 'grupo' && !(eu() in resource.data.membros)
+            && mudou().hasOnly(['membros', 'entrouCom', 'atualizadoEm'])
+            && request.resource.data.membros.toSet() == resource.data.membros.toSet().union([eu()].toSet())
+            && get(/databases/$(database)/documents/convites/$(request.resource.data.entrouCom)).data.chatId == chatId)
+      );
+
+      match /msgs/{msgId} {
+        function chat() { return get(/databases/$(database)/documents/chats/$(chatId)).data; }
+        allow read: if logado() && eu() in chat().membros;
+        allow create: if logado() && request.resource.data.autor == eu()
+          && eu() in chat().membros
+          && (!chat().get('soAdmins', false) || eu() in chat().admins)
+          && (chat().tipo != 'direto'
+              || (!exists(/databases/$(database)/documents/users/$(chat().membros[0])/bloqueados/$(eu()))
+                  && !exists(/databases/$(database)/documents/users/$(chat().membros[1])/bloqueados/$(eu()))))
+          && textoOk('texto', 2000) && textoOk('fig', 30);
+        allow delete: if logado() && resource.data.autor == eu();
+      }
+    }
+
+    // Códigos de convite dos grupos
+    match /convites/{codigo} {
+      allow read: if logado();
+      allow create, update: if logado() && codigo.matches('^[A-Z0-9]{6}$')
+        && eu() in getAfter(/databases/$(database)/documents/chats/$(request.resource.data.chatId)).data.admins;
+      allow delete: if logado()
+        && eu() in get(/databases/$(database)/documents/chats/$(resource.data.chatId)).data.admins;
+    }
+
+    // Mural
+    match /posts/{postId} {
+      allow read: if logado();
+      allow create: if logado() && request.auth.token.email_verified == true
+        && request.resource.data.autor == eu()
+        && textoOk('texto', 3000) && textoOk('fig', 30)
+        && request.resource.data.curtidas == [] && request.resource.data.nComent == 0;
+      allow update: if logado() && (
+        (resource.data.autor == eu() && mudou().hasOnly(['texto', 'editadoEm']) && textoOk('texto', 3000))
+        || (mudou().hasOnly(['curtidas'])
+            && request.resource.data.curtidas.toSet().difference(resource.data.curtidas.toSet()).hasOnly([eu()])
+            && resource.data.curtidas.toSet().difference(request.resource.data.curtidas.toSet()).hasOnly([eu()]))
+        || (mudou().hasOnly(['nComent'])
+            && (request.resource.data.nComent == resource.data.nComent + 1 || request.resource.data.nComent == resource.data.nComent - 1))
+      );
+      allow delete: if logado() && resource.data.autor == eu();
+
+      match /comentarios/{cid} {
+        allow read: if logado();
+        allow create: if logado() && request.resource.data.autor == eu() && textoOk('texto', 1000);
+        allow delete: if logado() && (resource.data.autor == eu()
+          || get(/databases/$(database)/documents/posts/$(postId)).data.autor == eu());
+      }
+    }
+
+    // Denúncias: qualquer pessoa conectada envia; só a administração lê (pelo console do Firebase)
+    match /denuncias/{id} {
+      allow create: if logado() && request.resource.data.autor == eu();
+    }
+  }
+}
