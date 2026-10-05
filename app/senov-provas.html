@@ -343,6 +343,9 @@ label.f>*:not(.ajuda-btn){flex-basis:100%}
 .clista .btn{justify-content:flex-start}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .hr{height:1px;background:var(--line);border:0;margin:4px 0}
+.duplex-passos{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:14px}
+.duplex-passos li{line-height:1.45;text-align:justify;hyphens:auto}
+.duplex-passos .btn{display:flex;width:100%;margin-top:8px}
 </style>
 
 <div class="app">
@@ -1379,7 +1382,7 @@ function lerLogo(file){
 }
 
 /* ============ PDF ============ */
-function gerarPDF(p,midiaFn){midiaFn=midiaFn||midia;
+function gerarPDF(p,midiaFn,modo){midiaFn=midiaFn||midia;
   /* ABNT NBR 14724: A4, margens 3 cm (sup./esq.) e 2 cm (inf./dir.), fonte 12, entrelinha 1,5,
      numeração no canto superior direito, ilustrações com identificação acima e fonte abaixo (tamanho menor). */
   const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});
@@ -1482,6 +1485,16 @@ function gerarPDF(p,midiaFn){midiaFn=midiaFn||midia;
   for(let i=1;i<=tot;i++){doc.setPage(i);doc.setFont("helvetica","normal");
     if(i<=nProva){doc.setFontSize(10);doc.setTextColor(0);doc.text(String(i),PW-MR,20,{align:"right"});}
     doc.setFontSize(7.5);doc.setTextColor(150);doc.text("ChatMil",ML+W/2,PH-9,{align:"center"});doc.setTextColor(0);}
+  /* Impressão frente e verso manual: só as páginas da prova (o gabarito fica de fora).
+     "frente" = páginas ímpares; "verso" = páginas pares (com página em branco se faltar) em ordem invertida, se pedido. */
+  if(modo&&modo.lado){
+    for(let i=doc.getNumberOfPages();i>nProva;i--)doc.deletePage(i);
+    if(modo.lado==="verso"&&nProva%2)doc.addPage();
+    const n=doc.getNumberOfPages();
+    for(let i=n;i>=1;i--){if((modo.lado==="frente")!==(i%2===1))doc.deletePage(i);}
+    const m=doc.getNumberOfPages();
+    if(modo.lado==="verso"&&modo.inverter)for(let i=1;i<m;i++)doc.movePage(m,i);
+  }
   return doc.output("blob");
 }
 function nomeArquivo(p){return ("Prova "+[p.disciplina,p.serie,p.bimestre].join(" ")).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^\w\- ]+/g,"").replace(/\s+/g,"_")+".pdf";}
@@ -1610,7 +1623,36 @@ document.addEventListener("click",async ev=>{
     case "reorganizar":p.montagem=organizar(p.itens,p.nivel);render();toast("Prova reorganizada.");break;
     case "pdf":{
       if(!window.jspdf){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
-      el.disabled=true;try{const falt=p.montagem.filter(precisaFoto).length;if(falt)toast(`${falt} ${falt===1?"questão sem imagem anexada saiu":"questões sem imagem anexada saíram"} com espaço em branco.`);const blob=gerarPDF(p);await baixar(nomeArquivo(p),blob);}catch(e){console.error(e);toast("Não foi possível gerar o PDF.");}el.disabled=false;break;}
+      abrirSheet(`<div class="sheet-h"><h2>PDF da prova</h2></div>
+        <div class="clista">
+          <button class="btn primary" data-a="pdf-completo">${I.down} Baixar PDF completo (com gabarito)</button>
+          <button class="btn" data-a="pdf-duplex">${I.prova} Imprimir frente e verso (manual)</button>
+        </div>
+        <p class="small muted">Para impressoras que não imprimem dos dois lados sozinhas: primeiro as frentes, depois você vira o papel e imprime os versos.</p>`);
+      break;}
+    case "pdf-completo":case "pdf-frente":case "pdf-verso":{
+      if(!window.jspdf){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
+      el.disabled=true;
+      try{
+        const falt=p.montagem.filter(precisaFoto).length;if(falt&&a==="pdf-completo")toast(`${falt} ${falt===1?"questão sem imagem anexada saiu":"questões sem imagem anexada saíram"} com espaço em branco.`);
+        const inv=!!($("#dx-inv")&&$("#dx-inv").checked);
+        const modo=a==="pdf-frente"?{lado:"frente"}:a==="pdf-verso"?{lado:"verso",inverter:inv}:null;
+        const blob=gerarPDF(p,null,modo);
+        const nome=nomeArquivo(p).replace(/\.pdf$/,a==="pdf-frente"?"_1-frentes.pdf":a==="pdf-verso"?"_2-versos.pdf":".pdf");
+        await baixar(nome,blob);
+        if(a==="pdf-frente"){const b=$("#dx-2");if(b)b.disabled=false;}
+      }catch(e){console.error(e);toast("Não foi possível gerar o PDF.");}
+      el.disabled=false;break;}
+    case "pdf-duplex":{
+      abrirSheet(`<div class="sheet-h"><h2>Frente e verso manual</h2></div>
+        <ol class="duplex-passos">
+          <li><b>Imprima as frentes.</b> Baixe a parte 1 e imprima normalmente (todas as páginas).<button class="btn primary" data-a="pdf-frente">${I.down} Parte 1: frentes</button></li>
+          <li><b>Vire o papel.</b> Pegue as folhas impressas, vire o bloco e coloque de volta na bandeja. Faça um teste com uma folha marcada se não souber o lado certo da sua impressora.</li>
+          <li><b>Imprima os versos.</b> Baixe a parte 2 e imprima.<button class="btn" id="dx-2" data-a="pdf-verso">${I.down} Parte 2: versos</button></li>
+        </ol>
+        <div class="opcao"><label class="switch" for="dx-inv"><input type="checkbox" id="dx-inv" checked><span class="t"><b>Versos em ordem invertida</b></span></label>${ajuda("dx-inv","Deixe ligado na maioria das impressoras (a folha sai com a face impressa para baixo). Desligue se os versos saírem fora de ordem no teste.")}</div>
+        <p class="small muted">O gabarito não entra na impressão frente e verso. Baixe o PDF completo para tê-lo.</p>`);
+      break;}
     case "salvar-prova":{
       if(!S.db||!S.uid){toast("Abra pelo claude.ai para salvar provas.");break;}
       const body={escola:p.escola,logo:p.logo,logoR:p.logoR,professor:p.professor,disciplina:p.disciplina,bimestre:p.bimestre,nivel:p.nivel,serie:p.serie,instrucoes:p.instrucoes,aee:p.aee,bastao:p.bastao,incluirGab:p.incluirGab,colunas:p.colunas,itens:p.itens.map(q=>({id:q.id,nivel:q.nivel,serie:q.serie,disciplina:q.disciplina,conteudo:q.conteudo,dificuldade:q.dificuldade,aee:!!q.aee,enunciado:q.enunciado,alternativas:q.alternativas,correta:q.correta,fixarOrdem:!!q.fixarOrdem,grafico:q.grafico||null,temFoto:!!q.temFoto,legenda:q.legenda||"",tituloImg:q.tituloImg||"",...(q.origemId?{origemId:q.origemId}:{})})),montagem:p.montagem,atualizadoEm:agora()};
