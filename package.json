@@ -19,6 +19,8 @@
     "@capacitor/cli": "8.5.2",
     "jspdf": "2.5.1",
     "firebase": "12.19.0",
+    "pdfjs-dist": "6.4.299",
+    "mammoth": "1.13.0",
     "esbuild": "0.28.2",
     "@fontsource/arimo": "5.3.0",
     "@fontsource/atkinson-hyperlegible": "5.3.0",
