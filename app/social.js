@@ -475,9 +475,7 @@
             <span class="cs-item-m"><small>${horaCurta(c.atualizadoEm)}</small>${nl ? '<i class="cs-dot" aria-label="Não lida"></i>' : ""}</span></button>`; }).join("")}
       </div>
       ${f ? `<h2 class="cs-sec">Pessoas</h2><div id="cs-res">${htmlResultados("ver-perfil")}</div>` : ""}
-      ${!lista.length && !f ? `<div class="empty"><b>Comece uma conversa</b><span>Encontre colegas pelo @usuário ou crie um grupo, como “Área de Linguagens”.</span>
-        <div class="row" style="justify-content:center"><button class="btn primary" data-s="buscar-pessoas">${K.addUser} Encontrar colegas</button><button class="btn" data-s="novo-grupo">${K.grupo} Criar grupo</button></div>
-        <button class="btn ghost" data-s="entrar-codigo">${K.codigo} Tenho um código de grupo</button></div>` : ""}
+      ${!lista.length && !f ? `<div class="empty"><b>Comece uma conversa</b><span>Toque em <b>Contatos</b> para achar colegas pelo nome ou @usuário, ou crie um grupo, como “Área de Linguagens”.</span></div>` : ""}
       <button class="cs-fab" data-s="novo" aria-label="Nova conversa ou grupo">${K.mais2}</button>`;
   }
   function sheetNovo() {
