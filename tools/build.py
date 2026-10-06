@@ -42,8 +42,13 @@ subprocess.run([os.path.join(os.path.abspath(NM), ".bin", "esbuild"), os.path.jo
                 "--format=iife", "--global-name=FB", "--target=es2019", "--legal-comments=none",
                 "--outfile=" + os.path.join(WWW, "vendor", "firebase.js")], check=True, cwd=RAIZ)
 # módulos da rede social (só na versão aplicativo; no claude.ai o app segue sem eles)
-for arq in ("firebase-config.js", "social-extras.js", "social.js"):
+for arq in ("firebase-config.js", "social-extras.js", "social.js", "social-mais.js"):
     shutil.copy(os.path.join(RAIZ, "app", arq), os.path.join(WWW, arq))
+# apresentação de PDF (pdf.js) e de DOCX (mammoth): carregados só quando o professor apresenta um arquivo
+os.makedirs(os.path.join(WWW, "vendor", "pdfjs"), exist_ok=True)
+shutil.copy(os.path.join(NM, "pdfjs-dist", "legacy", "build", "pdf.min.mjs"), os.path.join(WWW, "vendor", "pdfjs", "pdf.min.js"))
+shutil.copy(os.path.join(NM, "pdfjs-dist", "legacy", "build", "pdf.worker.min.mjs"), os.path.join(WWW, "vendor", "pdfjs", "pdf.worker.min.js"))
+shutil.copy(os.path.join(NM, "mammoth", "mammoth.browser.min.js"), os.path.join(WWW, "vendor", "mammoth.browser.min.js"))
 
 # ---------- index.html ----------
 src = open(os.path.join(RAIZ, "app", "senov-provas.html"), encoding="utf-8").read()
@@ -52,7 +57,7 @@ corpo = src[src.index("<style>"):]
 corpo = corpo.replace(
     '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>',
     '<script src="vendor/jspdf.umd.min.js"></script>\n<script src="vendor/capacitor.js"></script>\n<script src="local.js"></script>\n'
-    '<script src="vendor/firebase.js"></script>\n<script src="firebase-config.js"></script>\n<script src="social-extras.js"></script>\n<script src="social.js"></script>')
+    '<script src="vendor/firebase.js"></script>\n<script src="firebase-config.js"></script>\n<script src="social-extras.js"></script>\n<script src="social.js"></script>\n<script src="social-mais.js"></script>')
 assert "vendor/jspdf.umd.min.js" in corpo, "script do jsPDF não encontrado"
 estilo, resto = corpo.split("</style>", 1)
 reset = """
@@ -154,7 +159,7 @@ json.dump(manifest, open(os.path.join(WWW, "manifest.webmanifest"), "w", encodin
 
 # ---------- service worker (funciona offline) ----------
 arquivos = ["./", "index.html", "local.js", "fonts.css", "manifest.webmanifest", "vendor/jspdf.umd.min.js", "vendor/capacitor.js",
-            "vendor/firebase.js", "firebase-config.js", "social-extras.js", "social.js",
+            "vendor/firebase.js", "firebase-config.js", "social-extras.js", "social.js", "social-mais.js",
             "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/favicon-32.png", "icons/apple-touch-icon.png"]
 arquivos += ["fonts/" + f for f in sorted(os.listdir(os.path.join(WWW, "fonts")))]
 sw = f"""/* ChatMil — service worker: guarda o app no aparelho para abrir sem internet */
