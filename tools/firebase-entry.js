@@ -11,5 +11,5 @@ export {
   initializeFirestore, persistentLocalCache, persistentSingleTabManager, memoryLocalCache,
   doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, onSnapshot,
   query, where, orderBy, limit, limitToLast, startAt, endAt, writeBatch, runTransaction,
-  serverTimestamp, arrayUnion, arrayRemove, increment, getCountFromServer, Timestamp, connectFirestoreEmulator
+  serverTimestamp, arrayUnion, arrayRemove, increment, getCountFromServer, Timestamp, Bytes, connectFirestoreEmulator
 } from "firebase/firestore";
