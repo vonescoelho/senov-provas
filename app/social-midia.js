@@ -375,7 +375,7 @@
     if (g === "pdf") return comBlob(a, b => verPdf(a, b));
     window.abrirSheet(`<div class="sheet-h"><h2>${esc(a.nome)}</h2></div><p class="small muted">${ROTULO[g]} · ${tamanho(a.tamanho || 0)}</p><div class="cs-menu">
       ${g === "docx" ? `<button data-s="md-ler" data-v="${esc(a.id)}">${I.tela}<span><b>Ler aqui ou apresentar</b><small>Tela cheia, letra grande, TV e projetor</small></span></button>` : ""}
-      <button data-s="md-abrircom" data-v="${esc(a.id)}">${I.abrir}<span><b>Abrir com outro aplicativo</b><small>${g === "apk" ? "Instalar o aplicativo (o Android pede confirmação)" : g === "zip" ? "Gerenciador de arquivos, WinZip, RAR…" : "Word, Excel, leitor de arquivos…"}</small></span></button>
+      <button data-s="md-abrircom" data-v="${esc(a.id)}">${I.abrir}<span><b>Abrir com outro aplicativo</b><small>${g === "apk" ? "Salve e instale pelo app Arquivos do celular" : g === "zip" ? "Gerenciador de arquivos, WinZip, RAR…" : "Word, Excel, leitor de arquivos…"}</small></span></button>
       <button data-s="md-partilhar" data-v="${esc(a.id)}">${I.partilhar}<span><b>Compartilhar</b><small>WhatsApp, e-mail, Drive…</small></span></button>
       <button data-s="md-salvar" data-v="${esc(a.id)}">${I.baixar}<span><b>Salvar no aparelho</b><small>Pasta Downloads › ChatMil</small></span></button></div>
       ${g === "apk" ? `<p class="small muted">Só instale aplicativos de quem você confia.</p>` : ""}`);
