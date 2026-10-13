@@ -78,6 +78,9 @@ service cloud.firestore {
       allow update: if logado() && (
         // mensagem nova: atualiza só a prévia da última mensagem
         (eu() in resource.data.membros && mudou().hasOnly(['ultima', 'atualizadoEm']))
+        // confirmação de leitura: cada um marca só o próprio horário em lidos.{uid}
+        || (eu() in resource.data.membros && mudou().hasOnly(['lidos'])
+            && request.resource.data.lidos.diff(resource.data.get('lidos', {})).affectedKeys().hasOnly([eu()]))
         // administrador edita o grupo
         || (resource.data.tipo == 'grupo' && eu() in resource.data.admins
             && mudou().hasOnly(['nome', 'descricao', 'foto', 'membros', 'admins', 'codigo', 'soAdmins', 'atualizadoEm'])
@@ -241,6 +244,13 @@ service cloud.firestore {
       allow create, update: if logado() && admin() && textoOk('titulo', 120) && textoOk('descricao', 600) && textoOk('imagem', 200000)
         && request.resource.data.link is string && request.resource.data.link.matches('^https://.*');
       allow delete: if logado() && admin();
+    }
+
+    // Online / visto por último: cada um escreve só o próprio
+    match /presenca/{uid} {
+      allow read: if logado();
+      allow write: if logado() && uid == eu() && request.resource.data.keys().hasOnly(['em', 'on']);
+      allow delete: if logado() && uid == eu();
     }
 
     // Denúncias: qualquer pessoa conectada envia; só a administração lê (pelo console do Firebase)
