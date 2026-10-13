@@ -36,25 +36,12 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Texto no tamanho do layout (a fonte ampliada do sistema não desmonta a tela)
+      - name: Recursos do Android (imprimir, abrir com, salvar, TV, bloqueio de print, câmera e microfone)
         run: |
-          cat > android/app/src/main/java/br/com/senov/provas/MainActivity.java <<'JAVA'
-          package br.com.senov.provas;
-
-          import android.webkit.WebView;
-          import com.getcapacitor.BridgeActivity;
-
-          public class MainActivity extends BridgeActivity {
-              @Override
-              protected void load() {
-                  super.load();
-                  if (bridge != null && bridge.getWebView() != null) {
-                      WebView wv = bridge.getWebView();
-                      wv.getSettings().setTextZoom(100);
-                  }
-              }
-          }
-          JAVA
+          cp android-extra/MainActivity.java android-extra/NativoPlugin.java android/app/src/main/java/br/com/senov/provas/
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.microphone" android:required="false" />#' $M
+          grep -c "RECORD_AUDIO" $M
 
       - name: Ícone e tela de abertura
         continue-on-error: true
