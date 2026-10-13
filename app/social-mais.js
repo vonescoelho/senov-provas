@@ -227,4 +227,53 @@ body.cs-5abas .nav .ico{padding:3px 12px}
 .cs-vit-cats .chip{flex:none}
 `;
   document.head.appendChild(css);
+
+  /* ================= Acabamento visual: botões compactos e modernos (só no app) ================= */
+  const acab = document.createElement("style");
+  acab.textContent = `
+body.cs-on .btn{min-height:42px;padding:0 16px;border-radius:12px;font-size:.94rem;font-weight:650;gap:6px;letter-spacing:.005em;
+  transition:background-color .15s,border-color .15s,box-shadow .15s,transform .08s;box-shadow:0 1px 2px rgba(16,24,40,.06)}
+body.cs-on .btn:active{transform:scale(.97)}
+body.cs-on .btn:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+body.cs-on .btn.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--primary) 88%,#fff),var(--primary));
+  box-shadow:0 1px 2px rgba(16,24,40,.14),0 4px 12px -4px color-mix(in srgb,var(--primary) 55%,transparent),inset 0 1px 0 rgba(255,255,255,.18)}
+body.cs-on .btn.ghost{box-shadow:none}
+body.cs-on .btn.sm{min-height:34px;padding:0 12px;font-size:.84rem;border-radius:10px}
+body.cs-on .btn svg{width:18px;height:18px}
+body.cs-on .btn.sm svg{width:16px;height:16px}
+body.cs-on .cs-grande{min-height:48px;font-size:.98rem;border-radius:14px}
+body.cs-on .cs-ico-bt{width:42px;height:42px}
+body.cs-on .cs-ico-bt svg{width:22px;height:22px}
+body.cs-on .cs-ico-bt.sm{width:34px;height:34px}
+body.cs-on .cs-compor .cs-ico-bt{width:42px;height:42px}
+body.cs-on .cs-env{width:46px;height:46px;min-height:46px}
+body.cs-on .cs-compor .in{min-height:46px;padding:11px 15px}
+body.cs-on .chip{padding:6px 12px;font-size:.83rem}
+body.cs-on .seg{padding:3px;gap:3px;border-radius:11px}
+body.cs-on .seg button{min-height:34px;font-size:.88rem;border-radius:8px}
+body.cs-on .cs-menu>button,body.cs-on .cs-menu>.cs-linha,body.cs-on .cs-menu>label{min-height:52px;padding:9px 10px;gap:12px;font-size:.97rem}
+body.cs-on .cs-menu>button>svg:first-child,body.cs-on .cs-menu>label>svg:first-child{width:21px;height:21px}
+body.cs-on .cs-atalhos{grid-template-columns:repeat(3,1fr);gap:6px}
+body.cs-on .cs-atalhos button{flex-direction:row;justify-content:center;min-height:42px;padding:6px 8px;gap:6px;border-radius:12px;font-size:.8rem;line-height:1.15}
+body.cs-on .cs-atalhos button svg{width:18px;height:18px;flex:none}
+body.cs-on .cs-fab{width:54px;height:54px;border-radius:17px}
+body.cs-on .cs-fab svg{width:24px;height:24px}
+body.cs-on .cs-perfil-bt .btn{max-width:200px}
+body.cs-on .cs-clip-g{gap:6px}
+body.cs-on .cs-clip-g button{padding:10px 4px;gap:6px;font-size:.84rem;border-radius:14px}
+body.cs-on .cs-clip-g button span{width:40px;height:40px}
+body.cs-on .cs-clip-g button svg{width:20px;height:20px}
+body.cs-on .cs-vis-acoes button{min-height:48px;font-size:.74rem}
+body.cs-on .cs-vis-acoes svg{width:22px;height:22px}
+body.cs-on .cs-vbt{min-width:42px;height:42px;border-radius:11px}
+body.cs-on .cs-vbt svg{width:22px;height:22px}
+body.cs-on .cs-grav-bt{width:48px;height:48px}
+body.cs-on .cs-grav-bt.env{width:54px;height:54px}
+body.cs-on .cs-aud-play{width:40px;height:40px}
+body.cs-on .cs-aud-play svg{width:19px;height:19px}
+body.cs-on .cs-aud-r{padding-left:48px}
+body.cs-on .nav button{font-size:.7rem}
+@media (prefers-reduced-motion:reduce){body.cs-on .btn{transition:none}body.cs-on .btn:active{transform:none}}
+`;
+  document.head.appendChild(acab);
 })();
