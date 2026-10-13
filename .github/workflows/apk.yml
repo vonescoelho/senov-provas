@@ -40,8 +40,38 @@ jobs:
         run: |
           cp android-extra/MainActivity.java android-extra/NativoPlugin.java android/app/src/main/java/br/com/senov/provas/
           M=android/app/src/main/AndroidManifest.xml
-          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.microphone" android:required="false" />#' $M
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.microphone" android:required="false" />#' $M
           grep -c "RECORD_AUDIO" $M
+
+      - name: Assinatura sempre igual (atualizações instalam por cima) e versão final mais leve
+        run: |
+          python3 - <<'PY'
+          import re
+          p = "android/app/build.gradle"
+          s = open(p).read()
+          assin = """
+              signingConfigs {
+                  chatmil {
+                      storeFile rootProject.file("../android-debug.keystore")
+                      storePassword "android"
+                      keyAlias "androiddebugkey"
+                      keyPassword "android"
+                      v1SigningEnabled true
+                      v2SigningEnabled true
+                  }
+              }
+              lint {
+                  checkReleaseBuilds false
+                  abortOnError false
+              }
+          """
+          assert "buildTypes {" in s
+          s = s.replace("    buildTypes {", assin + "    buildTypes {", 1)
+          s = re.sub(r"(release \{\s*\n)", r"\1            signingConfig signingConfigs.chatmil\n", s, count=1)
+          assert "signingConfig signingConfigs.chatmil" in s
+          open(p, "w").write(s)
+          PY
+          grep -n "signingConfig\|storeFile" android/app/build.gradle
 
       - name: Ícone e tela de abertura
         continue-on-error: true
@@ -53,17 +83,13 @@ jobs:
           sed -i "s/versionName \"1.0\"/versionName \"1.0.${{ github.run_number }}\"/" android/app/build.gradle
           grep -n "versionCode\|versionName" android/app/build.gradle
 
-      - name: Chave fixa (para instalar atualizações por cima, sem perder os dados)
-        run: |
-          mkdir -p ~/.android
-          cp android-debug.keystore ~/.android/debug.keystore
-
       - name: Compilar APK
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
-          cp app/build/outputs/apk/debug/app-debug.apk ../ChatMil.apk
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk ../ChatMil.apk
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs ../ChatMil.apk | head -5 || true
 
       - uses: actions/upload-artifact@v4
         with:
