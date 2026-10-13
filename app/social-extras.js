@@ -1,225 +1,173 @@
-/* ChatMil — figurinhas próprias (desenhos originais) e filtro de linguagem ofensiva. */
+/* ChatMil — figurinhas próprias (desenhos originais, sem legenda) e filtro de linguagem ofensiva. */
 (function () {
   "use strict";
 
-  /* ================= Figurinhas ================= */
-  const W = 'stroke="#fff" stroke-width="7" stroke-linejoin="round" paint-order="stroke"';
-  const lbl = (t, y, cor, tam) =>
-    `<text x="64" y="${y}" text-anchor="middle" font-family="Bricolage Grotesque, system-ui, sans-serif" font-weight="800" font-size="${tam || 19}" fill="${cor}" stroke="#fff" stroke-width="5" stroke-linejoin="round" paint-order="stroke">${t}</text>`;
-  function estrela(cx, cy, R, r, n) {
-    n = n || 5; const p = [];
-    for (let i = 0; i < n * 2; i++) {
-      const a = Math.PI / n * i - Math.PI / 2, rr = i % 2 ? r : R;
-      p.push((cx + rr * Math.cos(a)).toFixed(1) + "," + (cy + rr * Math.sin(a)).toFixed(1));
-    }
-    return p.join(" ");
-  }
-  const brilho = (x, y, s, cor) => `<polygon points="${estrela(x, y, s, s * 0.35, 4)}" fill="${cor || "#FFC53D"}"/>`;
+  /* ================= Figurinhas =================
+     Desenhos em SVG, leves (não baixam nada). Os ids "@x" viram ids únicos em cada figurinha da tela. */
+  const rosto = (c1, c2, c3) => `<defs><radialGradient id="@f" cx=".38" cy=".3" r=".8"><stop offset="0" stop-color="${c1 || "#FFE58F"}"/><stop offset=".55" stop-color="${c2 || "#FFC83D"}"/><stop offset="1" stop-color="${c3 || "#F09A1A"}"/></radialGradient></defs>
+    <circle cx="64" cy="66" r="50" fill="url(#@f)"/><ellipse cx="50" cy="34" rx="18" ry="9" fill="#fff" opacity=".28"/>`;
+  const olhoAberto = (x, y) => `<ellipse cx="${x}" cy="${y}" rx="5.5" ry="7.5" fill="#3A2412"/><circle cx="${x + 1.8}" cy="${y - 2.6}" r="1.8" fill="#fff"/>`;
+  const bochechas = `<ellipse cx="34" cy="76" rx="8" ry="5" fill="#FF7A6B" opacity=".35"/><ellipse cx="94" cy="76" rx="8" ry="5" fill="#FF7A6B" opacity=".35"/>`;
+  const faisca = (x, y, s, c) => `<path d="M${x} ${y - s}Q${x} ${y} ${x + s} ${y}Q${x} ${y} ${x} ${y + s}Q${x} ${y} ${x - s} ${y}Q${x} ${y} ${x} ${y - s}z" fill="${c || "#FFC83D"}"/>`;
+  const linhas = (x, y, w, n, gap, cor) => Array.from({ length: n }, (_, i) => `<rect x="${x}" y="${y + i * gap}" width="${i === n - 1 ? w * .6 : w}" height="3.4" rx="1.7" fill="${cor || "#C9D2E3"}"/>`).join("");
+  const papel = `<linearGradient id="@p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#E9EDF5"/></linearGradient>`;
+  const fundo = (a, b) => `<linearGradient id="@b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient>`;
 
   const F = {
-    nota10: { nome: "Nota 10", svg:
-      `<polygon points="${estrela(64, 54, 48, 23)}" fill="#FFC53D" ${W}/>
-       <polygon points="${estrela(64, 54, 38, 18)}" fill="#FFD76A"/>
-       <text x="64" y="66" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="30" fill="#B45309">10</text>
-       ${brilho(108, 20, 7, "#FFC53D")}${brilho(18, 30, 5, "#FF8A3D")}
-       ${lbl("Nota 10!", 120, "#D97706")}` },
-    arrasou: { nome: "Arrasou!", svg:
-      `<path d="M38 20h52v26a26 26 0 0 1-52 0z" fill="#FFC53D" ${W}/>
-       <path d="M38 28H27a11 11 0 0 0 13 24M90 28h11a11 11 0 0 1-13 24" fill="none" stroke="#FFC53D" stroke-width="7" stroke-linecap="round"/>
-       <rect x="57" y="70" width="14" height="12" fill="#F59E0B"/>
-       <rect x="42" y="82" width="44" height="12" rx="4" fill="#B45309" ${W}/>
-       <rect x="46" y="26" width="7" height="26" rx="3.5" fill="#fff" opacity=".55"/>
-       <polygon points="${estrela(64, 42, 10, 4.5)}" fill="#fff"/>
-       ${brilho(16, 18, 6, "#FF5C8A")}${brilho(112, 16, 7, "#2447C6")}${brilho(110, 70, 5, "#22A06B")}
-       ${lbl("Arrasou!", 120, "#E11D48")}` },
-    parabens: { nome: "Parabéns!", svg:
-      `<path d="M44 66 60 94M84 62 64 94M64 58v36" stroke="#94A3B8" stroke-width="2.5" fill="none"/>
-       <ellipse cx="40" cy="42" rx="19" ry="23" fill="#EF4444" ${W}/>
-       <ellipse cx="88" cy="38" rx="19" ry="23" fill="#2447C6" ${W}/>
-       <ellipse cx="64" cy="32" rx="20" ry="24" fill="#FFC53D" ${W}/>
-       <ellipse cx="57" cy="24" rx="5" ry="8" fill="#fff" opacity=".6"/>
-       <ellipse cx="33" cy="34" rx="4" ry="7" fill="#fff" opacity=".5"/>
-       <ellipse cx="81" cy="30" rx="4" ry="7" fill="#fff" opacity=".5"/>
-       <rect x="14" y="80" width="6" height="10" rx="2" fill="#22A06B" transform="rotate(25 17 85)"/>
-       <rect x="104" y="78" width="6" height="10" rx="2" fill="#FF5C8A" transform="rotate(-30 107 83)"/>
-       <circle cx="26" cy="96" r="3" fill="#7C5CFF"/><circle cx="100" cy="98" r="3" fill="#FF8A3D"/>
-       ${lbl("Parabéns!", 120, "#7C3AED")}` },
-    obrigado: { nome: "Obrigado(a)!", svg:
-      `<path d="M64 98C18 68 20 30 44 26c10-2 18 4 20 12 2-8 10-14 20-12 24 4 26 42-20 72z" fill="#FF5C8A" ${W}/>
-       <path d="M40 40c4-6 12-6 14-2" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" opacity=".7"/>
-       <path d="M50 58q14 14 28 0" stroke="#9F1239" stroke-width="4" fill="none" stroke-linecap="round"/>
-       <circle cx="52" cy="50" r="3.5" fill="#9F1239"/><circle cx="76" cy="50" r="3.5" fill="#9F1239"/>
-       ${brilho(108, 26, 6, "#FFC53D")}${brilho(18, 70, 5, "#FFC53D")}
-       ${lbl("Obrigado(a)!", 121, "#E11D48", 17)}` },
-    presente: { nome: "Presente!", svg:
-      `<rect x="84" y="14" width="14" height="52" rx="7" fill="#FFC53D" transform="rotate(14 91 40)" ${W}/>
-       <circle cx="54" cy="68" r="30" fill="#FFC53D" ${W}/>
-       <circle cx="45" cy="64" r="3.8" fill="#3B2A1A"/><circle cx="63" cy="64" r="3.8" fill="#3B2A1A"/>
-       <path d="M42 76q12 12 24 0" stroke="#3B2A1A" stroke-width="4" fill="none" stroke-linecap="round"/>
-       <circle cx="38" cy="74" r="4" fill="#FF8FA3" opacity=".7"/><circle cx="70" cy="74" r="4" fill="#FF8FA3" opacity=".7"/>
-       <path d="M104 10q6 4 6 12M110 30q6 2 8 8" stroke="#2447C6" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-       ${lbl("Presente!", 120, "#2447C6")}` },
-    dever: { nome: "Dever feito!", svg:
-      `<rect x="32" y="16" width="64" height="84" rx="9" fill="#A16207" ${W}/>
-       <rect x="39" y="27" width="50" height="66" rx="4" fill="#fff"/>
-       <rect x="52" y="10" width="24" height="13" rx="5" fill="#94A3B8"/>
-       ${[40, 56, 72].map(y => `<rect x="45" y="${y}" width="10" height="10" rx="2.5" fill="#DDF3E8" stroke="#22A06B" stroke-width="2"/><path d="M47 ${y + 5}l2.5 3 5-6" stroke="#22A06B" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><rect x="60" y="${y + 3}" width="23" height="4" rx="2" fill="#CBD5E1"/>`).join("")}
-       ${lbl("Dever feito!", 120, "#15803D")}` },
-    boaprova: { nome: "Boa prova!", svg:
-      `<rect x="34" y="12" width="60" height="80" rx="7" fill="#EAF1FF" ${W}/>
-       ${[26, 34, 42].map(y => `<rect x="42" y="${y}" width="${y === 42 ? 26 : 44}" height="3.5" rx="1.7" fill="#B8C6EA"/>`).join("")}
-       <text x="64" y="80" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="32" fill="#E11D48">A+</text>
-       <rect x="30" y="12" width="3" height="80" fill="#D23F58" opacity=".7"/>
-       ${brilho(104, 22, 7, "#FFC53D")}${brilho(22, 64, 5, "#FFC53D")}
-       ${lbl("Boa prova!", 120, "#2447C6")}` },
-    revisao: { nome: "Revisão!", svg:
-      `<g transform="rotate(-32 64 56)">
-         <rect x="12" y="46" width="94" height="20" rx="4" fill="#FFC53D" ${W}/>
-         <rect x="12" y="46" width="12" height="20" rx="4" fill="#FF8FA3"/>
-         <rect x="24" y="46" width="9" height="20" fill="#94A3B8"/>
-         <rect x="33" y="54" width="73" height="4" fill="#F59E0B"/>
-         <polygon points="106,46 124,56 106,66" fill="#F5D0A9" ${W}/>
-         <polygon points="118,53 124,56 118,59" fill="#334155"/>
-       </g>
-       <path d="M22 96q10-8 20 0t20 0 20 0" stroke="#2447C6" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-       ${lbl("Revisão!", 121, "#EA580C")}` },
-    estudar: { nome: "Hora de estudar", svg:
-      `<path d="M64 36C50 26 30 26 14 32v58c16-6 36-6 50 4 14-10 34-10 50-4V32c-16-6-36-6-50 4z" fill="#2447C6" ${W}/>
-       <path d="M64 38C52 30 36 30 22 34v48c14-4 30-4 42 4z" fill="#F8FAFC"/>
-       <path d="M64 38c12-8 28-8 42-4v48c-14-4-30-4-42 4z" fill="#EEF2FF"/>
-       ${[44, 52, 60, 68].map(y => `<path d="M30 ${y}q14-3 26 2M72 ${y + 2}q12-5 26-2" stroke="#B8C6EA" stroke-width="2.5" fill="none" stroke-linecap="round"/>`).join("")}
-       ${brilho(64, 16, 8, "#FFC53D")}${brilho(22, 18, 5, "#FF8A3D")}${brilho(106, 18, 5, "#FF5C8A")}
-       ${lbl("Hora de estudar", 119, "#2447C6", 16)}` },
-    bomdia: { nome: "Bom dia!", svg:
-      `${Array.from({ length: 10 }, (_, i) => `<rect x="60" y="4" width="8" height="18" rx="4" fill="#FFB020" transform="rotate(${i * 36} 64 56)"/>`).join("")}
-       <circle cx="64" cy="56" r="30" fill="#FFC53D" ${W}/>
-       <path d="M50 52q5-6 10 0M68 52q5-6 10 0" stroke="#7C2D12" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-       <path d="M52 64q12 12 24 0" stroke="#7C2D12" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-       <circle cx="46" cy="64" r="4.5" fill="#FF8FA3" opacity=".7"/><circle cx="82" cy="64" r="4.5" fill="#FF8FA3" opacity=".7"/>
-       ${lbl("Bom dia!", 120, "#EA580C")}` },
-    cafe: { nome: "Café e correção", svg:
-      `<path d="M50 10q-6 8 0 14t0 14M64 6q-6 8 0 14t0 14M78 10q-6 8 0 14t0 14" stroke="#94A3B8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-       <path d="M84 56h6a13 13 0 0 1 0 26h-6" stroke="#2447C6" stroke-width="8" fill="none"/>
-       <rect x="30" y="44" width="56" height="52" rx="12" fill="#2447C6" ${W}/>
-       <ellipse cx="58" cy="48" rx="24" ry="5" fill="#6B3E26"/>
-       <path d="M58 82c-12-8-12-16-6-17 3 0 5 2 6 4 1-2 3-4 6-4 6 1 6 9-6 17z" fill="#fff"/>
-       ${lbl("Café e correção", 119, "#6B3E26", 16)}` },
-    reuniao: { nome: "Reunião!", svg:
-      `<rect x="24" y="20" width="80" height="74" rx="11" fill="#F8FAFC" ${W}/>
-       <path d="M24 31a11 11 0 0 1 11-11h58a11 11 0 0 1 11 11v11H24z" fill="#EF4444"/>
-       <rect x="40" y="12" width="8" height="18" rx="4" fill="#64748B"/><rect x="80" y="12" width="8" height="18" rx="4" fill="#64748B"/>
-       <text x="64" y="39" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="11" fill="#fff" letter-spacing="1.5">HOJE</text>
-       ${[[44, "#2447C6"], [64, "#22A06B"], [84, "#FF8A3D"]].map(([x, c]) => `<circle cx="${x}" cy="60" r="7" fill="${c}"/><path d="M${x - 11} 84a11 11 0 0 1 22 0z" fill="${c}"/>`).join("")}
-       ${lbl("Reunião!", 120, "#DC2626")}` },
-    ferias: { nome: "Férias!", svg:
-      `<circle cx="104" cy="22" r="11" fill="#FFC53D"/>
-       <path d="M70 58l12 38" stroke="#8B5E3C" stroke-width="5" stroke-linecap="round"/>
-       <path d="M24 64a44 44 0 0 1 86-18z" fill="#EF4444" ${W}/>
-       <path d="M46 50 38 70M67 37l2 22M88 39l8 16" stroke="#fff" stroke-width="7" opacity=".85"/>
-       <ellipse cx="64" cy="98" rx="46" ry="8" fill="#FCD34D"/>
-       <path d="M12 104q8-5 16 0t16 0M86 104q8-5 16 0t16 0" stroke="#0EA5E9" stroke-width="3" fill="none" stroke-linecap="round"/>
-       ${lbl("Férias!", 121, "#0284C7")}` },
-    /* ----- vida de professor ----- */
-    cansado: { nome: "Cansado(a)", svg:
-      `<circle cx="58" cy="60" r="36" fill="#FFC53D" ${W}/>
-       <path d="M40 56q7 5 14 0M62 56q7 5 14 0" stroke="#7C2D12" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-       <path d="M36 50h18M60 50h18" stroke="#B45309" stroke-width="3" stroke-linecap="round" opacity=".6"/>
-       <ellipse cx="58" cy="76" rx="8" ry="5" fill="#7C2D12"/>
-       <path d="M76 66q4 8 0 12q-4-4 0-12z" fill="#60A5FA"/>
-       <text x="96" y="30" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="18" fill="#7C5CFF" stroke="#fff" stroke-width="4" paint-order="stroke">z</text>
-       <text x="106" y="18" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="13" fill="#7C5CFF" stroke="#fff" stroke-width="4" paint-order="stroke">z</text>
-       <rect x="92" y="78" width="24" height="13" rx="3" fill="#fff" stroke="#475569" stroke-width="2.5"/><rect x="116" y="82" width="3" height="5" rx="1" fill="#475569"/><rect x="95" y="81" width="5" height="7" rx="1" fill="#EF4444"/>
-       ${lbl("Cansado(a)", 121, "#B45309", 18)}` },
-    motivado: { nome: "Motivado(a)!", svg:
-      `<path d="M52 86l-8 22 16-10 4 16 4-16 16 10-8-22z" fill="#FF8A3D" ${W}/>
-       <path d="M58 88l6 14 6-14z" fill="#FFC53D"/>
-       <path d="M64 8c18 12 24 34 18 64l-6 12H52l-6-12C40 42 46 20 64 8z" fill="#F8FAFC" ${W}/>
-       <path d="M64 8c8 5 13 12 16 20H48c3-8 8-15 16-20z" fill="#EF4444"/>
-       <circle cx="64" cy="48" r="9" fill="#2447C6" stroke="#93C5FD" stroke-width="3"/>
-       <path d="M46 62l-12 14 14 2zM82 62l12 14-14 2z" fill="#EF4444"/>
-       ${brilho(22, 30, 7, "#FFC53D")}${brilho(106, 22, 6, "#FF5C8A")}
-       ${lbl("Motivado(a)!", 121, "#EA580C", 17)}` },
-    sextou: { nome: "Sextou!", svg:
-      `<rect x="26" y="20" width="76" height="72" rx="12" fill="#F8FAFC" ${W}/>
-       <path d="M26 32a12 12 0 0 1 12-12h52a12 12 0 0 1 12 12v12H26z" fill="#7C5CFF"/>
-       <text x="64" y="38" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="12" fill="#fff" letter-spacing="2">SEXTA</text>
-       <polygon points="44,86 58,52 78,72" fill="#FFC53D" stroke="#F59E0B" stroke-width="2" stroke-linejoin="round"/>
-       <path d="M50 72l12 8M54 62l14 10" stroke="#EF4444" stroke-width="3" stroke-linecap="round"/>
-       <path d="M70 52l8-8M80 60l10-2M66 46l0-8" stroke="#7C5CFF" stroke-width="3" stroke-linecap="round"/>
-       <circle cx="86" cy="48" r="3" fill="#22A06B"/><circle cx="76" cy="40" r="2.5" fill="#FF5C8A"/><circle cx="90" cy="68" r="2.5" fill="#2447C6"/>
-       <rect x="12" y="16" width="6" height="11" rx="2" fill="#22A06B" transform="rotate(25 15 21)"/>
-       <rect x="110" y="14" width="6" height="11" rx="2" fill="#FF5C8A" transform="rotate(-30 113 19)"/>
-       <circle cx="14" cy="70" r="3.5" fill="#FFC53D"/><circle cx="116" cy="62" r="3.5" fill="#2447C6"/><circle cx="20" cy="94" r="3" fill="#EF4444"/>
-       ${lbl("Sextou!", 121, "#7C3AED", 21)}` },
-    pilha: { nome: "Pilha de provas", svg:
-      `${[0, 1, 2, 3, 4].map(i => `<rect x="${30 + (i % 2) * 5}" y="${78 - i * 13}" width="62" height="16" rx="3" fill="${i % 2 ? "#EAF1FF" : "#fff"}" stroke="#94A3B8" stroke-width="2" transform="rotate(${i % 2 ? 3 : -3} 64 ${86 - i * 13})"/>`).join("")}
-       <rect x="30" y="10" width="62" height="18" rx="3" fill="#fff" stroke="#94A3B8" stroke-width="2"/>
-       <text x="40" y="24" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="12" fill="#E11D48">A+ B C…</text>
-       <g transform="rotate(35 104 60)"><rect x="98" y="30" width="10" height="46" rx="3" fill="#E11D48" ${W}/><polygon points="98,76 108,76 103,88" fill="#F5D0A9"/><polygon points="101,82 105,82 103,88" fill="#9F1239"/></g>
-       <path d="M22 34q-4 8 0 12q4-4 0-12z" fill="#60A5FA"/>
-       ${lbl("Pilha de provas", 120, "#BE123C", 16)}` },
-    burocracia: { nome: "Burocracia…", svg:
-      `<rect x="22" y="52" width="60" height="44" rx="5" fill="#FDE68A" ${W}/>
-       <path d="M22 60h24l6-8h30" stroke="#F59E0B" stroke-width="3" fill="none"/>
-       <rect x="30" y="30" width="54" height="48" rx="4" fill="#fff" stroke="#94A3B8" stroke-width="2" transform="rotate(-6 57 54)"/>
-       ${[40, 48, 56].map(y => `<rect x="36" y="${y}" width="36" height="3.5" rx="1.7" fill="#CBD5E1" transform="rotate(-6 57 54)"/>`).join("")}
-       <g transform="rotate(12 96 46)"><rect x="84" y="24" width="24" height="16" rx="4" fill="#8B5E3C" ${W}/><rect x="90" y="40" width="12" height="10" fill="#6B3E26"/><rect x="80" y="50" width="32" height="10" rx="3" fill="#EF4444"/></g>
-       <text x="84" y="84" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="13" fill="#EF4444" stroke="#EF4444" stroke-width=".5" transform="rotate(-10 84 80)" opacity=".85">CARIMBO</text>
-       ${lbl("Burocracia…", 120, "#92400E", 18)}` },
-    respira: { nome: "Respira…", svg:
-      `<circle cx="64" cy="56" r="44" fill="#A7F3D0" opacity=".55"/>
-       <circle cx="64" cy="58" r="32" fill="#FFC53D" ${W}/>
-       <path d="M48 56q6 5 12 0M68 56q6 5 12 0" stroke="#7C2D12" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-       <path d="M56 70q8 5 16 0" stroke="#7C2D12" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-       <circle cx="48" cy="66" r="4" fill="#FF8FA3" opacity=".7"/><circle cx="80" cy="66" r="4" fill="#FF8FA3" opacity=".7"/>
-       <path d="M20 28q6-6 12 0M96 22q6-6 12 0" stroke="#15803D" stroke-width="3" fill="none" stroke-linecap="round"/>
-       ${lbl("Respira…", 121, "#15803D")}` },
-    pi: { nome: "Matemágica!", svg:
-      `<circle cx="64" cy="54" r="40" fill="#7C5CFF" ${W}/>
-       <text x="64" y="76" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="700" font-size="60" fill="#fff">π</text>
-       ${brilho(104, 18, 8, "#FFC53D")}${brilho(20, 22, 6, "#FF5C8A")}${brilho(108, 84, 5, "#22A06B")}
-       <text x="24" y="92" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="14" fill="#7C5CFF">+</text>
-       ${lbl("Matemágica!", 120, "#6D28D9", 18)}` },
-    ciencia: { nome: "Ciência!", svg:
-      `${[0, 60, 120].map(r => `<ellipse cx="64" cy="54" rx="44" ry="16" fill="none" stroke="#fff" stroke-width="15" transform="rotate(${r} 64 54)"/>`).join("")}
-       ${[0, 60, 120].map(r => `<ellipse cx="64" cy="54" rx="44" ry="16" fill="none" stroke="#14B8A6" stroke-width="6" transform="rotate(${r} 64 54)"/>`).join("")}
-       <circle cx="64" cy="54" r="11" fill="#FF5C8A" stroke="#fff" stroke-width="4"/>
-       <circle cx="108" cy="54" r="5" fill="#2447C6"/><circle cx="42" cy="16" r="5" fill="#2447C6"/><circle cx="42" cy="92" r="5" fill="#2447C6"/>
-       ${lbl("Ciência!", 121, "#0F766E")}` },
-    eureca: { nome: "Eureca!", svg:
-      `<path d="M64 6v10M26 22l7 7M102 22l-7 7M14 52h10M104 52h10" stroke="#FFB020" stroke-width="5" stroke-linecap="round"/>
-       <path d="M64 20a30 30 0 0 0-18 54c4 3 6 7 6 10h24c0-3 2-7 6-10a30 30 0 0 0-18-54z" fill="#FFE066" ${W}/>
-       <path d="M58 74V60M70 74V60M58 60c0-8 12-8 12 0" stroke="#F59E0B" stroke-width="3" fill="none" stroke-linecap="round"/>
-       <rect x="52" y="86" width="24" height="7" rx="3" fill="#94A3B8"/><rect x="55" y="94" width="18" height="6" rx="3" fill="#64748B"/>
-       <ellipse cx="54" cy="36" rx="5" ry="9" fill="#fff" opacity=".6" transform="rotate(25 54 36)"/>
-       ${lbl("Eureca!", 121, "#D97706")}` },
-    inclusao: { nome: "Inclusão", svg:
-      `<defs><clipPath id="fg-cor"><path d="M64 98C18 68 20 30 44 26c10-2 18 4 20 12 2-8 10-14 20-12 24 4 26 42-20 72z"/></clipPath></defs>
-       <path d="M64 98C18 68 20 30 44 26c10-2 18 4 20 12 2-8 10-14 20-12 24 4 26 42-20 72z" fill="#fff" ${W}/>
-       <g clip-path="url(#fg-cor)">${["#EF4444", "#FF8A3D", "#FFC53D", "#22A06B", "#2447C6", "#7C5CFF"].map((c, i) => `<rect x="0" y="${24 + i * 12.5}" width="128" height="13" fill="${c}"/>`).join("")}</g>
-       <path d="M40 40c4-6 12-6 14-2" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" opacity=".7"/>
-       ${brilho(108, 24, 6, "#FFC53D")}${brilho(20, 22, 5, "#FF5C8A")}
-       ${lbl("Inclusão", 120, "#6D28D9")}` },
-    tempo: { nome: "Cada um no seu tempo", svg:
-      `<path d="M14 84c0-8 8-10 16-8h58c6-10 8-22 14-24 6-2 8 6 4 14-4 10-10 18-18 18H22c-5 0-8 3-8 0z" fill="#A3E635" ${W}/>
-       <path d="M100 52l-3-16M106 54l5-15" stroke="#65A30D" stroke-width="3.5" stroke-linecap="round"/>
-       <circle cx="97" cy="34" r="4.5" fill="#1F2937"/><circle cx="112" cy="37" r="4.5" fill="#1F2937"/>
-       <path d="M98 66q4 4 8 0" stroke="#365314" stroke-width="3" fill="none" stroke-linecap="round"/>
-       <circle cx="54" cy="56" r="26" fill="#FF8A3D" ${W}/>
-       <path d="M54 56m-3 0a3 3 0 1 1 6 0a8 8 0 1 1-16 0a13 13 0 1 1 26 0a18 18 0 1 1-36 0" stroke="#C2410C" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-       ${lbl("Cada um no", 106, "#15803D", 14)}${lbl("seu tempo", 122, "#15803D", 14)}` }
+    /* ---- Vida de professor ---- */
+    sextou: { nome: "Sextou", svg: `${rosto()}
+      <path d="M30 50h68" stroke="#1E2230" stroke-width="4" stroke-linecap="round"/>
+      <path d="M31 50h28v8a11 11 0 0 1-11 11h-6a11 11 0 0 1-11-11z" fill="#1E2230"/><path d="M69 50h28v8a11 11 0 0 1-11 11h-6a11 11 0 0 1-11-11z" fill="#1E2230"/>
+      <path d="M37 55l6-3M75 55l6-3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".6"/>
+      <path d="M42 82q22 22 44 0z" fill="#7A2E12"/><path d="M48 84q16 6 32 0" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      <rect x="104" y="18" width="7" height="12" rx="2" fill="#4C7DFF" transform="rotate(28 107 24)"/><rect x="14" y="26" width="7" height="12" rx="2" fill="#FF5C8A" transform="rotate(-24 17 32)"/>
+      <circle cx="110" cy="96" r="4" fill="#22B07D"/><circle cx="18" cy="100" r="3.5" fill="#9B6BFF"/>${faisca(100, 44, 6, "#FF8A3D")}` },
+    cansado: { nome: "Cansado", svg: `${rosto("#FFE7A3", "#F6C24E", "#DE9325")}
+      <path d="M36 58q9 7 18 0M74 58q9 7 18 0" stroke="#3A2412" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M38 67q7 4 14 0M76 67q7 4 14 0" stroke="#B9762A" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>
+      <ellipse cx="64" cy="90" rx="10" ry="13" fill="#6B2A10"/><ellipse cx="64" cy="96" rx="7" ry="4.5" fill="#E0605A"/>
+      <path d="M92 14h13l-13 13h13M108 32h8l-8 8h8" stroke="#6D7AA8" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` },
+    cafe: { nome: "Café", svg: `<defs><linearGradient id="@c" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2F6E8E"/><stop offset=".55" stop-color="#3F8FB5"/><stop offset="1" stop-color="#235A75"/></linearGradient></defs>
+      <ellipse cx="60" cy="110" rx="44" ry="8" fill="#D5DBE6"/>
+      <path d="M88 60h6a14 14 0 0 1 0 28h-8" stroke="#2A6584" stroke-width="8" fill="none"/>
+      <path d="M26 50h66v38a20 20 0 0 1-20 20H46a20 20 0 0 1-20-20z" fill="url(#@c)"/>
+      <ellipse cx="59" cy="50" rx="33" ry="7" fill="#2A6584"/><ellipse cx="59" cy="51" rx="28" ry="5" fill="#5A3420"/>
+      <rect x="34" y="60" width="6" height="34" rx="3" fill="#fff" opacity=".22"/>
+      <path d="M46 38c-6-8 6-12 0-22M60 36c-6-8 6-12 0-22M74 38c-6-8 6-12 0-22" stroke="#AEB7C9" stroke-width="4" fill="none" stroke-linecap="round" opacity=".8"/>` },
+    pilha: { nome: "Pilha de correção", svg: `<defs>${papel}</defs>
+      ${[0, 1, 2, 3, 4, 5, 6].map(i => `<rect x="${24 + (i % 2 ? 4 : -2) + (i === 6 ? 3 : 0)}" y="${100 - i * 11}" width="70" height="11" rx="2" fill="url(#@p)" stroke="#BCC5D6" stroke-width="1.6" transform="rotate(${[-2, 2, -3, 1, 3, -2, 4][i]} 60 ${105 - i * 11})"/>`).join("")}
+      <g transform="rotate(-38 92 34)"><rect x="70" y="30" width="48" height="9" rx="4.5" fill="#E5484D"/><path d="M70 30l-10 4.5 10 4.5z" fill="#F3D3B0"/><path d="M63 33l-3 1.5 3 1.5z" fill="#333"/><rect x="104" y="30" width="5" height="9" fill="#B9363A"/></g>` },
+    burocracia: { nome: "Burocracia", svg: `<defs>${papel}</defs>
+      <rect x="22" y="30" width="66" height="84" rx="6" fill="url(#@p)" stroke="#BCC5D6" stroke-width="1.6" transform="rotate(-6 55 72)"/>
+      <rect x="28" y="24" width="66" height="84" rx="6" fill="url(#@p)" stroke="#BCC5D6" stroke-width="1.6"/>
+      ${linhas(38, 38, 44, 4, 9)}
+      <circle cx="68" cy="88" r="14" fill="none" stroke="#E5484D" stroke-width="3.5" opacity=".85"/><path d="M61 88l5 5 9-10" stroke="#E5484D" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+      <path d="M88 20v18a7 7 0 0 1-14 0V16a4 4 0 0 1 8 0v20" stroke="#8A94A8" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <g transform="rotate(14 100 70)"><rect x="92" y="44" width="16" height="22" rx="8" fill="#8B5A2B"/><rect x="88" y="64" width="24" height="8" rx="2" fill="#6B4320"/><rect x="85" y="72" width="30" height="9" rx="2" fill="#E5484D"/></g>` },
+    respira: { nome: "Respira", svg: `${rosto("#FFF0B8", "#FFD45C", "#F2A72B")}
+      <path d="M36 58q9 7 18 0M74 58q9 7 18 0" stroke="#3A2412" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M50 84q14 9 28 0" stroke="#3A2412" stroke-width="4" fill="none" stroke-linecap="round"/>${bochechas}
+      <path d="M100 20c8 2 14 8 14 16M106 46h14a5 5 0 1 0-5-5M96 56h20" stroke="#6CC3D9" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      <path d="M14 30c10-10 22-6 22 4-10 2-18 2-22-4z" fill="#3FB37F"/>` },
+    motivado: { nome: "Motivado", svg: `<defs><linearGradient id="@r" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C8D1E6"/></linearGradient>
+      <linearGradient id="@q" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE066"/><stop offset="1" stop-color="#FF6A3D"/></linearGradient></defs>
+      <path d="M22 118l14-14M12 96l12-6M32 124l6-12" stroke="#B9C3D8" stroke-width="4" stroke-linecap="round"/>
+      <g transform="rotate(45 64 64)"><path d="M52 82h24c0 16-6 26-12 34-6-8-12-18-12-34z" fill="url(#@q)"/>
+      <path d="M64 10c17 13 23 34 18 64H46c-5-30 1-51 18-64z" fill="url(#@r)"/>
+      <path d="M46 60l-14 20h16zM82 60l14 20H80z" fill="#E5484D"/><rect x="58" y="70" width="12" height="12" rx="3" fill="#E5484D"/>
+      <circle cx="64" cy="44" r="10" fill="#2447C6" stroke="#fff" stroke-width="4"/><circle cx="61" cy="41" r="3" fill="#fff" opacity=".6"/></g>
+      ${faisca(104, 20, 8)}${faisca(20, 40, 5, "#FF8A3D")}` },
+    ferias: { nome: "Férias", svg: `<defs>${fundo("#7FD3F7", "#D8F3FF")}<clipPath id="@k"><rect x="8" y="8" width="112" height="112" rx="28"/></clipPath></defs>
+      <g clip-path="url(#@k)"><rect x="8" y="8" width="112" height="112" fill="url(#@b)"/>
+      <circle cx="92" cy="34" r="14" fill="#FFC83D"/><circle cx="92" cy="34" r="20" fill="#FFC83D" opacity=".25"/>
+      <path d="M8 86q14-6 28 0t28 0 28 0 28 0v34H8z" fill="#2E9BD6"/><path d="M8 100q14-5 28 0t28 0 28 0 28 0v20H8z" fill="#F5D9A6"/>
+      <path d="M48 104 60 52" stroke="#7A5230" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M26 56a36 26 0 0 1 70 10z" fill="#E5484D"/><path d="M46 52a18 26 0 0 1 32 11z" fill="#fff"/></g>` },
+    /* ---- Reações ---- */
+    joinha: { nome: "Joinha", svg: `<defs><linearGradient id="@h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD9B5"/><stop offset="1" stop-color="#E9A97A"/></linearGradient></defs>
+      <rect x="18" y="54" width="24" height="58" rx="6" fill="#2447C6"/>
+      <path d="M56 18c6-4 14 0 14 8v24h26a10 10 0 0 1 9 13l-9 34a12 12 0 0 1-12 9H40V58l12-22z" fill="url(#@h)"/>
+      <path d="M78 62h20M76 76h18M74 90h16" stroke="#C98A5E" stroke-width="3" stroke-linecap="round" opacity=".7"/>${faisca(108, 22, 7)}${faisca(28, 30, 5, "#4C7DFF")}` },
+    rindo: { nome: "Rindo", svg: `${rosto()}
+      <path d="M34 54q9-9 18 0M76 54q9-9 18 0" stroke="#3A2412" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M36 74h56q-4 30-28 30t-28-30z" fill="#6B2A10"/><path d="M40 75h48q-1 7-4 10H44q-3-3-4-10z" fill="#fff"/><ellipse cx="64" cy="97" rx="12" ry="5" fill="#E0605A"/>
+      <path d="M28 58c-8 6-10 16-4 20 5 3 10-3 8-12z" fill="#5CC8F2"/><path d="M100 58c8 6 10 16 4 20-5 3-10-3-8-12z" fill="#5CC8F2"/>` },
+    amei: { nome: "Amei", svg: `${rosto()}
+      <path d="M44 66c-10-6-14-12-12-17 2-5 9-5 12 0 3-5 10-5 12 0 2 5-2 11-12 17zM84 66c-10-6-14-12-12-17 2-5 9-5 12 0 3-5 10-5 12 0 2 5-2 11-12 17z" fill="#E8344E"/>
+      <path d="M44 82q20 20 40 0z" fill="#6B2A10"/>${bochechas}` },
+    uau: { nome: "Uau", svg: `${rosto()}
+      <path d="M36 40q8-6 16-2M76 38q8-4 16 2" stroke="#3A2412" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      <circle cx="46" cy="58" r="9" fill="#fff"/><circle cx="82" cy="58" r="9" fill="#fff"/>${olhoAberto(46, 58)}${olhoAberto(82, 58)}
+      <ellipse cx="64" cy="89" rx="9" ry="12" fill="#6B2A10"/>` },
+    pensando: { nome: "Pensando", svg: `${rosto()}
+      <path d="M36 42l16 4M76 38q8-6 16 0" stroke="#3A2412" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      ${olhoAberto(45, 58)}${olhoAberto(82, 56)}<path d="M54 86q10-4 22 2" stroke="#3A2412" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <circle cx="104" cy="22" r="9" fill="#fff" stroke="#C9D2E3" stroke-width="2"/><circle cx="114" cy="40" r="4.5" fill="#fff" stroke="#C9D2E3" stroke-width="2"/>
+      <circle cx="99" cy="22" r="1.8" fill="#8A94A8"/><circle cx="104" cy="22" r="1.8" fill="#8A94A8"/><circle cx="109" cy="22" r="1.8" fill="#8A94A8"/>` },
+    obrigado: { nome: "Obrigado", svg: `<defs><linearGradient id="@h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF7A93"/><stop offset="1" stop-color="#D91E48"/></linearGradient></defs>
+      <path d="M64 112C14 80 12 40 38 30c12-4 22 2 26 12 4-10 14-16 26-12 26 10 24 50-26 82z" fill="url(#@h)"/>
+      <path d="M34 48c2-8 10-12 18-8" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>
+      ${faisca(108, 22, 8)}${faisca(20, 22, 5, "#FF8A3D")}${faisca(112, 80, 4, "#FFC83D")}` },
+    /* ---- Elogios ---- */
+    nota10: { nome: "Nota 10", svg: `<defs>${papel}</defs>
+      <rect x="22" y="14" width="78" height="100" rx="6" fill="url(#@p)" stroke="#BCC5D6" stroke-width="1.6" transform="rotate(-5 61 64)"/>
+      <g transform="rotate(-5 61 64)">${linhas(32, 28, 56, 3, 9)}
+      <path d="M34 84c0-14 14-22 30-22 18 0 28 8 28 19 0 12-14 20-30 20-14 0-26-6-28-16" fill="none" stroke="#E5484D" stroke-width="3.4" stroke-linecap="round"/>
+      <path d="M48 76l6-5v22" stroke="#E5484D" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="71" cy="82" rx="8" ry="11" fill="none" stroke="#E5484D" stroke-width="5"/></g>
+      ${faisca(108, 20, 7)}` },
+    arrasou: { nome: "Arrasou", svg: `<defs><linearGradient id="@t" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFE08A"/><stop offset=".5" stop-color="#FFC22E"/><stop offset="1" stop-color="#D98A0B"/></linearGradient></defs>
+      <path d="M38 26H22a14 14 0 0 0 18 26M90 26h16a14 14 0 0 1-18 26" stroke="#E0A11B" stroke-width="7" fill="none" stroke-linecap="round"/>
+      <path d="M36 18h56v30a28 28 0 0 1-56 0z" fill="url(#@t)"/><rect x="58" y="74" width="12" height="14" fill="#D98A0B"/>
+      <rect x="40" y="88" width="48" height="10" rx="3" fill="#E0A11B"/><rect x="34" y="98" width="60" height="14" rx="4" fill="#5B4636"/>
+      <path d="M64 30l4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z" fill="#fff" opacity=".85"/>
+      <rect x="44" y="24" width="6" height="26" rx="3" fill="#fff" opacity=".4"/>${faisca(112, 14, 7)}${faisca(14, 70, 5, "#4C7DFF")}` },
+    parabens: { nome: "Parabéns", svg: `<defs><linearGradient id="@t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9B6BFF"/><stop offset="1" stop-color="#5B3DD6"/></linearGradient></defs>
+      <path d="M16 114 38 52l38 38z" fill="url(#@t)"/><path d="M26 86l14 14M32 70l24 24" stroke="#FFC83D" stroke-width="5" stroke-linecap="round"/>
+      <path d="M56 46c4-14 14-16 16-28M74 62c12-4 18 2 30-6M66 52c10-12 22-10 30-20" stroke="#FF5C8A" stroke-width="3.6" fill="none" stroke-linecap="round"/>
+      <rect x="86" y="16" width="7" height="12" rx="2" fill="#22B07D" transform="rotate(30 89 22)"/><rect x="104" y="70" width="7" height="12" rx="2" fill="#4C7DFF" transform="rotate(-20 107 76)"/>
+      <circle cx="58" cy="24" r="4" fill="#FFC83D"/><circle cx="112" cy="44" r="4" fill="#FF8A3D"/><circle cx="90" cy="92" r="3.5" fill="#FFC83D"/>${faisca(40, 30, 6, "#4C7DFF")}` },
+    /* ---- Sala de aula ---- */
+    presente: { nome: "Presente", svg: `<defs><linearGradient id="@h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD9B5"/><stop offset="1" stop-color="#E9A97A"/></linearGradient></defs>
+      <g fill="url(#@h)"><rect x="38" y="26" width="13" height="50" rx="6.5"/><rect x="53" y="16" width="13" height="58" rx="6.5"/><rect x="68" y="20" width="13" height="56" rx="6.5"/><rect x="83" y="32" width="12" height="46" rx="6"/>
+      <rect x="38" y="54" width="57" height="56" rx="22"/><rect x="22" y="58" width="13" height="38" rx="6.5" transform="rotate(-34 28 77)"/></g>
+      <path d="M50 92q14 8 30 0" stroke="#C98A5E" stroke-width="3" fill="none" stroke-linecap="round" opacity=".6"/>
+      <path d="M18 24l10 8M14 44h12M104 14l-6 10" stroke="#4C7DFF" stroke-width="4" stroke-linecap="round"/>` },
+    dever: { nome: "Tarefa feita", svg: `<defs>${papel}</defs><rect x="26" y="14" width="76" height="104" rx="10" fill="#9A6A3A"/>
+      <rect x="34" y="26" width="60" height="84" rx="4" fill="url(#@p)"/><rect x="50" y="8" width="28" height="14" rx="5" fill="#8A94A8"/>
+      ${[40, 60, 80].map(y => `<rect x="42" y="${y}" width="12" height="12" rx="3" fill="#DDF5EA"/><path d="M44 ${y + 6}l3 3.5 6-7" stroke="#16A34A" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>${linhas(60, y + 4, 26, 1, 0)}`).join("")}` },
+    boaprova: { nome: "Boa prova", svg: `<g transform="rotate(-40 64 64)"><rect x="20" y="54" width="70" height="20" fill="#FFC83D"/><rect x="20" y="54" width="70" height="6" fill="#FFE08A"/>
+      <path d="M90 54l22 10-22 10z" fill="#F3D3B0"/><path d="M106 61l6 3-6 3z" fill="#333"/><rect x="12" y="54" width="10" height="20" fill="#B8C1D1"/><rect x="2" y="54" width="12" height="20" rx="4" fill="#FF8FA3"/></g>
+      <g transform="translate(86 86)" fill="#22B07D">${[0, 90, 180, 270].map(a => `<path d="M0 0c-4-12 10-16 10-6 10 0 6 14-6 10z" transform="rotate(${a})"/>`).join("")}<path d="M2 4q6 10 2 20" stroke="#15803D" stroke-width="3" fill="none" stroke-linecap="round"/></g>` },
+    revisao: { nome: "Revisão", svg: `<defs>${papel}</defs><rect x="18" y="20" width="80" height="96" rx="6" fill="url(#@p)" stroke="#BCC5D6" stroke-width="1.6"/>
+      ${linhas(28, 34, 60, 6, 12)}<rect x="26" y="57" width="52" height="10" rx="2" fill="#FFE14D" opacity=".75"/><rect x="26" y="81" width="38" height="10" rx="2" fill="#FFE14D" opacity=".75"/>
+      <g transform="rotate(38 92 54)"><rect x="80" y="10" width="22" height="56" rx="5" fill="#FFD400"/><rect x="80" y="10" width="22" height="16" rx="5" fill="#2A2F3A"/><path d="M82 66h18l-4 12h-10z" fill="#E9EDF5"/><path d="M86 78h10l-2 6h-6z" fill="#FFE14D"/></g>` },
+    estudar: { nome: "Estudar", svg: `<defs><linearGradient id="@l" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#E3E8F2"/></linearGradient></defs>
+      <path d="M10 46c20-8 38-6 54 4v62c-16-10-34-12-54-4z" fill="#2447C6"/><path d="M118 46c-20-8-38-6-54 4v62c16-10 34-12 54-4z" fill="#1B3797"/>
+      <path d="M16 44c18-6 34-4 48 6v58c-14-10-30-12-48-6z" fill="url(#@l)"/><path d="M112 44c-18-6-34-4-48 6v58c14-10 30-12 48-6z" fill="url(#@l)"/>
+      <path d="M24 58q16-4 32 4M24 70q16-4 32 4M72 62q16-8 32-4M72 74q16-8 32-4" stroke="#C9D2E3" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <g fill="none" stroke="#2A2F3A" stroke-width="4"><circle cx="46" cy="30" r="12"/><circle cx="82" cy="30" r="12"/><path d="M58 30q6-5 12 0"/></g>` },
+    eureca: { nome: "Ideia", svg: `<defs><radialGradient id="@l" cx=".45" cy=".35" r=".7"><stop offset="0" stop-color="#FFF6C2"/><stop offset=".6" stop-color="#FFD84D"/><stop offset="1" stop-color="#F2A81F"/></radialGradient></defs>
+      <path d="M64 8v10M24 26l7 7M104 26l-7 7M10 62h10M108 62h10" stroke="#FFC83D" stroke-width="5" stroke-linecap="round"/>
+      <path d="M64 22a34 34 0 0 0-20 61c4 3 6 7 6 11h28c0-4 2-8 6-11a34 34 0 0 0-20-61z" fill="url(#@l)"/>
+      <path d="M56 92V74l8 6 8-6v18" stroke="#C47A12" stroke-width="3" fill="none" stroke-linejoin="round"/>
+      <rect x="50" y="94" width="28" height="9" rx="3" fill="#8A94A8"/><rect x="52" y="104" width="24" height="8" rx="3" fill="#6F798D"/><rect x="58" y="113" width="12" height="5" rx="2.5" fill="#5A6376"/>
+      <path d="M48 40a20 20 0 0 1 12-8" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" opacity=".7"/>` },
+    /* ---- Dia a dia ---- */
+    bomdia: { nome: "Bom dia", svg: `<defs>${fundo("#FFB37A", "#FFE6C7")}<clipPath id="@k"><rect x="8" y="8" width="112" height="112" rx="28"/></clipPath></defs>
+      <g clip-path="url(#@k)"><rect x="8" y="8" width="112" height="112" fill="url(#@b)"/>
+      <g stroke="#FFF3D6" stroke-width="5" stroke-linecap="round"><path d="M64 30v12M34 44l8 8M94 44l-8 8M20 72h12M96 72h12"/></g>
+      <circle cx="64" cy="80" r="26" fill="#FFD84D"/><path d="M8 84q28-12 56 0t56 0v36H8z" fill="#5BB98B"/><path d="M8 98q30-10 60 0t52 0v22H8z" fill="#3E9C70"/></g>` },
+    reuniao: { nome: "Reunião", svg: `<rect x="14" y="20" width="100" height="70" rx="8" fill="#2A2F3A"/>
+      ${[[20, 26, "#4C7DFF"], [66, 26, "#22B07D"], [20, 58, "#FF8A3D"], [66, 58, "#9B6BFF"]].map(([x, y, c]) => `<rect x="${x}" y="${y}" width="42" height="28" rx="4" fill="${c}" opacity=".9"/><circle cx="${x + 21}" cy="${y + 11}" r="6" fill="#fff" opacity=".9"/><path d="M${x + 10} ${y + 28}a11 9 0 0 1 22 0z" fill="#fff" opacity=".9"/>`).join("")}
+      <path d="M4 96h120l-8 12H12z" fill="#B8C1D1"/><rect x="52" y="96" width="24" height="4" rx="2" fill="#8A94A8"/>` },
+    /* ---- Disciplinas ---- */
+    pi: { nome: "Matemática", svg: `<rect x="10" y="16" width="108" height="84" rx="8" fill="#9A6A3A"/><rect x="16" y="22" width="96" height="72" rx="4" fill="#2F5D4A"/>
+      <g stroke="#F4F7F2" stroke-width="3.4" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".92">
+      <path d="M28 44h22M34 44v20M44 44v16q0 4 4 4"/><path d="M60 84l14-26 14 26z"/><circle cx="96" cy="44" r="10"/><path d="M96 44h10"/><path d="M28 80h20M38 74v12"/></g>
+      <rect x="84" y="100" width="22" height="6" rx="3" fill="#fff"/><rect x="24" y="100" width="12" height="6" rx="3" fill="#FFE14D"/>` },
+    ciencia: { nome: "Ciências", svg: `<defs><linearGradient id="@l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5BE0A8"/><stop offset="1" stop-color="#159A69"/></linearGradient></defs>
+      <path d="M50 14h28M54 14v34L24 100a10 10 0 0 0 9 15h62a10 10 0 0 0 9-15L74 48V14" fill="#EAF6FF" fill-opacity=".85" stroke="#9FB2CC" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M38 78h52l14 22a10 10 0 0 1-9 15H33a10 10 0 0 1-9-15z" fill="url(#@l)"/>
+      <circle cx="54" cy="96" r="5" fill="#fff" opacity=".7"/><circle cx="72" cy="88" r="3.5" fill="#fff" opacity=".7"/><circle cx="66" cy="104" r="3" fill="#fff" opacity=".6"/>
+      <circle cx="94" cy="36" r="6" fill="none" stroke="#5BE0A8" stroke-width="3"/><circle cx="104" cy="20" r="4" fill="none" stroke="#5BE0A8" stroke-width="3"/>` },
+    /* ---- Inclusão ---- */
+    inclusao: { nome: "Inclusão", svg: `<defs><linearGradient id="@l" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E5484D"/><stop offset=".2" stop-color="#FF8A3D"/><stop offset=".4" stop-color="#FFC83D"/><stop offset=".6" stop-color="#22B07D"/><stop offset=".8" stop-color="#4C7DFF"/><stop offset="1" stop-color="#9B6BFF"/></linearGradient></defs>
+      <path d="M64 64c-12-16-22-24-34-24a24 24 0 0 0 0 48c12 0 22-8 34-24s22-24 34-24a24 24 0 0 1 0 48c-12 0-22-8-34-24z" fill="none" stroke="url(#@l)" stroke-width="13" stroke-linecap="round"/>
+      ${faisca(108, 24, 6)}${faisca(20, 104, 5, "#9B6BFF")}` },
+    tempo: { nome: "Cada um no seu tempo", svg: `<defs><linearGradient id="@a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD98A"/><stop offset="1" stop-color="#E9A23B"/></linearGradient></defs>
+      <rect x="28" y="10" width="72" height="12" rx="5" fill="#8B5A2B"/><rect x="28" y="106" width="72" height="12" rx="5" fill="#8B5A2B"/>
+      <path d="M38 22h52c0 22-18 30-18 42s18 20 18 42H38c0-22 18-30 18-42S38 44 38 22z" fill="#EAF6FF" fill-opacity=".9" stroke="#B8C6DA" stroke-width="3"/>
+      <path d="M48 36h32c-4 10-16 16-16 22-0-6-12-12-16-22z" fill="url(#@a)"/><path d="M64 64v26" stroke="#E9A23B" stroke-width="2.5" stroke-dasharray="3 4"/>
+      <path d="M44 104c4-12 14-16 20-16s16 4 20 16z" fill="url(#@a)"/>` }
   };
-  const PACOTES = [
-    { nome: "Vida de professor", ids: ["sextou", "cansado", "motivado", "pilha", "burocracia", "respira", "cafe", "ferias"] },
-    { nome: "Elogios", ids: ["nota10", "arrasou", "parabens", "obrigado"] },
-    { nome: "Sala de aula", ids: ["presente", "dever", "boaprova", "revisao", "estudar"] },
-    { nome: "Dia a dia", ids: ["bomdia", "cafe", "reuniao", "ferias"] },
-    { nome: "Disciplinas", ids: ["pi", "ciencia", "eureca"] },
-    { nome: "Inclusão", ids: ["inclusao", "tempo"] }
-  ];
+  const ORDEM = ["sextou", "cansado", "cafe", "pilha", "burocracia", "respira", "motivado", "ferias", "joinha", "rindo", "amei", "uau", "pensando", "obrigado",
+    "nota10", "arrasou", "parabens", "presente", "dever", "boaprova", "revisao", "estudar", "eureca", "bomdia", "reuniao", "pi", "ciencia", "inclusao", "tempo"];
+  const PACOTES = [{ nome: "Figurinhas", ids: ORDEM }];
+  let seqFig = 0;
   function figurinha(id, tam) {
     const f = F[id]; if (!f) return "";
-    return `<svg class="fig" viewBox="0 0 128 128" width="${tam || 128}" height="${tam || 128}" role="img" aria-label="Figurinha: ${f.nome}"><g filter="drop-shadow(0 2px 2px rgba(0,0,0,.18))">${f.svg}</g></svg>`;
+    const u = "fg" + (++seqFig).toString(36);
+    return `<svg class="fig" viewBox="0 0 128 128" width="${tam || 128}" height="${tam || 128}" role="img" aria-label="Figurinha: ${f.nome}"><g filter="drop-shadow(0 2px 3px rgba(20,30,60,.18))">${f.svg.replace(/@/g, u)}</g></svg>`;
   }
 
   /* ================= Filtro de linguagem ================= */
@@ -256,5 +204,5 @@
     return FRASES.some(f => frase.includes(" " + f + " "));
   }
 
-  window.SOC_EXTRAS = { F, PACOTES, figurinha, ofensivo };
+  window.SOC_EXTRAS = { F, PACOTES, ORDEM, figurinha, ofensivo };
 })();

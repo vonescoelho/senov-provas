@@ -1,5 +1,4 @@
-/* ChatMil — ferramentas de aula: arquivos (PDF, DOCX, imagens, vídeos), apresentação em tela cheia/TV,
-   videochamada, músicas e vídeos por conteúdo e Vitrine educativa. Depende de social.js. */
+/* ChatMil — músicas e vídeos por conteúdo (para a aula ou a avaliação) e Vitrine educativa. Depende de social.js. */
 (function () {
   "use strict";
   if (!window.SOCIAL || !window.SOCIAL.ext) return;
@@ -32,202 +31,6 @@
   };
   const abrirUrl = u => { try { window.open(u, "_blank", "noopener"); } catch (e) { location.href = u; } };
   const tamanho = n => n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + " KB" : (n / 1048576).toFixed(1).replace(".", ",") + " MB";
-
-  /* ================= Videochamada (Jitsi Meet, gratuito) ================= */
-  function salaDe(chatId) { return "ChatMil-" + String(chatId).replace(/[^A-Za-z0-9]/g, "").slice(0, 10) + "-" + Math.random().toString(36).slice(2, 8); }
-  function abrirSala(sala) {
-    const nome = (SO.eu && SO.eu.nome) || "";
-    abrirUrl(`https://meet.jit.si/${encodeURIComponent(sala)}#userInfo.displayName=${encodeURIComponent(JSON.stringify(nome))}`);
-  }
-  X.chatBotoes = c => `<button class="cs-ico-bt" data-s="vc-iniciar" data-id="${esc(c.id)}" aria-label="Videochamada">${KI.video}</button>`;
-  X.acoes["vc-iniciar"] = el => window.abrirSheet(`<div class="sheet-h"><h2>Videochamada</h2></div>
-    <p class="cs-just">Todos da conversa recebem um convite para entrar. A chamada abre no <b>Jitsi Meet</b>, gratuito e sem anúncios. Na primeira vez, quem abre a sala pode precisar entrar com uma conta Google.</p>
-    <button class="btn primary cs-grande" data-s="vc-criar" data-id="${esc(el.dataset.id)}">${KI.video} Iniciar videochamada</button>`);
-  X.acoes["vc-criar"] = async el => {
-    const sala = salaDe(el.dataset.id); window.fecharSheet();
-    const ok = await enviarMsg(el.dataset.id, { chamada: sala, prev: "Videochamada" });
-    if (ok !== false) abrirSala(sala);
-  };
-  X.acoes["vc-entrar"] = el => abrirSala(el.dataset.v);
-
-  /* ================= Arquivos nas conversas ================= */
-  const LIMITE = 20 * 1048576, PARTE = 700 * 1024;
-  const TIPOS = ".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.txt,image/*,video/*,audio/*";
-  function tipoPorNome(n) {
-    const e = (n.split(".").pop() || "").toLowerCase();
-    return { pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", doc: "application/msword",
-      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation", xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      txt: "text/plain", mp4: "video/mp4", mp3: "audio/mpeg" }[e] || "application/octet-stream";
-  }
-  function genero(a) {
-    const t = a.tipo || "", n = (a.nome || "").toLowerCase();
-    if (t.startsWith("image/")) return "img"; if (t.startsWith("video/")) return "video"; if (t.startsWith("audio/")) return "audio";
-    if (t === "application/pdf" || n.endsWith(".pdf")) return "pdf";
-    if (/wordprocessingml/.test(t) || n.endsWith(".docx")) return "docx";
-    return "outro";
-  }
-  const COR = { img: "#15803D", video: "#7C3AED", audio: "#0E7490", pdf: "#DC2626", docx: "#2447C6", outro: "#64748B" };
-  const ROTULO = { img: "Imagem", video: "Vídeo", audio: "Áudio", pdf: "PDF", docx: "Word", outro: "Arquivo" };
-  async function comprimirImg(file) {
-    const url = URL.createObjectURL(file);
-    try {
-      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
-      const M = 1800, k = Math.min(1, M / Math.max(img.naturalWidth, img.naturalHeight));
-      const cv = document.createElement("canvas"); cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
-      cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
-      return await new Promise(r => cv.toBlob(r, "image/jpeg", 0.85));
-    } finally { URL.revokeObjectURL(url); }
-  }
-  function progresso(f, nome) {
-    let el = $("#cs-up");
-    if (f == null) { if (el) el.remove(); return; }
-    if (!el) { el = document.createElement("div"); el.id = "cs-up"; el.className = "cs-up"; document.body.appendChild(el); }
-    el.innerHTML = `<span>Enviando ${esc(nome)}…</span><i style="width:${Math.round(f * 100)}%"></i>`;
-  }
-  async function enviarArquivo(chatId, file) {
-    let blob = file, nome = (file.name || "arquivo").slice(0, 120), tipo = file.type || tipoPorNome(file.name || "");
-    if (ofensivo(nome)) return toast("O nome do arquivo tem palavras não permitidas.");
-    if (/^image\/(jpeg|png|webp|heic|heif)/.test(tipo)) { try { blob = await comprimirImg(file); tipo = "image/jpeg"; nome = nome.replace(/\.\w+$/, "") + ".jpg"; } catch (e) { } }
-    if (blob.size > LIMITE) return toast(`Arquivo grande demais (máximo ${LIMITE / 1048576} MB). Para vídeos longos, envie o link do YouTube ou do Drive.`);
-    const ref = fb.doc(C("arquivos")), n = Math.max(1, Math.ceil(blob.size / PARTE));
-    progresso(0, nome);
-    try {
-      await fb.setDoc(ref, { dono: eu(), chatId, nome, tipo, tamanho: blob.size, partes: n, criadoEm: TS() });
-      const buf = new Uint8Array(await blob.arrayBuffer());
-      for (let i = 0; i < n; i++) {
-        await fb.setDoc(D("arquivos", ref.id, "partes", String(i).padStart(4, "0")), { d: fb.Bytes.fromUint8Array(buf.subarray(i * PARTE, (i + 1) * PARTE)) });
-        progresso((i + 1) / n, nome);
-      }
-      CACHE.set(ref.id, blob);
-      await enviarMsg(chatId, { arquivo: { id: ref.id, nome, tipo, tamanho: blob.size }, prev: "Arquivo: " + nome });
-    } catch (e) { console.warn(e); toast(msgErro(e)); }
-    progresso(null);
-  }
-  const CACHE = new Map();
-  async function obterArquivo(a) {
-    if (CACHE.has(a.id)) return CACHE.get(a.id);
-    const s = await fb.getDocs(C("arquivos", a.id, "partes"));
-    const partes = s.docs.slice().sort((x, y) => x.id.localeCompare(y.id)).map(d => d.data().d.toUint8Array());
-    const blob = new Blob(partes, { type: a.tipo || "application/octet-stream" });
-    CACHE.set(a.id, blob); return blob;
-  }
-  X.composerBotoes = c => `<button type="button" class="cs-ico-bt" data-s="arq-escolher" data-id="${esc(c.id)}" aria-label="Enviar arquivo, foto ou vídeo">${KI.clipe}</button>`;
-  X.acoes["arq-escolher"] = el => {
-    const inp = document.createElement("input"); inp.type = "file"; inp.accept = TIPOS; inp.multiple = true;
-    inp.onchange = async () => { for (const f of inp.files) await enviarArquivo(el.dataset.id, f); };
-    inp.click();
-  };
-  const ACHADOS = {};
-  function acharArq(id) { return ACHADOS[id]; }
-  X.msg = (m, o) => {
-    const cls = `cs-m ${o.meu ? "eu" : ""} ${o.seq ? "seq" : ""}`;
-    if (m.chamada) return `<div class="${cls}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-cmsg">${o.nome}
-      <div class="cs-cmsg-l"><span class="cs-cmsg-ic" style="--c:#7C3AED">${KI.video}</span><span><b>Videochamada</b><small>${o.meu ? "Você iniciou" : "Convite para entrar"}</small></span></div>
-      <button class="btn sm primary" data-s="vc-entrar" data-v="${esc(m.chamada)}">Entrar na chamada</button><span class="cs-h">${o.hr}</span></div></div>`;
-    const a = m.arquivo; ACHADOS[a.id] = a;
-    const g = genero(a), apres = ["img", "video", "pdf", "docx", "audio"].includes(g);
-    return `<div class="${cls}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-cmsg">${o.nome}
-      <div class="cs-cmsg-l"><span class="cs-cmsg-ic" style="--c:${COR[g]}">${g === "img" ? KI.img : g === "video" ? KI.play : g === "audio" ? KI.musica : KI.arq}</span>
-        <span><b>${esc(a.nome)}</b><small>${ROTULO[g]} · ${tamanho(a.tamanho || 0)}</small></span></div>
-      <div class="row cs-cmsg-bt">${apres ? `<button class="btn sm primary" data-s="arq-apresentar" data-v="${esc(a.id)}">${g === "audio" ? "Ouvir" : g === "video" ? "Assistir" : "Apresentar"}</button>` : ""}
-        <button class="btn sm" data-s="arq-abrir" data-v="${esc(a.id)}">${KI.baixar} Salvar</button></div><span class="cs-h">${o.hr}</span></div></div>`;
-  };
-  X.acoes["arq-abrir"] = async el => {
-    const a = acharArq(el.dataset.v); if (!a) return;
-    try {
-      toast("Preparando o arquivo…");
-      const blob = await obterArquivo(a);
-      if (typeof S !== "undefined" && S.dl) await S.dl.save({ filename: a.nome, data: blob });
-      else { const u = URL.createObjectURL(blob), x = document.createElement("a"); x.href = u; x.download = a.nome; x.click(); setTimeout(() => URL.revokeObjectURL(u), 60000); }
-    } catch (e) { console.warn(e); toast("Não foi possível abrir o arquivo."); }
-  };
-  X.acoes["arq-apresentar"] = el => { const a = acharArq(el.dataset.v); if (a) apresentar(a); };
-
-  /* ================= Apresentação (tela cheia, projetor e TV) ================= */
-  let pdfjsP = null, mammothP = null;
-  const base = () => new URL(".", location.href).href;
-  function carregarPdfjs() {
-    return pdfjsP || (pdfjsP = import(base() + "vendor/pdfjs/pdf.min.js").then(m => { m.GlobalWorkerOptions.workerSrc = base() + "vendor/pdfjs/pdf.worker.min.js"; return m; }));
-  }
-  function carregarScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
-  function carregarMammoth() { return mammothP || (mammothP = window.mammoth ? Promise.resolve(window.mammoth) : carregarScript(base() + "vendor/mammoth.browser.min.js").then(() => window.mammoth)); }
-  const AP = { el: null, url: null, pdf: null, pag: 1, total: 1, tipo: "", fonte: 1.25 };
-  function fecharApres() {
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
-    try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (e) { }
-    if (AP.el) AP.el.remove(); AP.el = null; if (AP.url) URL.revokeObjectURL(AP.url); AP.url = null; AP.pdf = null;
-    document.body.classList.remove("cs-apres-on");
-  }
-  async function apresentar(a) {
-    fecharApres();
-    const g = genero(a); AP.tipo = g; AP.pag = 1; AP.total = 1;
-    const el = document.createElement("div"); el.className = "cs-apres"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Apresentação");
-    el.innerHTML = `<div class="cs-ap-top"><button class="cs-ap-bt" data-s="ap-fechar" aria-label="Fechar">${KI.fechar}</button><b>${esc(a.nome)}</b>
-      <span class="cs-ap-pg" id="cs-ap-pg"></span>
-      ${g === "docx" ? `<button class="cs-ap-bt" data-s="ap-fonte" data-v="-1" aria-label="Diminuir letra">A−</button><button class="cs-ap-bt" data-s="ap-fonte" data-v="1" aria-label="Aumentar letra">A+</button>` : ""}
-      <button class="cs-ap-bt" data-s="ap-tv" aria-label="Mostrar na TV ou projetor">${KI.tv}</button><button class="cs-ap-bt" data-s="ap-cheia" aria-label="Tela cheia">${KI.cheia}</button></div>
-      <div class="cs-ap-palco" id="cs-ap-palco"><div class="spin"></div></div>
-      ${g === "pdf" ? `<button class="cs-ap-nav esq" data-s="ap-ant" aria-label="Página anterior">${KI.ant}</button><button class="cs-ap-nav dir" data-s="ap-prox" aria-label="Próxima página">${KI.prox}</button>` : ""}`;
-    document.body.appendChild(el); AP.el = el; document.body.classList.add("cs-apres-on");
-    let x0 = null;
-    el.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
-    el.addEventListener("touchend", e => { if (x0 == null || AP.tipo !== "pdf") return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 60) irPag(AP.pag + (dx < 0 ? 1 : -1)); x0 = null; });
-    const palco = $("#cs-ap-palco");
-    try {
-      const blob = await obterArquivo(a); if (AP.el !== el) return;
-      AP.url = URL.createObjectURL(blob);
-      if (g === "img") palco.innerHTML = `<img src="${AP.url}" alt="${esc(a.nome)}">`;
-      else if (g === "video") palco.innerHTML = `<video id="cs-ap-video" src="${AP.url}" controls autoplay playsinline></video>`;
-      else if (g === "audio") palco.innerHTML = `<div class="cs-ap-audio">${KI.musica}<b>${esc(a.nome)}</b><audio src="${AP.url}" controls autoplay></audio></div>`;
-      else if (g === "pdf") {
-        const pdfjs = await carregarPdfjs();
-        AP.pdf = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
-        AP.total = AP.pdf.numPages; palco.innerHTML = `<canvas id="cs-ap-canvas"></canvas>`; await irPag(1);
-      } else if (g === "docx") {
-        const mammoth = await carregarMammoth();
-        const r = await mammoth.convertToHtml({ arrayBuffer: await blob.arrayBuffer() });
-        palco.innerHTML = `<div class="cs-ap-doc" id="cs-ap-doc" style="font-size:${AP.fonte}rem">${r.value}</div>`;
-      }
-    } catch (e) { console.warn(e); palco.innerHTML = `<div class="cs-ap-erro"><b>Não foi possível mostrar este arquivo.</b><span>Use “Salvar” para abrir no aplicativo do aparelho.</span></div>`; }
-  }
-  async function irPag(n) {
-    if (!AP.pdf) return;
-    n = Math.max(1, Math.min(AP.total, n)); AP.pag = n;
-    const pg = $("#cs-ap-pg"); if (pg) pg.textContent = `${n} / ${AP.total}`;
-    const page = await AP.pdf.getPage(n), cv = $("#cs-ap-canvas"), palco = $("#cs-ap-palco"); if (!cv || !palco) return;
-    const v1 = page.getViewport({ scale: 1 }), esc2 = Math.min(palco.clientWidth / v1.width, palco.clientHeight / v1.height);
-    const dpr = Math.min(window.devicePixelRatio || 1, 2), vp = page.getViewport({ scale: esc2 * dpr });
-    cv.width = vp.width; cv.height = vp.height; cv.style.width = vp.width / dpr + "px"; cv.style.height = vp.height / dpr + "px";
-    await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
-  }
-  X.acoes["ap-fechar"] = fecharApres;
-  X.acoes["ap-ant"] = () => irPag(AP.pag - 1);
-  X.acoes["ap-prox"] = () => irPag(AP.pag + 1);
-  X.acoes["ap-fonte"] = el => { AP.fonte = Math.max(0.9, Math.min(2.6, AP.fonte + 0.15 * +el.dataset.v)); const d = $("#cs-ap-doc"); if (d) d.style.fontSize = AP.fonte + "rem"; };
-  X.acoes["ap-cheia"] = async () => {
-    try { if (document.fullscreenElement) await document.exitFullscreen(); else { await AP.el.requestFullscreen(); try { await screen.orientation.lock("landscape"); } catch (e) { } } } catch (e) { toast("Tela cheia indisponível neste aparelho."); }
-    setTimeout(() => irPag(AP.pag), 300);
-  };
-  X.acoes["ap-tv"] = async () => {
-    const v = $("#cs-ap-video");
-    if (v && v.remote && v.remote.prompt) { try { await v.remote.prompt(); return; } catch (e) { } }
-    window.abrirSheet(`<div class="sheet-h"><h2>Mostrar na TV ou no projetor</h2></div>
-      <ul class="cs-ul">
-        <li><b>TV sem fio (celular Android):</b> puxe a barra de notificações e toque em <b>Smart View</b> (Samsung) ou <b>Transmitir tela</b>. Escolha a TV. Depois toque em <b>Tela cheia</b> aqui.</li>
-        <li><b>Projetor ou TV com cabo:</b> ligue um cabo HDMI (ou adaptador USB-C para HDMI) e toque em <b>Tela cheia</b>.</li>
-        <li><b>Computador da escola:</b> abra o ChatMil pelo site, entre na sua conta e apresente em tela cheia.</li>
-        <li><b>Vídeos:</b> se a TV tiver Chromecast, o botão de TV do próprio vídeo envia direto para ela.</li>
-      </ul><button class="btn primary" data-s="fechar">Entendi</button>`);
-  };
-  document.addEventListener("keydown", e => {
-    if (!AP.el) return;
-    if (e.key === "Escape" && !document.fullscreenElement) fecharApres();
-    if (AP.tipo === "pdf" && (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ")) { e.preventDefault(); irPag(AP.pag + 1); }
-    if (AP.tipo === "pdf" && (e.key === "ArrowLeft" || e.key === "PageUp")) { e.preventDefault(); irPag(AP.pag - 1); }
-  });
-  window.addEventListener("resize", () => { if (AP.tipo === "pdf" && AP.el) irPag(AP.pag); });
-  const voltarAnt = window.SENOV_voltar;
-  window.SENOV_voltar = function () { if (AP.el) { fecharApres(); return true; } return voltarAnt ? voltarAnt() : false; };
 
   /* ================= Músicas e vídeos por conteúdo ================= */
   const R = (() => { try { return JSON.parse(localStorage.getItem("cs.rec") || "{}"); } catch (e) { return {}; } })();
@@ -386,7 +189,7 @@
       <button class="btn primary cs-grande">Publicar na vitrine</button></form>`;
   document.addEventListener("change", async e => {
     if (e.target.id === "vn-img" && e.target.files[0]) {
-      try { const b = await comprimirImg(e.target.files[0]); NV.foto = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); if (NV.foto.length > 190000) { NV.foto = null; toast("Imagem grande demais. Use outra menor."); } }
+      try { const b = await X.midia.comprimirImg(e.target.files[0], 1200); NV.foto = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(b); }); if (NV.foto.length > 190000) { NV.foto = null; toast("Imagem grande demais. Use outra menor."); } }
       catch (er) { toast("Não foi possível usar esta imagem."); }
     }
   });
@@ -411,42 +214,6 @@
 body.cs-5abas .nav-in{grid-template-columns:repeat(5,1fr);max-width:680px}
 body.cs-5abas .nav button{font-size:.7rem;padding-inline:2px}
 body.cs-5abas .nav .ico{padding:3px 12px}
-.cs-cmsg{min-width:230px;gap:8px}
-.cs-cmsg-l{display:flex;align-items:center;gap:10px}
-.cs-cmsg-l>span:last-child{display:flex;flex-direction:column;min-width:0}
-.cs-cmsg-l b{overflow-wrap:anywhere;line-height:1.25}
-.cs-cmsg-l small{opacity:.8;font-size:.8rem}
-.cs-cmsg-ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#fff;flex:none;background:var(--c)}
-.cs-m.eu .cs-cmsg-ic{background:#fff;color:var(--c)}
-.cs-cmsg-ic svg{width:22px;height:22px}
-.cs-cmsg .btn{align-self:flex-start}
-.cs-m.eu .cs-cmsg .btn:not(.primary){background:color-mix(in srgb,var(--primary-ink) 15%,transparent);color:var(--primary-ink);border-color:transparent}
-.cs-m.eu .cs-cmsg .btn.primary{background:var(--primary-ink);color:var(--primary)}
-.cs-cmsg-bt{gap:6px}
-.cs-cmsg-bt .btn svg{width:16px;height:16px}
-.cs-up{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:60;background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 14px 14px;font-weight:700;font-size:.9rem;overflow:hidden}
-.cs-up i{position:absolute;left:0;bottom:0;height:4px;background:var(--primary);transition:width .2s}
-body.cs-apres-on{overflow:hidden}
-body.cs-apres-on .scrim{z-index:100}
-body.cs-apres-on .toast{z-index:101}
-.cs-apres{position:fixed;inset:0;z-index:95;background:#0b0f1a;color:#fff;display:flex;flex-direction:column}
-.cs-ap-top{display:flex;align-items:center;gap:6px;padding:calc(6px + env(safe-area-inset-top,0px)) 8px 6px;background:rgba(0,0,0,.35)}
-.cs-ap-top b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:1rem}
-.cs-ap-pg{font-variant-numeric:tabular-nums;opacity:.85;font-weight:700;padding:0 6px}
-.cs-ap-bt{min-width:46px;height:46px;border-radius:12px;border:0;background:rgba(255,255,255,.1);color:#fff;display:grid;place-items:center;cursor:pointer;font-weight:800;font-size:1rem}
-.cs-ap-bt svg{width:24px;height:24px}
-.cs-ap-palco{flex:1;min-height:0;display:grid;place-items:center;overflow:auto;padding:8px}
-.cs-ap-palco img,.cs-ap-palco video{max-width:100%;max-height:100%;object-fit:contain}
-.cs-ap-palco canvas{background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.5)}
-.cs-ap-doc{background:#fff;color:#111;max-width:900px;width:100%;align-self:start;padding:28px 32px;border-radius:8px;line-height:1.55;text-align:justify;hyphens:auto}
-.cs-ap-doc img{max-width:100%}
-@media (max-width:600px){.cs-ap-doc{text-align:left;padding:18px 16px}}
-.cs-ap-audio{display:flex;flex-direction:column;align-items:center;gap:14px}
-.cs-ap-audio svg{width:80px;height:80px;opacity:.8}
-.cs-ap-erro{display:flex;flex-direction:column;gap:6px;text-align:center}
-.cs-ap-nav{position:absolute;top:50%;transform:translateY(-50%);width:54px;height:54px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;display:grid;place-items:center;cursor:pointer}
-.cs-ap-nav svg{width:28px;height:28px}
-.cs-ap-nav.esq{left:10px}.cs-ap-nav.dir{right:10px}
 .cs-rec{display:flex;align-items:center;gap:12px;padding:10px 12px}
 .cs-rec-ic{width:42px;height:42px;border-radius:12px;background:var(--primary-soft);color:var(--primary);display:grid;place-items:center;flex:none}
 .cs-rec-ic svg{width:22px;height:22px}
