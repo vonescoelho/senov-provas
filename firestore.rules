@@ -122,7 +122,7 @@ service cloud.firestore {
     // Mural
     match /posts/{postId} {
       allow read: if logado();
-      allow create: if logado() && request.auth.token.email_verified == true
+      allow create: if logado()
         && request.resource.data.autor == eu()
         && textoOk('texto', 3000) && textoOk('fig', 30)
         && request.resource.data.curtidas == [] && request.resource.data.nComent == 0;
@@ -142,6 +142,105 @@ service cloud.firestore {
         allow delete: if logado() && (resource.data.autor == eu()
           || get(/databases/$(database)/documents/posts/$(postId)).data.autor == eu());
       }
+    }
+
+    // Arquivos enviados nas conversas (guardados em partes de até 700 KB).
+    // "unica" = visualização única: quem recebe pode apagar depois de abrir.
+    match /arquivos/{aid} {
+      function chatDoArq(cid) { return get(/databases/$(database)/documents/chats/$(cid)).data; }
+      function arq() { return get(/databases/$(database)/documents/arquivos/$(aid)).data; }
+      function membroArq() { return eu() in get(/databases/$(database)/documents/chats/$(arq().chatId)).data.membros; }
+      allow read: if logado() && eu() in chatDoArq(resource.data.chatId).membros;
+      allow create: if logado() && request.resource.data.dono == eu()
+        && eu() in chatDoArq(request.resource.data.chatId).membros
+        && request.resource.data.tamanho is int && request.resource.data.tamanho <= 20971520
+        && request.resource.data.partes is int && request.resource.data.partes <= 40
+        && textoOk('nome', 120) && textoOk('texto', 2000);
+      allow delete: if logado() && (resource.data.dono == eu()
+        || (resource.data.get('unica', false) == true && eu() in chatDoArq(resource.data.chatId).membros));
+      match /partes/{pid} {
+        allow read: if logado() && membroArq();
+        allow create: if logado() && arq().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000;
+        allow delete: if logado() && (arq().dono == eu() || (arq().get('unica', false) == true && membroArq()));
+      }
+      match /vistos/{uid} {
+        allow read: if logado() && membroArq();
+        allow create: if logado() && uid == eu() && membroArq();
+        allow delete: if logado() && (arq().dono == eu() || (arq().get('unica', false) == true && membroArq()));
+      }
+    }
+
+    // Chamadas de vídeo e de voz (sinalização WebRTC)
+    match /chamadas/{cid} {
+      function chatDe(id) { return get(/databases/$(database)/documents/chats/$(id)).data; }
+      allow read: if logado() && (eu() in resource.data.membros || eu() in resource.data.tocando);
+      allow create: if logado() && request.resource.data.de == eu()
+        && eu() in chatDe(request.resource.data.chatId).membros
+        && request.resource.data.membros == chatDe(request.resource.data.chatId).membros
+        && request.resource.data.membros.size() <= 512;
+      allow update: if logado() && eu() in resource.data.membros
+        && mudou().hasOnly(['dentro', 'tocando', 'estado', 'atualizadoEm']);
+      match /sinais/{sid} {
+        allow read, delete: if logado() && (resource.data.para == eu() || resource.data.de == eu());
+        allow create: if logado() && request.resource.data.de == eu()
+          && eu() in get(/databases/$(database)/documents/chamadas/$(cid)).data.membros
+          && request.resource.data.d is string && request.resource.data.d.size() < 20000;
+      }
+    }
+
+    // Flash (24 h). "flashes": todos veem. "flashesPriv": só as pessoas da lista "para".
+    function flashOk() {
+      return request.resource.data.dono == eu() && request.resource.data.partes is int && request.resource.data.partes <= 20
+        && textoOk('legenda', 200) && textoOk('thumb', 40000);
+    }
+    match /flashes/{id} {
+      function f() { return get(/databases/$(database)/documents/flashes/$(id)).data; }
+      allow read: if logado();
+      allow create: if logado() && flashOk();
+      allow delete: if logado() && resource.data.dono == eu();
+      match /partes/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
+      match /som/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
+      match /vistos/{uid} { allow create: if logado() && uid == eu(); allow read, delete: if logado() && f().dono == eu(); }
+    }
+    match /flashesPriv/{id} {
+      function f() { return get(/databases/$(database)/documents/flashesPriv/$(id)).data; }
+      function pode() { return f().dono == eu() || eu() in f().para; }
+      allow read: if logado() && (resource.data.dono == eu() || eu() in resource.data.para);
+      allow create: if logado() && flashOk() && request.resource.data.para is list && request.resource.data.para.size() <= 400;
+      allow delete: if logado() && resource.data.dono == eu();
+      match /partes/{pid} { allow read: if logado() && pode(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
+      match /som/{pid} { allow read: if logado() && pode(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
+      match /vistos/{uid} { allow create: if logado() && uid == eu() && pode(); allow read, delete: if logado() && f().dono == eu(); }
+    }
+    // Destaques do perfil (até 5, controlado pelo app)
+    match /destaques/{id} {
+      function f() { return get(/databases/$(database)/documents/destaques/$(id)).data; }
+      allow read: if logado();
+      allow create: if logado() && flashOk();
+      allow delete: if logado() && resource.data.dono == eu();
+      match /partes/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
+      match /som/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
+      match /vistos/{uid} { allow read, delete: if logado() && f().dono == eu(); }
+    }
+
+    // Foto de perfil reservada: "seguindo" = só quem a pessoa segue; "ninguem" = só a própria pessoa
+    match /fotos/{uid} {
+      allow read: if logado() && (uid == eu()
+        || (resource.data.priv == 'seguindo' && exists(/databases/$(database)/documents/users/$(uid)/seguindo/$(eu()))));
+      allow create, update: if logado() && uid == eu() && textoOk('foto', 150000) && request.resource.data.priv in ['seguindo', 'ninguem'];
+      allow delete: if logado() && uid == eu();
+    }
+
+    // Vitrine educativa: todos leem; só administradores (coleção admins, criada pelo console) publicam
+    match /admins/{uid} {
+      allow read: if logado() && uid == eu();
+    }
+    match /vitrine/{id} {
+      function admin() { return exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
+      allow read: if logado();
+      allow create, update: if logado() && admin() && textoOk('titulo', 120) && textoOk('descricao', 600) && textoOk('imagem', 200000)
+        && request.resource.data.link is string && request.resource.data.link.matches('^https://.*');
+      allow delete: if logado() && admin();
     }
 
     // Denúncias: qualquer pessoa conectada envia; só a administração lê (pelo console do Firebase)
