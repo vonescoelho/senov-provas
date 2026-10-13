@@ -124,7 +124,7 @@
   const msgErro = e => ERROS[e && e.code] || "Não deu certo. Tente de novo.";
   const CORES = ["#2447C6", "#7C5CFF", "#E11D48", "#EA580C", "#15803D", "#0E7490", "#B45309", "#9333EA"];
   const corDe = s => { let h = 0; for (const c of String(s || "")) h = (h * 31 + c.charCodeAt(0)) >>> 0; return CORES[h % CORES.length]; };
-  const iniciais = n => String(n || "?").trim().split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase() || "?";
+  const iniciais = n => String(n || "?").trim().split(/[\s._]+/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase() || "?";
   function av(p, tam, uid) {
     tam = tam || 48;
     const st = `width:${tam}px;height:${tam}px;font-size:${Math.round(tam * 0.38)}px`;
@@ -140,6 +140,8 @@
   const seloHtml = p => p && p.inst ? `<span class="cs-selo" title="E-mail institucional confirmado">${K.selo}</span>` : "";
 
   /* Perfis de outras pessoas (guardados em memória enquanto o app está aberto) */
+  /* Para os outros, o professor aparece pelo nome de usuário (o nome completo fica só no próprio perfil) */
+  const pub = (uid, d) => ({ uid, ...d, nomeReal: d.nome, nome: d.usuario || d.nome });
   function P(uid) {
     if (!uid) return { nome: "?" };
     if (uid === eu() && SO.eu) return SO.eu;
@@ -147,7 +149,7 @@
     if (!SO.buscando[uid]) {
       SO.buscando[uid] = true;
       fb.getDoc(D("users", uid)).then(s => {
-        SO.perfis[uid] = s.exists() ? { uid, ...s.data() } : { uid, nome: "Conta removida", usuario: "", removido: true }; pintar();
+        SO.perfis[uid] = s.exists() ? pub(uid, s.data()) : { uid, nome: "Conta removida", usuario: "", removido: true }; pintar();
         /* foto só para quem a pessoa segue: o servidor decide se pode ver */
         if (s.exists() && s.data().fotoPriv && !s.data().foto) fb.getDoc(D("fotos", uid)).then(f => { if (f.exists() && SO.perfis[uid]) { SO.perfis[uid].foto = f.data().foto; pintar(); } }).catch(() => { });
       })
@@ -179,7 +181,7 @@
   fb.onAuthStateChanged(auth, async u => {
     pararTudo();
     const trocou = (SO.user && SO.user.uid) !== (u && u.uid);
-    SO.user = u; SO.eu = null; SO.euCarregado = false; SO.fotoPropria = undefined; SO.chats = []; SO.posts = []; SO.pilha = [];
+    SO.user = u; SO.pres = SO.pres || {}; SO.eu = null; SO.euCarregado = false; SO.fotoPropria = undefined; SO.chats = []; SO.posts = []; SO.pilha = [];
     if (trocou) {
       SO.perfis = {}; SO.buscando = {}; SO.msgs = {}; SO.coments = {}; SO.rascunho = {}; SO.contagens = {}; SO.novos = null; SO.leituras = {};
       if (u) { SO.tab = "conversas"; lembrarTab(); }
@@ -190,7 +192,9 @@
     if (!u) { SO.tela = SO.tela === "entrar" ? "entrar" : "boas-vindas"; pintar(); return; }
     pintar();
     ouvintes.push(fb.onSnapshot(D("users", u.uid), s => {
+      const tinha = !!SO.eu;
       SO.eu = s.exists() ? { uid: u.uid, ...s.data() } : null; SO.euCarregado = true;
+      if (SO.eu && !tinha) iniciarPresenca();
       if (SO.eu && SO.eu.fotoPriv) {
         if (SO.fotoPropria !== undefined) SO.eu.foto = SO.fotoPropria;
         else { SO.fotoPropria = null; fb.getDoc(D("fotos", u.uid)).then(f => { SO.fotoPropria = f.exists() ? f.data().foto : null; if (SO.eu) SO.eu.foto = SO.fotoPropria; pintar(); }).catch(() => { }); }
@@ -231,7 +235,53 @@
     if ((SO.leituras[id] || 0) >= alvo || (ultLeitura[id] || 0) >= alvo) return;
     ultLeitura[id] = alvo;
     fb.setDoc(D("users", eu(), "leituras", id), { em: TS() }).catch(() => { });
+    if (c && SO.eu && SO.eu.privLeitura !== false) fb.updateDoc(D("chats", id), { ["lidos." + eu()]: TS() }).catch(() => { });
   }
+  /* ✓ enviada · ✓✓ azul = vista (em grupo, quando todos viram) */
+  const TIQUE1 = '<svg class="cs-tq" viewBox="0 0 16 11" aria-label="Enviada"><path d="M1.5 6l3.5 3.5L14.5 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const TIQUE2 = '<svg class="cs-tq lido" viewBox="0 0 20 11" aria-label="Vista"><path d="M1.5 6l3.5 3.5L14.5 1M8.5 8.6l1 .9L19 1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const RELOGIO = '<svg class="cs-tq" viewBox="0 0 12 12" aria-label="Enviando"><circle cx="6" cy="6" r="4.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M6 3.4V6l1.8 1.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>';
+  function tique(c, m) {
+    if (m.autor !== eu()) return "";
+    if (!m.em) return RELOGIO;
+    if (!SO.eu || SO.eu.privLeitura === false) return TIQUE1;
+    const outros = (c.membros || []).filter(u => u !== eu()), lidos = c.lidos || {}, t = ms(m.em);
+    return outros.length && outros.every(u => lidos[u] && ms(lidos[u]) >= t) ? TIQUE2 : TIQUE1;
+  }
+  /* ---- online e visto por último (presenca/{uid}: atualiza a cada minuto com o app aberto) ---- */
+  let presT = null;
+  function marcarPresenca(on) {
+    if (!eu() || !SO.eu || SO.eu.privOnline === false) return;
+    fb.setDoc(D("presenca", eu()), { em: TS(), on: !!on }).catch(() => { });
+  }
+  function iniciarPresenca() {
+    clearInterval(presT); marcarPresenca(document.visibilityState === "visible");
+    presT = setInterval(() => { if (document.visibilityState === "visible") marcarPresenca(true); }, 60000);
+  }
+  document.addEventListener("visibilitychange", () => marcarPresenca(document.visibilityState === "visible"));
+  window.addEventListener("pagehide", () => marcarPresenca(false));
+  function ouvirPresenca(uid) {
+    if (!uid || SO.un["p:" + uid]) return;
+    SO.un["p:" + uid] = fb.onSnapshot(D("presenca", uid), s => { SO.pres[uid] = s.exists() ? dadosDe(s) : null; const t = topo(); if (t && t.v === "chat") pintarCabecalho(); }, () => { });
+  }
+  function textoPresenca(uid) {
+    if (SO.eu && SO.eu.privOnline === false) return "";
+    const pr = SO.pres[uid]; if (!pr || !pr.em) return "";
+    const t = ms(pr.em), agora = Date.now();
+    if (pr.on && agora - t < 150000) return "online";
+    const d = new Date(t), hoje = new Date(), ontem = new Date(Date.now() - 864e5);
+    const h = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    if (d.toDateString() === hoje.toDateString()) return "visto por último hoje às " + h;
+    if (d.toDateString() === ontem.toDateString()) return "visto por último ontem às " + h;
+    return "visto por último em " + d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) + " às " + h;
+  }
+  function pintarCabecalho() {
+    const t = topo(), el = $("#cs-chat-sub"); if (!t || t.v !== "chat" || !el) return;
+    const c = SO.chats.find(x => x.id === t.id); if (!c || c.tipo === "grupo") return;
+    const ti = tituloChat(c), pr = textoPresenca(ti.outro);
+    el.textContent = pr || ti.sub; el.classList.toggle("on", pr === "online");
+  }
+  setInterval(pintarCabecalho, 30000);
   function ouvirMsgs(id) {
     if (SO.un["m:" + id]) return;
     SO.un["m:" + id] = fb.onSnapshot(fb.query(C("chats", id, "msgs"), fb.orderBy("em"), fb.limitToLast(200)), snap => {
@@ -447,8 +497,8 @@
       <h1>Seu perfil</h1><p class="muted">Passo 2 de 2 · Como os colegas vão ver você</p>
       <form class="stack" id="cs-f-perfil" novalidate>
         ${campoFoto(c.foto, c.nome)}
-        <label class="f" for="cs-nome">Nome<input class="in" id="cs-nome" value="${esc(c.nome)}"></label>
-        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(c.usuario)}" placeholder="seu.nome"></span></label>
+        <label class="f" for="cs-nome"><span>Nome completo <small class="muted">(só você vê; vai no cabeçalho das provas)</small></span><input class="in" id="cs-nome" value="${esc(c.nome)}"></label>
+        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(c.usuario)}" placeholder="seu.nome"></span></label><small class="muted">É o nome que os outros veem em tudo no ChatMil.</small>
         <span id="cs-usu-ok" class="cs-ok" aria-live="polite"></span>
         ${sug.length ? `<div class="chips cs-sug">${sug.map(s => `<button type="button" class="chip" data-s="sug" data-v="${s}">@${s}</button>`).join("")}</div>` : ""}
         <p class="small muted">É assim que os colegas encontram você, sem precisar do número do celular.</p>
@@ -465,7 +515,7 @@
   function tituloChat(c) {
     if (c.tipo === "grupo") return { nome: c.nome, sub: `${(c.membros || []).length} ${c.membros && c.membros.length === 1 ? "membro" : "membros"}`, av: t => avGrupo(c, t), p: null };
     const outro = (c.membros || []).find(m => m !== eu()) || eu(); const p = P(outro);
-    return { nome: p.nome, sub: p.usuario ? "@" + p.usuario : "", av: t => av(p, t, outro), p, outro, selo: seloHtml(p) };
+    return { nome: p.nome, sub: p.escola || "", av: t => av(p, t, outro), p, outro, selo: seloHtml(p) };
   }
   function prevUltima(c) {
     const u = c.ultima; if (!u) return c.tipo === "grupo" ? "Grupo criado" : "Diga olá 👋";
@@ -518,7 +568,7 @@
     }
     window.fecharSheet(); abrirChat(id);
   }
-  function abrirChat(id) { ouvirMsgs(id); marcarLida(id); abrirTela({ v: "chat", id }); setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 60); }
+  function abrirChat(id) { ouvirMsgs(id); { const c = SO.chats.find(x => x.id === id); if (c && c.tipo !== "grupo") ouvirPresenca((c.membros || []).find(m => m !== eu())); } marcarLida(id); abrirTela({ v: "chat", id }); setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 60); }
 
   function vChat(id) {
     const c = SO.chats.find(x => x.id === id);
@@ -526,9 +576,10 @@
     const t = tituloChat(c), g = c.tipo === "grupo", admin = g && (c.admins || []).includes(eu());
     const bloq = !g && SO.bloqueados.has(t.outro);
     const podeEscrever = !bloq && (!g || !c.soAdmins || admin);
+    if (!g) ouvirPresenca(t.outro);
     return `<header class="cs-chat-h">
         <button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button>
-        <button class="cs-chat-quem" data-s="${g ? "info-grupo" : "ver-perfil"}" data-id="${esc(g ? c.id : t.outro)}">${t.av(40)}<span><b>${esc(t.nome)}${t.selo || ""}</b><small>${esc(t.sub)}</small></span></button>
+        <button class="cs-chat-quem" data-s="${g ? "info-grupo" : "ver-perfil"}" data-id="${esc(g ? c.id : t.outro)}">${t.av(40)}<span><b>${esc(t.nome)}${t.selo || ""}</b><small id="cs-chat-sub" class="${!g && textoPresenca(t.outro) === "online" ? "on" : ""}">${esc((!g && textoPresenca(t.outro)) || t.sub)}</small></span></button>
         ${EXT.chatBotoes ? EXT.chatBotoes(c) : ""}<button class="cs-ico-bt" data-s="${g ? "info-grupo" : "menu-pessoa"}" data-id="${esc(g ? c.id : t.outro)}" aria-label="Opções">${K.mais}</button>
       </header>
       <div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
@@ -548,7 +599,7 @@
       const d = diaSep(m.em); if (d !== dia) { h += `<div class="cs-dia"><span>${esc(d)}</span></div>`; dia = d; ant = null; }
       const meu = m.autor === eu(), seq = ant && ant.autor === m.autor && ms(m.em) - ms(ant.em) < 5 * 60e3;
       const nome = c.tipo === "grupo" && !meu && !seq ? `<b class="cs-autor" style="color:${corDe(m.autor)}">${esc(P(m.autor).nome)}</b>` : "";
-      const hr = new Date(ms(m.em)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+      const hr = (m.em ? new Date(ms(m.em)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "") + tique(c, m);
       if (EXT.msg && (m.arquivo || m.chamada || m.audio || m.unica)) { h += EXT.msg(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
       if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
       else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b">${nome}<span class="cs-tx">${esc(m.texto)}</span><span class="cs-h">${hr}</span></div></div>`;
@@ -645,7 +696,7 @@
           <button data-s="novo-codigo" data-id="${esc(c.id)}">${K.codigo}<span><b>Gerar novo código</b><small>O código antigo deixa de funcionar</small></span></button>
         </div>` : ""}
         <h2 class="cs-sec">Participantes</h2>
-        <div class="cs-lista">${mem.map(u => { const p = P(u); return `<button class="cs-item" data-s="membro" data-chat="${esc(c.id)}" data-id="${esc(u)}">${av(p, 44, u)}<span class="cs-item-t"><b>${esc(u === eu() ? "Você" : p.nome)}${seloHtml(p)}</b><span>${p.usuario ? "@" + esc(p.usuario) : ""}</span></span>${(c.admins || []).includes(u) ? '<span class="pill">Admin</span>' : ""}</button>`; }).join("")}</div>
+        <div class="cs-lista">${mem.map(u => { const p = P(u); return `<button class="cs-item" data-s="membro" data-chat="${esc(c.id)}" data-id="${esc(u)}">${av(p, 44, u)}<span class="cs-item-t"><b>${esc(u === eu() ? "Você" : p.nome)}${seloHtml(p)}</b><span>${esc(p.escola || "")}</span></span>${(c.admins || []).includes(u) ? '<span class="pill">Admin</span>' : ""}</button>`; }).join("")}</div>
         <button class="btn cs-perigo" data-s="sair-grupo" data-id="${esc(c.id)}">${K.sair} Sair do grupo</button>
       </div>`;
   }
@@ -710,7 +761,7 @@
     const texto = esc(p.texto || "");
     const longo = !completo && (p.texto || "").length > 420;
     return `<article class="card cs-post">
-      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(a.nome)}${seloHtml(a)}</b><small>${a.usuario ? "@" + esc(a.usuario) + " · " : ""}${tempoPost(p.em)}</small></span></button>
+      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(a.nome)}${seloHtml(a)}</b><small>${tempoPost(p.em)}</small></span></button>
         <button class="cs-ico-bt" data-s="menu-post" data-id="${esc(p.id)}" aria-label="Opções da publicação">${K.mais}</button></div>
       ${p.texto ? `<div class="cs-post-tx ${longo ? "corte" : ""}">${texto}</div>${longo ? `<button class="cs-link" data-s="abrir-post" data-id="${esc(p.id)}">Ler tudo</button>` : ""}` : ""}
       ${p.fig ? `<div class="cs-post-fig">${figurinha(p.fig, 140)}</div>` : ""}
@@ -785,7 +836,7 @@
         const [a, b] = await Promise.all([
           fb.getDocs(fb.query(C("users"), fb.orderBy("usuario"), fb.startAt(t), fb.endAt(t + ""), fb.limit(12))),
           fb.getDocs(fb.query(C("users"), fb.orderBy("nomeBusca"), fb.startAt(t), fb.endAt(t + ""), fb.limit(12)))]);
-        const m = new Map(); [...a.docs, ...b.docs].forEach(d => { if (d.id !== eu()) { m.set(d.id, { uid: d.id, ...d.data() }); SO.perfis[d.id] = { uid: d.id, ...d.data() }; } });
+        const m = new Map(); [...a.docs, ...b.docs].forEach(d => { if (d.id !== eu()) { const pp = pub(d.id, d.data()); m.set(d.id, pp); SO.perfis[d.id] = pp; } });
         if (SO.busca === q) { SO.resultados = [...m.values()]; atualizarResultados(); }
       } catch (e) { console.warn(e); }
     }, 300);
@@ -804,12 +855,12 @@
   }
   function itemPessoa(p, acao) {
     const seg = SO.seguindo.has(p.uid);
-    return `<div class="cs-item"><button type="button" class="cs-quem" data-s="${acao}" data-id="${esc(p.uid)}">${av(p, 46, p.uid)}<span class="cs-item-t"><b>${esc(p.nome)}${seloHtml(p)}</b><span>@${esc(p.usuario)}${p.escola ? " · " + esc(p.escola) : ""}</span></span></button>
+    return `<div class="cs-item"><button type="button" class="cs-quem" data-s="${acao}" data-id="${esc(p.uid)}">${av(p, 46, p.uid)}<span class="cs-item-t"><b>${esc(p.nome)}${seloHtml(p)}</b><span>${esc(p.escola || (p.disciplinas || []).slice(0, 2).join(", ") || "Professor(a)")}</span></span></button>
       ${acao === "ver-perfil" ? `<button type="button" class="cs-ico-bt" data-s="abrir-direto" data-id="${esc(p.uid)}" aria-label="Mandar mensagem para ${esc(p.nome)}">${K.chat}</button><button type="button" class="btn sm ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(p.uid)}">${seg ? "Seguindo" : "Seguir"}</button>` : `<button type="button" class="btn sm primary" data-s="${acao}" data-id="${esc(p.uid)}">Adicionar</button>`}</div>`;
   }
   function atualizarResultados() { const el = $("#cs-res"); if (el) { const t = topo(); el.innerHTML = htmlResultados(t && t.v === "novo-grupo" ? "g-add" : t && t.v === "add-membro" ? "m-add" : "ver-perfil"); } }
   function vBuscar() {
-    if (!SO.novos) { SO.novos = []; fb.getDocs(fb.query(C("users"), fb.orderBy("criadoEm", "desc"), fb.limit(15))).then(s => { SO.novos = s.docs.map(d => ({ uid: d.id, ...d.data() })); SO.novos.forEach(p => SO.perfis[p.uid] = p); atualizarResultados(); }).catch(() => { }); }
+    if (!SO.novos) { SO.novos = []; fb.getDocs(fb.query(C("users"), fb.orderBy("criadoEm", "desc"), fb.limit(15))).then(s => { SO.novos = s.docs.map(d => pub(d.id, d.data())); SO.novos.forEach(p => SO.perfis[p.uid] = p); atualizarResultados(); }).catch(() => { }); }
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Contatos</b></header>
       <div class="cs-pag stack"><label class="cs-busca grande">${K.busca}<input id="cs-p-busca" placeholder="Nome ou @usuário" autocomplete="off" autocapitalize="none" value="${esc(SO.busca)}" aria-label="Buscar pessoas"></label>
       <div id="cs-res">${htmlResultados("ver-perfil")}</div></div>`;
@@ -847,7 +898,7 @@
         <div class="cs-capa" style="--c:${corDe(uid)}"></div>
         <div class="cs-perfil-av">${EXT.perfilAv ? EXT.perfilAv(uid, av(p, 96, uid)) : av(p, 96, uid)}</div>
         <h1>${esc(p.nome)}${seloHtml(p)}</h1>
-        <span class="muted">${p.usuario ? "@" + esc(p.usuario) : ""}</span>
+        ${meu ? `<span class="muted">@${esc(p.usuario || "")} · é assim que os outros veem você</span>` : ""}
         ${p.inst ? `<span class="pill d1">${K.check} Professor(a) com e-mail institucional</span>` : ""}
         ${p.escola ? `<span class="cs-escola">${K.escola} ${esc(p.escola)}</span>` : ""}
         ${(p.disciplinas || []).length ? `<div class="chips cs-centro-chips">${p.disciplinas.map(d => `<span class="pill">${esc(d)}</span>`).join("")}</div>` : ""}
@@ -900,8 +951,8 @@
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Editar perfil</b></header>
       <form class="cs-pag stack" id="cs-f-editar" novalidate>
         ${campoFoto(e.foto, e.nome)}
-        <label class="f" for="cs-nome">Nome<input class="in" id="cs-nome" maxlength="60" value="${esc(e.nome)}"></label>
-        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(SO.cad.usuario)}"></span></label>
+        <label class="f" for="cs-nome"><span>Nome completo <small class="muted">(só você vê; vai no cabeçalho das provas)</small></span><input class="in" id="cs-nome" maxlength="60" value="${esc(e.nome)}"></label>
+        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(SO.cad.usuario)}"></span></label><small class="muted">É o nome que os outros veem em tudo no ChatMil.</small>
         <span id="cs-usu-ok" class="cs-ok" aria-live="polite"></span>
         <label class="f" for="cs-escola">Escola<input class="in" id="cs-escola" maxlength="100" value="${esc(e.escola || "")}"></label>
         <div class="f"><span>Disciplinas</span>${chipsDisciplinas(e.disciplinas, "ed")}</div>
@@ -963,6 +1014,10 @@
         <div class="cs-menu card flat">
           <div class="cs-linha"><span class="cs-lic">${K.lock}</span><span><b>Quem pode me mandar mensagem</b><small>Grupos não mudam</small>
             <span class="seg cs-seg-mini"><button data-s="priv" data-v="todos" aria-pressed="${(p.privMsg || "todos") === "todos"}">Todos</button><button data-s="priv" data-v="seguindo" aria-pressed="${p.privMsg === "seguindo"}">Só quem eu sigo</button></span></span></div>
+          <div class="cs-linha"><span class="cs-lic">${K.olho}</span><span><b>Mostrar quando estou online</b><small>Se desligar, você também não vê o dos outros</small>
+            <span class="seg cs-seg-mini"><button data-s="priv-on" data-v="sim" aria-pressed="${p.privOnline !== false}">Sim</button><button data-s="priv-on" data-v="nao" aria-pressed="${p.privOnline === false}">Não</button></span></span></div>
+          <div class="cs-linha"><span class="cs-lic">${K.check}</span><span><b>Confirmação de leitura</b><small>Os ✓✓ azuis. Se desligar, você também não vê a dos outros</small>
+            <span class="seg cs-seg-mini"><button data-s="priv-lido" data-v="sim" aria-pressed="${p.privLeitura !== false}">Sim</button><button data-s="priv-lido" data-v="nao" aria-pressed="${p.privLeitura === false}">Não</button></span></span></div>
           <div class="cs-linha"><span class="cs-lic">${K.user}</span><span><b>Quem vê minha foto de perfil</b>
             <span class="seg cs-seg-mini">${[["todos", "Todos"], ["seguindo", "Quem eu sigo"], ["ninguem", "Ninguém"]].map(([v, t]) => `<button data-s="priv-foto" data-v="${v}" aria-pressed="${(p.privFoto || "todos") === v}">${t}</button>`).join("")}</span></span></div>
           ${EXT.configPriv.map(f => f(p)).join("")}
@@ -1012,7 +1067,7 @@
   function vBloqueados() {
     const l = [...SO.bloqueados];
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Pessoas bloqueadas</b></header>
-      <div class="cs-pag stack">${l.length ? `<div class="cs-lista">${l.map(u => { const p = P(u); return `<div class="cs-item">${av(p, 44, u)}<span class="cs-item-t"><b>${esc(p.nome)}</b><span>${p.usuario ? "@" + esc(p.usuario) : ""}</span></span><button class="btn sm" data-s="desbloquear" data-id="${esc(u)}">Desbloquear</button></div>`; }).join("")}</div>`
+      <div class="cs-pag stack">${l.length ? `<div class="cs-lista">${l.map(u => { const p = P(u); return `<div class="cs-item">${av(p, 44, u)}<span class="cs-item-t"><b>${esc(p.nome)}</b><span>${esc(p.escola || "")}</span></span><button class="btn sm" data-s="desbloquear" data-id="${esc(u)}">Desbloquear</button></div>`; }).join("")}</div>`
         : `<div class="empty"><b>Ninguém bloqueado</b><span>Quando você bloqueia alguém, a pessoa não consegue mais mandar mensagens para você.</span></div>`}</div>`;
   }
   const TXT_DICAS = `<ul class="cs-ul"><li>Nunca informe a sua senha a ninguém. A equipe do ChatMil não pede senha.</li>
@@ -1257,6 +1312,8 @@
         } catch (e) { toast(msgErro(e)); }
         break;
       case "senha": sheetSenha(); break;
+      case "priv-on": try { const on = v === "sim"; if (!on) await fb.deleteDoc(D("presenca", eu())).catch(() => { }); await fb.updateDoc(D("users", eu()), { privOnline: on }); if (on) setTimeout(iniciarPresenca, 300); toast("Privacidade atualizada."); } catch (e) { toast(msgErro(e)); } break;
+      case "priv-lido": try { await fb.updateDoc(D("users", eu()), { privLeitura: v === "sim" }); toast("Privacidade atualizada."); } catch (e) { toast(msgErro(e)); } break;
       case "priv": try { await fb.updateDoc(D("users", eu()), { privMsg: v }); toast("Privacidade atualizada."); } catch (e) { toast(msgErro(e)); } break;
       case "bloqueados": abrirTela({ v: "bloqueados" }); break;
       case "tema": aplicarTema(v); pintar(); break;
@@ -1417,6 +1474,10 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-m.eu .cs-b{background:var(--primary);color:var(--primary-ink);border-radius:18px 4px 18px 18px}
 .cs-m.eu.seq .cs-b{border-radius:18px}
 .cs-tx{white-space:pre-wrap;overflow-wrap:anywhere;font-size:1.03rem;line-height:1.42}
+.cs-tq{width:15px;height:10px;margin-left:3px;vertical-align:-1px;opacity:.85}
+.cs-tq.lido{width:18px;color:#34B7F1;opacity:1}
+.cs-m.eu .cs-tq.lido{color:#7DD8FF}
+#cs-chat-sub.on{color:#16A34A;font-weight:700}
 .cs-h{align-self:flex-end;font-size:.7rem;opacity:.72;margin-top:1px;font-variant-numeric:tabular-nums}
 .cs-autor{font-size:.83rem;margin-bottom:1px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cs-autor{filter:brightness(1.8) saturate(.85)}}
