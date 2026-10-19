@@ -253,11 +253,56 @@
     }
   };
 
-  /* ---------- Revisão por IA (opcional, com chave da API) ---------- */
+  /* ---------- IA (opcional): Gemini grátis do Google ou Claude com chave própria ---------- */
   function cfgIA() { try { return JSON.parse(localStorage.getItem("senov.ia") || "null") || {}; } catch (e) { return {}; } }
-  function perguntar(input) {
+  function chaveGemini() { var c = cfgIA(); return c.gemini || window.CS_IA_GEMINI || ""; }
+  function temIA() { var c = cfgIA(); return !!(c.chave || chaveGemini()); }
+  function textoDe(input) {
+    var msgs = typeof input === "string" ? [{ role: "user", content: input }] : input;
+    return msgs.map(function (m) { return typeof m.content === "string" ? m.content : (m.content || []).map(function (b) { return b.text || ""; }).join("\n"); }).join("\n\n");
+  }
+  var MODELOS_G = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-flash-lite-latest", "gemini-2.5-flash-lite"];
+  function chamarGemini(modelo, k, texto, json) {
+    return fetch("https://generativelanguage.googleapis.com/v1beta/models/" + modelo + ":generateContent?key=" + encodeURIComponent(k), {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: texto }] }], generationConfig: json ? { temperature: 0.3, responseMimeType: "application/json" } : { temperature: 0.4 } })
+    });
+  }
+  function perguntarGemini(input, json) {
+    var k = chaveGemini(), texto = textoDe(input);
+    var salvo = null; try { salvo = localStorage.getItem("senov.gm"); } catch (e) {}
+    var lista = (salvo ? [salvo] : []).concat(MODELOS_G.filter(function (m) { return m !== salvo; }));
+    function tentar(i) {
+      if (i >= lista.length) return descobrir();
+      return chamarGemini(lista[i], k, texto, json).then(function (r) {
+        if (r.status === 404 || r.status === 400) return r.json().catch(function () { return {}; }).then(function (j) {
+          var m = (j && j.error && j.error.message) || ""; if (r.status === 400 && !/model|not found|supported/i.test(m)) throw { code: "unavailable", message: m || "Erro 400" };
+          return tentar(i + 1);
+        });
+        if (r.status === 429) throw { code: "rate_limited", message: "Cota grátis da IA esgotada por hoje" };
+        if (r.status === 401 || r.status === 403) throw { code: "not_granted", message: "Chave do Gemini recusada" };
+        if (!r.ok) throw { code: "unavailable", message: "Erro " + r.status };
+        try { localStorage.setItem("senov.gm", lista[i]); } catch (e) {}
+        return r.json().then(function (j) {
+          var c = j && j.candidates && j.candidates[0];
+          return ((c && c.content && c.content.parts) || []).map(function (p) { return p.text || ""; }).join("");
+        });
+      }, function () { throw { code: "unavailable", message: "Sem conexão com a internet" }; });
+    }
+    /* nenhum nome conhecido funcionou: pergunta ao Google quais modelos existem */
+    function descobrir() {
+      return fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=100&key=" + encodeURIComponent(k)).then(function (r) { return r.json(); }).then(function (j) {
+        var ms = ((j && j.models) || []).filter(function (m) { return /flash/.test(m.name) && (m.supportedGenerationMethods || []).indexOf("generateContent") >= 0 && !/image|tts|audio|live|thinking-exp/.test(m.name); })
+          .map(function (m) { return m.name.replace(/^models\//, ""); });
+        if (!ms.length) throw { code: "unavailable", message: "Nenhum modelo disponível" };
+        lista = ms.slice(0, 3); return tentar(0);
+      });
+    }
+    return tentar(0);
+  }
+  function perguntar(input, json) {
     var c = cfgIA();
-    if (!c.chave) return Promise.reject({ code: "not_granted", message: "Sem chave da API" });
+    if (!c.chave) { if (chaveGemini()) return perguntarGemini(input, json); return Promise.reject({ code: "not_granted", message: "Sem chave da API" }); }
     var msgs = typeof input === "string" ? [{ role: "user", content: input }] : input;
     return fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -270,11 +315,12 @@
         throw { code: r.status === 429 ? "rate_limited" : (r.status === 401 || r.status === 403) ? "not_granted" : "unavailable", message: m };
       });
     }, function () { throw { code: "unavailable", message: "Sem conexão com a internet" }; })
-      .then(function (j) { return (j.content || []).map(function (b) { return b.text || ""; }).join(""); });
+      .then(function (j) { return (j.content || []).map(function (b) { return b.text || ""; }).join(""); })
+      .catch(function (e) { if (chaveGemini() && e && e.code !== "not_granted") return perguntarGemini(input, json); throw e; });
   }
   var sample = function (input) { return perguntar(input).then(function (t) { return { text: t, truncated: false }; }); };
   sample.json = function (input) {
-    return perguntar(input).then(function (t) {
+    return perguntar(input, true).then(function (t) {
       var a = t.indexOf("{"), b = t.lastIndexOf("}");
       if (a < 0 || b < a) throw { code: "invalid_json", message: "Resposta sem JSON", text: t };
       try { return JSON.parse(t.slice(a, b + 1)); } catch (e) { throw { code: "invalid_json", message: "JSON inválido", text: t }; }
@@ -290,7 +336,7 @@
         if (nome === "db") return db;
         if (nome === "user") return user;
         if (nome === "downloads") return downloads;
-        if (nome === "sample") return cfgIA().chave ? sample : null;
+        if (nome === "sample") return temIA() ? sample : null;
         return null;
       });
     }
