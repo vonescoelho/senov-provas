@@ -14,7 +14,10 @@
   try { auth = fb.initializeAuth(app, { persistence: [fb.indexedDBLocalPersistence, fb.browserLocalPersistence] }); }
   catch (e) { auth = fb.initializeAuth(app, { persistence: fb.browserLocalPersistence }); }
   auth.languageCode = "pt-BR";
-  const db = fb.initializeFirestore(app, {});
+  /* cache no aparelho: conversas e perfil aparecem na hora, mesmo antes da internet responder */
+  let db;
+  try { db = fb.persistentLocalCache ? fb.initializeFirestore(app, { localCache: fb.persistentLocalCache({ tabManager: fb.persistentMultipleTabManager ? fb.persistentMultipleTabManager() : undefined }) }) : fb.initializeFirestore(app, {}); }
+  catch (e) { console.warn("cache", e); db = fb.initializeFirestore(app, {}); }
   if (CFG.emulador) { fb.connectAuthEmulator(auth, "http://" + CFG.emulador + ":9099", { disableWarnings: true }); fb.connectFirestoreEmulator(db, CFG.emulador, 8080); }
   const D = (...p) => fb.doc(db, ...p);
   const C = (...p) => fb.collection(db, ...p);
@@ -28,6 +31,14 @@
     gear: ic('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>'),
     grupo: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'),
     smile: ic('<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/>'),
+    clip: ic('<path d="m21.4 11.6-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>'),
+    video: ic('<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-3v10l-6-3"/>'),
+    live: ic('<circle cx="12" cy="12" r="2.5"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 16.2a6 6 0 0 0 0-8.4M5 5a10 10 0 0 0 0 14M19 19a10 10 0 0 0 0-14"/>'),
+    play: ic('<path d="M8 5v14l11-7z" fill="currentColor"/>'),
+    foto: ic('<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>'),
+    x: ic('<path d="M6 6l12 12M18 6 6 18"/>'),
+    baixar: ic('<path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/>'),
+    maisV: ic('<circle cx="12" cy="5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="19" r="1.3" fill="currentColor"/>'),
     mais: ic('<circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/>'),
     heart: ic('<path d="M12 20s-7-4.4-9-9.1C1.6 7.3 4 4 7.4 4c2 0 3.6 1.1 4.6 2.7C13 5.1 14.6 4 16.6 4 20 4 22.4 7.3 21 10.9 19 15.6 12 20 12 20z"/>'),
     coment: ic('<path d="M21 11.5a8.4 8.4 0 0 1-12.2 7.5L3 20.5l1.6-5A8.5 8.5 0 1 1 21 11.5z"/>'),
@@ -66,7 +77,7 @@
 
   /* Extensões (social-mais.js): telas, abas, ações e tipos de mensagem extras */
   const EXT = { views: {}, tabViews: {}, acoes: {}, tabs: [], provasSub: [], msg: null, chatBotoes: null, composerBotoes: null, composerFim: null,
-    conversasTopo: null, perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [] };
+    conversasTopo: null, depois: [], avisos: [], perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [] };
 
   /* ================= Estado ================= */
   const SO = {
@@ -158,6 +169,33 @@
     return { uid, nome: "…", usuario: "", carregando: true };
   }
 
+  /* ================= Tela protegida contra captura (só no app Android) =================
+     Fica ligada enquanto houver um motivo: conversa individual, Flash para pessoas escolhidas, visualização única. */
+  const SEG = { k: new Set(), on: false };
+  function seguroTela(chave, ligar) {
+    if (ligar) SEG.k.add(chave); else SEG.k.delete(chave);
+    const q = SEG.k.size > 0; if (q === SEG.on) return; SEG.on = q;
+    try { const N = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Nativo; if (N && N.seguro) N.seguro({ ligar: q }).catch(() => { }); } catch (e) { }
+  }
+  window.CS_SEGURO = seguroTela;
+
+  /* links clicáveis e prévia de vídeos do YouTube nas mensagens */
+  function textoComLinks(t) {
+    return String(t || "").split(/(https?:\/\/[^\s<>"']+)/g).map((p, i) => i % 2
+      ? `<a class="cs-lk" href="${esc(p)}" data-s="link" data-v="${esc(p)}" rel="noopener">${esc(p.length > 64 ? p.slice(0, 61) + "…" : p)}</a>` : esc(p)).join("");
+  }
+  const ytId = t => { const m = String(t || "").match(/(?:youtube\.com\/(?:watch\?(?:[^\s]*&)?v=|shorts\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/); return m ? m[1] : ""; };
+  function previaYT(t) {
+    const id = ytId(t); if (!id) return "";
+    return `<button class="cs-yt" data-s="yt-ver" data-v="${id}" aria-label="Assistir vídeo"><img src="https://i.ytimg.com/vi/${id}/mqdefault.jpg" alt="" loading="lazy"><span class="cs-yt-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span></button>`;
+  }
+  function abrirLink(u) {
+    if (!/^https?:\/\//i.test(u || "")) return;
+    try { const N = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Nativo; if (N && N.link) { N.link({ url: u }).catch(() => window.open(u, "_blank", "noopener")); return; } } catch (e) { }
+    try { window.open(u, "_blank", "noopener"); } catch (e) { location.href = u; }
+  }
+  window.CS_ABRIR_LINK = abrirLink;
+
   /* ================= Pintura ================= */
   let pintarPend = false;
   function pintar() {
@@ -223,9 +261,15 @@
     ouvintes.push(fb.onSnapshot(C("users", u.uid, "leituras"), snap => { SO.leituras = {}; snap.docs.forEach(d => SO.leituras[d.id] = ms(dadosDe(d).em)); pintar(); }));
     ouvintes.push(fb.onSnapshot(C("users", u.uid, "seguindo"), snap => { SO.seguindo = new Set(snap.docs.map(d => d.id)); pintar(); }));
     ouvintes.push(fb.onSnapshot(C("users", u.uid, "bloqueados"), snap => { SO.bloqueados = new Set(snap.docs.map(d => d.id)); pintar(); }));
-    ouvintes.push(fb.onSnapshot(fb.query(C("posts"), fb.orderBy("em", "desc"), fb.limit(80)), snap => {
-      SO.posts = snap.docs.map(d => ({ id: d.id, ...dadosDe(d) })); pintar();
-    }, e => console.warn(e)));
+    {
+      /* mural: públicas + "só para algumas pessoas" (as que me incluem e as minhas) */
+      const PB = { pub: [], pa: [], meu: [] };
+      const juntar = () => { const m = new Map(); [...PB.pub, ...PB.pa, ...PB.meu].forEach(p => m.set(p.col + ":" + p.id, p)); SO.posts = [...m.values()].sort((a, b) => ms(b.em) - ms(a.em)); pintar(); };
+      const ouvir = (q, k, col) => ouvintes.push(fb.onSnapshot(q, snap => { PB[k] = snap.docs.map(d => ({ id: d.id, col, ...dadosDe(d) })); juntar(); }, e => console.warn(e)));
+      ouvir(fb.query(C("posts"), fb.orderBy("em", "desc"), fb.limit(80)), "pub", "posts");
+      ouvir(fb.query(C("postsPriv"), fb.where("para", "array-contains", u.uid), fb.limit(60)), "pa", "postsPriv");
+      ouvir(fb.query(C("postsPriv"), fb.where("autor", "==", u.uid), fb.limit(60)), "meu", "postsPriv");
+    }
   });
   function naoLidas(c) { return c.ultima && c.ultima.autor !== eu() && ms(c.atualizadoEm) > (SO.leituras[c.id] || 0); }
   const ultLeitura = {};
@@ -289,9 +333,10 @@
       const t = topo(); if (t && t.v === "chat" && t.id === id) { marcarLida(id); pintarMsgs(); }
     }, e => { console.warn(e); SO.msgs[id] = SO.msgs[id] || []; pintarMsgs(); });
   }
+  const colP = id => ((SO.posts.find(x => x.id === id) || {}).col) || "posts";
   function ouvirComents(id) {
     if (SO.un["c:" + id]) return;
-    SO.un["c:" + id] = fb.onSnapshot(fb.query(C("posts", id, "comentarios"), fb.orderBy("em")), snap => {
+    SO.un["c:" + id] = fb.onSnapshot(fb.query(C(colP(id), id, "comentarios"), fb.orderBy("em")), snap => {
       SO.coments[id] = snap.docs.map(d => ({ id: d.id, ...dadosDe(d) })); pintar();
     });
   }
@@ -361,6 +406,7 @@
     ocupar("Criando…");
     try {
       const r = await fb.createUserWithEmailAndPassword(auth, c.email, c.senha);
+      if (window.CS_CHAMADAS_LOGIN) window.CS_CHAMADAS_LOGIN(c.email, c.senha);
       c.senha = "";
       fb.updateProfile(r.user, { displayName: c.nome }).catch(() => { });
       fb.sendEmailVerification(r.user).catch(() => { });
@@ -378,7 +424,7 @@
     const email = $("#cs-email").value.trim(), senha = $("#cs-senha").value;
     if (!email || !senha) return erro("Digite o e-mail e a senha.");
     ocupar("Entrando…");
-    try { await fb.signInWithEmailAndPassword(auth, email, senha); SO.erro = ""; }
+    try { await fb.signInWithEmailAndPassword(auth, email, senha); SO.erro = ""; if (window.CS_CHAMADAS_LOGIN) window.CS_CHAMADAS_LOGIN(email, senha); }
     catch (e) { erro(msgErro(e)); }
   }
   async function esqueci() {
@@ -527,11 +573,10 @@
     const lista = SO.chats.filter(c => (c.tipo === "grupo" || c.ultima || (topo() && topo().id === c.id)) && (!f || semAc(tituloChat(c).nome).includes(f)));
     const assist = !f || "assistente de provas".includes(f);
     return `<div class="cs-cab"><div class="cs-marca"><span class="cs-logo sm" style="width:42px;height:42px;border-radius:14px;box-shadow:none">${K.chat}</span><h1>ChatMil</h1></div><div class="row" style="gap:6px">
-        <button class="cs-ico-bt" data-s="buscar-pessoas" aria-label="Encontrar colegas">${K.addUser}</button></div></div>
-      ${avisoEmail()}
+        <button class="cs-ico-bt" data-s="novo" aria-label="Contatos e grupos">${K.maisV}</button></div></div>
+      ${avisoEmail()}${EXT.avisos.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       <label class="cs-busca">${K.busca}<input id="cs-filtro" placeholder="Buscar conversa ou pessoa" value="${esc(SO.filtroChats)}" aria-label="Buscar conversa ou pessoa"></label>
       ${!f && EXT.conversasTopo ? EXT.conversasTopo() : ""}
-      ${f ? "" : `<div class="cs-atalhos"><button data-s="buscar-pessoas">${K.user}<span>Contatos</span></button><button data-s="novo-grupo">${K.grupo}<span>Novo grupo</span></button><button data-s="entrar-codigo">${K.codigo}<span>Entrar com código</span></button></div>`}
       <div class="cs-lista" role="list">
         ${assist ? `<button class="cs-item" data-s="assistente" role="listitem"><span class="cs-av bot" style="width:52px;height:52px">${K.varinha}</span>
           <span class="cs-item-t"><b>Assistente de provas <span class="pill">Fixo</span></b><span>Monte uma prova em poucos toques</span></span></button>` : ""}
@@ -541,20 +586,25 @@
             <span class="cs-item-m"><small>${horaCurta(c.atualizadoEm)}</small>${nl ? '<i class="cs-dot" aria-label="Não lida"></i>' : ""}</span></button>`; }).join("")}
       </div>
       ${f ? `<h2 class="cs-sec">Pessoas</h2><div id="cs-res">${htmlResultados("ver-perfil")}</div>` : ""}
-      ${!lista.length && !f ? `<div class="empty"><b>Comece uma conversa</b><span>Toque em <b>Contatos</b> para achar colegas pelo nome ou @usuário, ou crie um grupo, como “Área de Linguagens”.</span></div>` : ""}
+      ${!lista.length && !f ? `<div class="empty"><b>Nenhuma conversa</b><button class="btn primary" data-s="buscar-pessoas">Contatos</button></div>` : ""}
       <button class="cs-fab" data-s="novo" aria-label="Nova conversa ou grupo">${K.mais2}</button>`;
   }
   function sheetNovo() {
-    window.abrirSheet(`<div class="sheet-h"><h2>Nova conversa</h2></div>
+    window.abrirSheet(`<div class="sheet-h"><h2>Contatos e grupos</h2></div>
       <div class="cs-menu">
-        <button data-s="buscar-pessoas">${K.addUser}<span><b>Conversar com um colega</b><small>Busque pelo nome ou @usuário</small></span></button>
-        <button data-s="novo-grupo">${K.grupo}<span><b>Criar grupo</b><small>Ex.: Área de Linguagens, Sala dos professores</small></span></button>
-        <button data-s="entrar-codigo">${K.codigo}<span><b>Entrar em um grupo</b><small>Com o código de convite</small></span></button>
+        <button data-s="buscar-pessoas">${K.user}<span><b>Contatos</b><small>Busque colegas pelo nome ou @usuário</small></span></button>
+        <button data-s="novo-grupo">${K.grupo}<span><b>Novo grupo</b><small>Ex.: Área de Linguagens, Sala dos professores</small></span></button>
+        <button data-s="entrar-codigo">${K.codigo}<span><b>Entrar com código</b><small>Código de convite de um grupo</small></span></button>
       </div>`);
   }
   async function abrirDireto(uid) {
-    if (!uid || uid === eu()) return;
-    if (SO.bloqueados.has(uid)) return toast("Você bloqueou esta pessoa. Desbloqueie em Configurações.");
+    const id = await garantirDireto(uid); if (!id) return;
+    window.fecharSheet(); abrirChat(id);
+  }
+  /* garante que a conversa com a pessoa existe; devolve o id (ou null) */
+  async function garantirDireto(uid) {
+    if (!uid || uid === eu()) return null;
+    if (SO.bloqueados.has(uid)) { toast("Você bloqueou esta pessoa. Desbloqueie em Configurações."); return null; }
     const id = [eu(), uid].sort().join("_");
     if (!SO.chats.some(c => c.id === id)) {
       /* conversa que ainda não existe: a leitura é negada ou volta vazia; então cria */
@@ -563,12 +613,14 @@
         try {
           const m = [eu(), uid].sort();
           await fb.setDoc(D("chats", id), { tipo: "direto", membros: m, criadoPor: eu(), criadoEm: TS(), atualizadoEm: TS(), ultima: null });
-        } catch (e2) { return toast(e2 && e2.code === "unavailable" ? msgErro(e2) : "Não é possível mandar mensagem para esta pessoa agora. Ela pode aceitar mensagens só de quem ela segue."); }
+        } catch (e2) { toast(e2 && e2.code === "unavailable" ? msgErro(e2) : "Não é possível mandar mensagem para esta pessoa agora. Ela pode aceitar mensagens só de quem ela segue."); return null; }
       }
+      /* espera a conversa chegar na lista (até 4 s) */
+      for (let k = 0; k < 40 && !SO.chats.some(c => c.id === id); k++) await new Promise(r => setTimeout(r, 100));
     }
-    window.fecharSheet(); abrirChat(id);
+    return id;
   }
-  function abrirChat(id) { ouvirMsgs(id); { const c = SO.chats.find(x => x.id === id); if (c && c.tipo !== "grupo") ouvirPresenca((c.membros || []).find(m => m !== eu())); } marcarLida(id); abrirTela({ v: "chat", id }); setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 60); }
+  function abrirChat(id) { contarConversa(id); ouvirMsgs(id); { const c = SO.chats.find(x => x.id === id); if (c && c.tipo !== "grupo") ouvirPresenca((c.membros || []).find(m => m !== eu())); } marcarLida(id); abrirTela({ v: "chat", id }); setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 60); }
 
   function vChat(id) {
     const c = SO.chats.find(x => x.id === id);
@@ -579,7 +631,7 @@
     if (!g) ouvirPresenca(t.outro);
     return `<header class="cs-chat-h">
         <button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button>
-        <button class="cs-chat-quem" data-s="${g ? "info-grupo" : "ver-perfil"}" data-id="${esc(g ? c.id : t.outro)}">${t.av(40)}<span><b>${esc(t.nome)}${t.selo || ""}</b><small id="cs-chat-sub" class="${!g && textoPresenca(t.outro) === "online" ? "on" : ""}">${esc((!g && textoPresenca(t.outro)) || t.sub)}</small></span></button>
+        <button class="cs-chat-quem" data-s="${g ? "info-grupo" : "ver-perfil"}" data-id="${esc(g ? c.id : t.outro)}">${t.av(38)}<span><b>${esc(t.nome)}${t.selo || ""}</b><small id="cs-chat-sub" class="${!g && textoPresenca(t.outro) === "online" ? "on" : ""}">${esc((!g && textoPresenca(t.outro)) || t.sub)}</small></span></button>
         ${EXT.chatBotoes ? EXT.chatBotoes(c) : ""}<button class="cs-ico-bt" data-s="${g ? "info-grupo" : "menu-pessoa"}" data-id="${esc(g ? c.id : t.outro)}" aria-label="Opções">${K.mais}</button>
       </header>
       <div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
@@ -602,7 +654,7 @@
       const hr = (m.em ? new Date(ms(m.em)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "") + tique(c, m);
       if (EXT.msg && (m.arquivo || m.chamada || m.audio || m.unica)) { h += EXT.msg(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
       if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
-      else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b">${nome}<span class="cs-tx">${esc(m.texto)}</span><span class="cs-h">${hr}</span></div></div>`;
+      else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b">${nome}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
       ant = m;
     });
     return h;
@@ -622,8 +674,21 @@
     return `<div class="cs-figp" role="dialog" aria-label="Figurinhas">
       <div class="cs-figgrid">${todas.map(id => `<button type="button" data-s="${acao}" data-v="${id}" aria-label="${esc(FIGS[id].nome)}">${figurinha(id, 72)}</button>`).join("")}</div></div>`;
   }
+  /* frequência de conversa (neste aparelho): quem mais conversa comigo aparece primeiro */
+  function freq() { try { return JSON.parse(localStorage.getItem("cs.freq." + eu()) || "{}") || {}; } catch (e) { return {}; } }
+  function contarConversa(id) { try { const f = freq(); f[id] = (f[id] || 0) + 1; localStorage.setItem("cs.freq." + eu(), JSON.stringify(f)); } catch (e) { } }
+  function contatosOrdenados() {
+    const fr = freq(), vistos = new Set(), out = [];
+    SO.chats.filter(c => c.tipo !== "grupo").map(c => ({ c, uid: (c.membros || []).find(m => m !== eu()) }))
+      .filter(x => x.uid && !SO.bloqueados.has(x.uid))
+      .sort((a, b) => ((fr[b.c.id] || 0) - (fr[a.c.id] || 0)) || (ms(b.c.atualizadoEm) - ms(a.c.atualizadoEm)))
+      .forEach(x => { if (!vistos.has(x.uid)) { vistos.add(x.uid); out.push(x.uid); } });
+    [...(SO.seguindo || [])].forEach(u => { if (!vistos.has(u) && !SO.bloqueados.has(u) && u !== eu()) { vistos.add(u); out.push(u); } });
+    return out;
+  }
   async function enviarMsg(id, conteudo) {
     const c = SO.chats.find(x => x.id === id); if (!c) return;
+    contarConversa(id);
     if (conteudo.texto != null) {
       const t = conteudo.texto.trim(); if (!t) return;
       if (ofensivo(t)) { toast("Mensagem não enviada: tem palavras ofensivas ou preconceituosas."); return false; }
@@ -761,10 +826,11 @@
     const texto = esc(p.texto || "");
     const longo = !completo && (p.texto || "").length > 420;
     return `<article class="card cs-post">
-      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(a.nome)}${seloHtml(a)}</b><small>${tempoPost(p.em)}</small></span></button>
+      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(a.nome)}${seloHtml(a)}</b><small>${tempoPost(p.em)}${p.para ? ` · ${K.lock} ${meu ? `para ${p.para.length} pessoa${p.para.length === 1 ? "" : "s"}` : "só para algumas pessoas"}` : ""}</small></span></button>
         <button class="cs-ico-bt" data-s="menu-post" data-id="${esc(p.id)}" aria-label="Opções da publicação">${K.mais}</button></div>
       ${p.texto ? `<div class="cs-post-tx ${longo ? "corte" : ""}">${texto}</div>${longo ? `<button class="cs-link" data-s="abrir-post" data-id="${esc(p.id)}">Ler tudo</button>` : ""}` : ""}
       ${p.fig ? `<div class="cs-post-fig">${figurinha(p.fig, 140)}</div>` : ""}
+      ${htmlFotosPost(p)}${htmlArqPost(p)}
       <div class="cs-post-a">
         <button class="cs-acao ${curti ? "on" : ""}" data-s="curtir" data-id="${esc(p.id)}" aria-pressed="${curti}" aria-label="Curtir">${K.heart}<span>${n || ""}</span></button>
         <button class="cs-acao" data-s="abrir-post" data-id="${esc(p.id)}" aria-label="Comentários">${K.coment}<span>${p.nComent || ""}</span></button>
@@ -778,32 +844,232 @@
     const lista = postsVisiveis(), eup = SO.eu || {};
     return `<div class="cs-cab"><h1>Mural</h1><button class="cs-ico-bt" data-s="buscar-pessoas" aria-label="Encontrar colegas">${K.busca}</button></div>
       ${avisoEmail()}
-      <button class="card cs-novo-post" data-s="novo-post">${av(eup, 40, eu())}<span>Compartilhe uma ideia, um aviso ou um material…</span></button>
+      <button class="card cs-novo-post" data-s="novo-post">${av(eup, 40, eu())}<span>Nova publicação</span>${K.foto}</button>
       <div class="seg cs-seg"><button data-s="feed" data-v="todos" aria-pressed="${SO.feed === "todos"}">Todos</button><button data-s="feed" data-v="seguindo" aria-pressed="${SO.feed === "seguindo"}">Quem eu sigo</button></div>
       ${lista.length ? `<div class="stack">${lista.map(p => htmlPost(p)).join("")}</div>` :
-        `<div class="empty">${figurinha("eureca", 96)}<b>${SO.feed === "seguindo" ? "Ninguém que você segue publicou ainda" : "O mural está esperando a primeira ideia"}</b>
-        <span>${SO.feed === "seguindo" ? "Siga colegas para ver as publicações deles aqui." : "Publique um aviso, uma dica de aula ou um material."}</span>
-        <button class="btn primary" data-s="${SO.feed === "seguindo" ? "buscar-pessoas" : "novo-post"}">${SO.feed === "seguindo" ? "Encontrar colegas" : "Publicar"}</button></div>`}`;
+        `<div class="empty">${figurinha("eureca", 96)}<b>Nada por aqui</b>
+        <button class="btn primary" data-s="${SO.feed === "seguindo" ? "buscar-pessoas" : "novo-post"}">${SO.feed === "seguindo" ? "Encontrar colegas" : "Publicar"}</button></div>`}
+      <button class="cs-fab" data-s="novo-post" aria-label="Nova publicação">${K.mais2}</button>`;
   }
   function sheetNovoPost() {
-    SO.postFig = null;
+    SO.postFig = null; (SO.postFotos || []).forEach(f => URL.revokeObjectURL(f.url)); SO.postFotos = []; SO.postPub = "todos"; SO.postArq = null; SO.postLive = false;
     window.abrirSheet(`<div class="sheet-h"><h2>Nova publicação</h2></div>
-      <form class="stack" id="cs-f-post"><textarea class="in" id="cs-post-tx" maxlength="3000" rows="5" placeholder="Escreva para os colegas…"></textarea>
+      <form class="stack" id="cs-f-post"><textarea class="in" id="cs-post-tx" maxlength="3000" rows="4" placeholder="Escreva para os colegas…"></textarea>
       <div id="cs-post-figsel"></div>
-      <details class="cs-det"><summary>${K.smile} Adicionar figurinha</summary>${painelFig("fig-post")}</details>
-      <p class="small muted">Respeito sempre: mensagens ofensivas ou preconceituosas são bloqueadas.</p>
-      <button class="btn primary cs-grande">Publicar</button></form>`);
+      <div class="cs-pc-fotos" id="cs-pc-fotos"></div>
+      <div id="cs-pc-arq"></div>
+      <div class="cs-pc-bar">
+        <button type="button" class="btn sm" data-s="mp-fotos">${K.foto}<span>Fotos</span></button>
+        <button type="button" class="btn sm" data-s="mp-arq">${K.clip}<span>Arquivo</span></button>
+        <button type="button" class="btn sm" data-s="mp-gravar">${K.video}<span>Gravar</span></button>
+        <button type="button" class="btn sm" data-s="mp-live">${K.live}<span>Ao vivo</span></button>
+        <button type="button" class="btn sm" data-s="mp-fig">${K.smile}<span>Figurinha</span></button>
+        <button type="button" class="btn sm" data-s="mp-pub" id="cs-mp-pub">${K.grupo}<span>Todos</span></button>
+      </div>
+      <div id="cs-mp-figs" hidden>${painelFig("fig-post")}</div>
+      <div class="cs-mp-pessoas" id="cs-mp-pessoas" hidden>
+        <div class="seg"><button type="button" data-s="mp-pubv" data-v="todos" aria-pressed="true">Todos</button><button type="button" data-s="mp-pubv" data-v="escolher" aria-pressed="false">Só pessoas marcadas</button></div>
+        <div id="cs-mp-lista" hidden>
+          <input class="in" id="cs-mp-filtro" placeholder="Buscar pelo nome" aria-label="Buscar pessoa">
+          <button type="button" class="cs-link" data-s="mp-seguidos">Marcar todos que eu sigo</button>
+          <div class="cs-mp-ll">${contatosOrdenados().map(u => { const p = P(u); return `<label class="cs-aceite" data-n="${esc(semAc(p.nome || ""))}"><input type="checkbox" class="cs-mp-pp" value="${esc(u)}">${av(p, 32, u)}<span>${esc(p.nome)}</span></label>`; }).join("") || `<p class="small muted">Converse com colegas ou siga alguém para marcar aqui.</p>`}</div>
+        </div>
+      </div>
+      <div class="cs-pc-prog" id="cs-pc-prog" hidden><i></i></div>
+      <button class="btn primary cs-grande" id="cs-pc-ok">Publicar</button></form>`);
   }
+  function pintarFotosCompositor() {
+    const el = $("#cs-pc-fotos"); if (!el) return;
+    el.innerHTML = (SO.postFotos || []).map((f, i) => `<span class="cs-pc-f"><img src="${f.url}" alt=""><button type="button" data-s="mp-tirar" data-v="${i}" aria-label="Tirar foto">${K.x}</button></span>`).join("");
+  }
+  function marcadosPost() { return [...document.querySelectorAll(".cs-mp-pp:checked")].map(x => x.value).slice(0, 400); }
   async function publicar() {
-    const t = $("#cs-post-tx").value.trim();
-    if (!t && !SO.postFig) return toast("Escreva algo ou escolha uma figurinha.");
+    const t = $("#cs-post-tx").value.trim(), fotos = SO.postFotos || [];
+    const arqP = SO.postArq, live = SO.postLive;
+    if (!t && !SO.postFig && !fotos.length && !arqP && !live) return toast("Escreva algo ou anexe.");
     if (ofensivo(t)) return toast("Publicação não enviada: tem palavras ofensivas ou preconceituosas.");
+    const para = SO.postPub === "escolher" ? marcadosPost() : null;
+    if (para && !para.length) return toast("Marque quem vai ver a publicação.");
+    const ok = $("#cs-pc-ok"), prog = $("#cs-pc-prog");
+    if (ok.disabled) return; ok.disabled = true; ok.textContent = fotos.length ? "Preparando fotos…" : "Publicando…";
+    const col = para ? "postsPriv" : "posts", ref = fb.doc(C(col)), criados = [], imgs = []; let criadosArq = null;
     try {
       await SO.user.getIdToken(true).catch(() => { });
-      await fb.addDoc(C("posts"), { autor: eu(), texto: t.slice(0, 3000), fig: SO.postFig || null, em: TS(), curtidas: [], nComent: 0 });
-      window.fecharSheet(); toast("Publicado!"); SO.feed = "todos"; if (SO.tab !== "mural") { SO.tab = "mural"; lembrarTab(); } pintar();
-    } catch (e) { toast(msgErro(e)); }
+      if (prog && fotos.length) prog.hidden = false;
+      for (let i = 0; i < fotos.length; i++) {
+        const r = await fotos[i].prep; const iid = ref.id + "_" + i;
+        if (ok) ok.textContent = `Enviando foto ${i + 1} de ${fotos.length}…`;
+        const base = { dono: eu(), em: TS(), ...(para ? { para } : {}) };
+        await fb.setDoc(D("postImgs", iid + "m"), { ...base, d: fb.Bytes.fromUint8Array(new Uint8Array(await r.m.arrayBuffer())) }); criados.push(iid + "m");
+        if (r.f) { await fb.setDoc(D("postImgs", iid + "f"), { ...base, d: fb.Bytes.fromUint8Array(new Uint8Array(await r.f.arrayBuffer())) }); criados.push(iid + "f"); }
+        MI_guardar(iid + "m", r.m); if (r.f) MI.cheia.set(iid + "f", r.f);
+        imgs.push({ id: iid, w: r.w, h: r.h, t: r.t, f: !!r.f });
+        if (prog) prog.firstElementChild.style.width = Math.round((i + 1) / fotos.length * 100) + "%";
+      }
+      let arq = null;
+      if (arqP) {
+        if (ok) ok.textContent = "Enviando arquivo…";
+        const r = await arqP.prep, M = EXT.midia;
+        const aid = await M.subir(null, r.blob, { nome: r.nome, tipo: r.tipo, extra: para ? { para } : {} }, f => { if (prog) { prog.hidden = false; prog.firstElementChild.style.width = Math.round(f * 100) + "%"; } }, "postArqs");
+        criadosArq = aid; M.guardar("postArqs:" + aid, r.blob);
+        arq = { id: aid, nome: r.nome, tipo: r.tipo, tamanho: r.blob.size, ...r.extra };
+      }
+      const aoVivo = live ? "ChatMil-AoVivo-" + eu().slice(0, 6) + "-" + Math.random().toString(36).slice(2, 8) : null;
+      await fb.setDoc(ref, { autor: eu(), texto: t.slice(0, 3000), fig: SO.postFig || null, em: TS(), curtidas: [], nComent: 0, ...(imgs.length ? { imgs } : {}), ...(para ? { para } : {}), ...(arq ? { arq } : {}), ...(aoVivo ? { aoVivo } : {}) });
+      if (aoVivo) abrirAoVivo(aoVivo);
+      fotos.forEach(f => URL.revokeObjectURL(f.url)); SO.postFotos = []; SO.postArq = null; SO.postLive = false;
+      window.fecharSheet(); toast(para ? `Publicado só para ${para.length} pessoa${para.length === 1 ? "" : "s"}.` : "Publicado!"); SO.feed = "todos"; if (SO.tab !== "mural") { SO.tab = "mural"; lembrarTab(); } pintar();
+    } catch (e) {
+      criados.forEach(id => fb.deleteDoc(D("postImgs", id)).catch(() => { })); if (criadosArq && EXT.midia) EXT.midia.apagarArquivo(criadosArq, "postArqs");
+      if (ok) { ok.disabled = false; ok.textContent = "Publicar"; } if (prog) prog.hidden = true;
+      toast(e && e.msg ? e.msg : msgErro(e));
+    }
   }
+
+  /* ================= Fotos do mural: leves no celular e nítidas =================
+     Cada foto vai em 2 tamanhos: "m" (até 1280 px, ~150 KB) aparece no mural;
+     "f" (até 2560 px) só baixa quando a pessoa abre a foto. Uma prévia borrada
+     de poucos bytes vai junto da publicação e aparece na hora. */
+  const MI = { m: new Map(), cheia: new Map(), pend: new Map(), obs: null, el: null };
+  function MI_guardar(id, blob) {
+    if (MI.m.has(id)) return MI.m.get(id);
+    const u = URL.createObjectURL(blob); MI.m.set(id, u);
+    while (MI.m.size > 48) { const [k, x] = MI.m.entries().next().value; MI.m.delete(k); setTimeout(() => URL.revokeObjectURL(x), 4000); }
+    return u;
+  }
+  async function abrirImagem(file) {
+    if (window.createImageBitmap) { try { return await createImageBitmap(file, { imageOrientation: "from-image" }); } catch (e) { } }
+    const url = URL.createObjectURL(file);
+    try { return await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; }); }
+    finally { setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  }
+  const dimDe = img => [img.naturalWidth || img.width, img.naturalHeight || img.height];
+  function blobDe(cv, tipo, q) { return new Promise(r => { try { cv.toBlob(b => r(b), tipo, q); } catch (e) { r(null); } }); }
+  async function reduzir(img, lado, q, max) {
+    const [w0, h0] = dimDe(img), k = Math.min(1, lado / Math.max(w0, h0));
+    const cv = document.createElement("canvas"); cv.width = Math.max(1, Math.round(w0 * k)); cv.height = Math.max(1, Math.round(h0 * k));
+    const cx = cv.getContext("2d"); cx.imageSmoothingQuality = "high"; cx.fillStyle = "#fff"; cx.fillRect(0, 0, cv.width, cv.height); cx.drawImage(img, 0, 0, cv.width, cv.height);
+    let tipo = "image/webp", b = await blobDe(cv, tipo, q);
+    if (!b || b.type !== "image/webp") { tipo = "image/jpeg"; b = await blobDe(cv, tipo, q); }
+    while (b && b.size > max && q > 0.42) { q -= 0.08; b = await blobDe(cv, tipo, q); }
+    if (!b || b.size > max) { cv.width = Math.round(cv.width * 0.75); cv.height = Math.round(cv.height * 0.75); cx.drawImage(img, 0, 0, cv.width, cv.height); b = await blobDe(cv, "image/jpeg", 0.7); }
+    if (!b) throw { msg: "Não foi possível preparar esta foto." };
+    return { b, w: cv.width, h: cv.height };
+  }
+  async function prepararFotoPost(file) {
+    const img = await abrirImagem(file); const [w, h] = dimDe(img);
+    if (!w || !h) throw { msg: "Esta imagem não pôde ser lida." };
+    const m = await reduzir(img, 1280, 0.82, 300000);
+    const f = Math.max(w, h) > 1400 ? await reduzir(img, 2560, 0.86, 740000) : null;
+    const tc = document.createElement("canvas"), k = 24 / Math.max(w, h); tc.width = Math.max(2, Math.round(w * k)); tc.height = Math.max(2, Math.round(h * k));
+    tc.getContext("2d").drawImage(img, 0, 0, tc.width, tc.height);
+    try { img.close && img.close(); } catch (e) { }
+    return { m: m.b, f: f ? f.b : null, w: m.w, h: m.h, t: tc.toDataURL("image/jpeg", 0.5) };
+  }
+  /* arquivo (PDF, vídeo, slides…) e ao vivo no mural */
+  function htmlArqPost(p) {
+    let h = "";
+    if (p.aoVivo) {
+      const fresco = Date.now() - ms(p.em) < 3 * 3600e3;
+      h += `<div class="cs-live ${fresco ? "on" : ""}"><span class="cs-live-tag">${fresco ? "AO VIVO" : "Transmissão encerrada"}</span>${fresco ? `<button class="btn sm primary" data-s="mp-assistir" data-v="${esc(p.aoVivo)}">${p.autor === eu() ? "Abrir" : "Assistir"}</button>` : ""}</div>`;
+    }
+    const a = p.arq; if (!a || !EXT.midia) return h;
+    const g = EXT.midia.genero(a), capa = a.thumb && /^data:image\/(jpeg|png|webp);base64,/.test(a.thumb);
+    if (g === "video") return h + `<button class="cs-parq-v" data-s="mp-abrir" data-post="${esc(p.id)}" ${capa ? `style="background-image:url(${a.thumb})"` : ""} aria-label="Assistir vídeo"><span class="cs-yt-play">${K.play}</span>${a.dur ? `<i>${Math.floor(a.dur / 60)}:${String(Math.round(a.dur % 60)).padStart(2, "0")}</i>` : ""}</button>`;
+    const ext = (String(a.nome || "").split(".").pop() || "").slice(0, 4).toUpperCase();
+    return h + `<button class="cs-arq cs-parq ${capa ? "cs-arq-capa" : ""}" data-s="mp-abrir" data-post="${esc(p.id)}">${capa ? `<span class="cs-capa ${g === "slides" || (a.tw > a.th) ? "larga" : "folha"}"><img src="${a.thumb}" alt="" loading="lazy"></span>` : ""}
+      <span class="cs-arq-row"><span class="cs-arq-ic" style="--c:${EXT.midia.COR[g]}">${K.clip}<b>${esc(ext)}</b></span><span class="cs-arq-t"><b>${esc(a.nome)}</b><small>${EXT.midia.ROTULO[g]}${a.paginas ? " · " + a.paginas + " pág." : ""}</small></span></span></button>`;
+  }
+  function abrirAoVivo(sala) {
+    const nome = (SO.eu && (SO.eu.usuario || SO.eu.nome)) || "";
+    const u = `https://meet.jit.si/${encodeURIComponent(sala)}#userInfo.displayName=${encodeURIComponent(JSON.stringify(nome))}&config.disableDeepLinking=true`;
+    abrirLink(u);
+  }
+  function pintarArqCompositor() {
+    const el = $("#cs-pc-arq"); if (!el) return;
+    const a = SO.postArq, live = SO.postLive;
+    el.innerHTML = (a ? `<div class="cs-pc-a">${K.clip}<span>${esc(a.nome)}</span><button type="button" data-s="mp-arq-tirar" aria-label="Tirar">${K.x}</button></div>` : "")
+      + (live ? `<div class="cs-pc-a cs-pc-live">${K.live}<span>Ao vivo ao publicar</span><button type="button" data-s="mp-live" aria-label="Tirar">${K.x}</button></div>` : "");
+  }
+  const tinyOk = t => typeof t === "string" && /^data:image\/(jpeg|webp|png);base64,[A-Za-z0-9+/=]+$/.test(t) && t.length < 4000;
+  function htmlFotosPost(p) {
+    const l = (p.imgs || []).slice(0, 6); if (!l.length) return "";
+    const n = Math.min(l.length, 4), ar = l.length === 1 ? Math.max(0.65, Math.min(1.9, (l[0].w || 1) / (l[0].h || 1))) : 0;
+    return `<div class="cs-pfotos n${n}" ${ar ? `style="--ar:${ar.toFixed(3)}"` : ""}>${l.slice(0, 4).map((m, i) => {
+      const u = MI.m.get(m.id + "m");
+      return `<button class="cs-pf ${u ? "ok" : ""}" data-s="mf-ver" data-post="${esc(p.id)}" data-v="${i}" data-img="${esc(m.id)}" ${tinyOk(m.t) ? `style="background-image:url(${m.t})"` : ""} aria-label="Abrir foto ${i + 1} de ${l.length}">${u ? `<img src="${u}" alt="" decoding="async">` : ""}${i === 3 && l.length > 4 ? `<i class="cs-pf-mais">+${l.length - 4}</i>` : ""}</button>`;
+    }).join("")}</div>`;
+  }
+  async function baixarFotoPost(id0, col) {
+    col = col || "postImgs"; const id = col === "postImgs" ? id0 : col + ":" + id0;
+    if (MI.m.has(id)) return MI.m.get(id);
+    if (MI.pend.has(id)) return MI.pend.get(id);
+    const pr = fb.getDoc(D(col, id0)).then(d => {
+      if (!d.exists()) return null; const x = d.data().d; if (!x) return null;
+      const u8 = x.toUint8Array(); const tipo = u8[0] === 0x52 && u8[8] === 0x57 ? "image/webp" : "image/jpeg";
+      return MI_guardar(id, new Blob([u8], { type: tipo }));
+    }).catch(e => { console.warn(e); return null; }).finally(() => MI.pend.delete(id));
+    MI.pend.set(id, pr); return pr;
+  }
+  function observarFotos() {
+    const els = document.querySelectorAll(".cs-pf:not(.ok):not(.vig)"); if (!els.length) return;
+    const carregar = async b => {
+      const u = await baixarFotoPost(b.dataset.img + "m", b.dataset.col); if (!u || !b.isConnected) return;
+      const img = new Image(); img.decoding = "async"; img.alt = ""; img.onload = () => { b.prepend(img); b.classList.add("ok"); }; img.src = u;
+    };
+    if (!("IntersectionObserver" in window)) { els.forEach(b => { b.classList.add("vig"); carregar(b); }); return; }
+    if (!MI.obs) MI.obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { MI.obs.unobserve(e.target); carregar(e.target); } }), { rootMargin: "700px 0px" });
+    els.forEach(b => { b.classList.add("vig"); MI.obs.observe(b); });
+  }
+  function apagarFotosPost(p) {
+    if (p && p.arq && EXT.midia) EXT.midia.apagarArquivo(p.arq.id, "postArqs");
+    if (!p || !p.imgs) return;
+    p.imgs.forEach(m => { fb.deleteDoc(D("postImgs", m.id + "m")).catch(() => { }); if (m.f) fb.deleteDoc(D("postImgs", m.id + "f")).catch(() => { }); });
+  }
+  /* visualizador: arrastar para os lados troca de foto; dois toques ampliam */
+  function fecharFotos() { if (!MI.el) return; MI.el.remove(); MI.el = null; document.body.classList.remove("cs-vis-on"); }
+  async function verFotosPost(pid, i0) {
+    const p = SO.posts.find(x => x.id === pid); if (!p || !p.imgs || !p.imgs.length) return;
+    verFotos(p.imgs, i0, "postImgs");
+  }
+  async function verFotos(l, i0, col) {
+    if (!l || !l.length) return;
+    fecharFotos(); col = col || "postImgs"; const ck = id => col === "postImgs" ? id : col + ":" + id; let i = Math.max(0, Math.min(l.length - 1, i0 | 0)), z = 1, tx = 0, ty = 0;
+    const el = document.createElement("div"); el.className = "cs-mfv"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Fotos da publicação");
+    el.innerHTML = `<div class="cs-mfv-top"><button class="cs-vbt" data-s="mf-fechar" aria-label="Fechar">${K.x}</button><b id="mfv-n"></b><button class="cs-vbt" data-s="mf-salvar" aria-label="Salvar foto">${K.baixar}</button></div>
+      <div class="cs-mfv-palco" id="mfv-palco"><img id="mfv-img" alt="" draggable="false"></div>
+      ${l.length > 1 ? `<div class="cs-mfv-pts">${l.map((_, k) => `<i data-k="${k}"></i>`).join("")}</div>` : ""}`;
+    document.body.appendChild(el); document.body.classList.add("cs-vis-on"); MI.el = el;
+    const img = el.querySelector("#mfv-img"), palco = el.querySelector("#mfv-palco");
+    const aplicar = () => { img.style.transform = `translate(${tx}px,${ty}px) scale(${z})`; };
+    const mostrar = async () => {
+      z = 1; tx = ty = 0; aplicar(); const m = l[i], meu = i;
+      el.querySelector("#mfv-n").textContent = l.length > 1 ? `${i + 1} de ${l.length}` : "";
+      el.querySelectorAll(".cs-mfv-pts i").forEach((x, k) => x.classList.toggle("on", k === i));
+      img.src = tinyOk(m.t) ? m.t : ""; img.classList.add("bor");
+      const um = await baixarFotoPost(m.id + "m", col); if (meu !== i || !MI.el) return; if (um) { img.src = um; img.classList.remove("bor"); }
+      if (m.f) {
+        let b = MI.cheia.get(ck(m.id + "f"));
+        if (!b) { try { const d = await fb.getDoc(D(col, m.id + "f")); if (d.exists()) { const u8 = d.data().d.toUint8Array(); b = new Blob([u8], { type: u8[0] === 0x52 && u8[8] === 0x57 ? "image/webp" : "image/jpeg" }); MI.cheia.set(ck(m.id + "f"), b); while (MI.cheia.size > 4) MI.cheia.delete(MI.cheia.keys().next().value); } } catch (e) { } }
+        if (b && meu === i && MI.el) { const u = URL.createObjectURL(b); const pre = new Image(); pre.onload = () => { if (meu === i && MI.el) { const ant = img.src; img.src = u; img.dataset.cheia = u; } else URL.revokeObjectURL(u); }; pre.src = u; }
+      }
+    };
+    MI.salvar = async () => { const m = l[i]; let b = MI.cheia.get(ck(m.id + "f")); if (!b) { const u = await baixarFotoPost(m.id + "m", col); if (u) b = await (await fetch(u)).blob(); } if (!b) return; const nome = "chatmil-foto-" + (i + 1) + (b.type === "image/webp" ? ".webp" : ".jpg"); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); toast("Foto salva."); };
+    let x0 = 0, y0 = 0, ult = 0, arr = false, px = 0, py = 0;
+    palco.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; px = tx; py = ty; arr = true; });
+    palco.addEventListener("pointermove", e => { if (!arr || z === 1) return; tx = px + (e.clientX - x0); ty = py + (e.clientY - y0); aplicar(); });
+    palco.addEventListener("pointerup", e => {
+      arr = false; const dx = e.clientX - x0, dy = e.clientY - y0, agora = Date.now();
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
+        if (agora - ult < 300) { if (z === 1) { const r = palco.getBoundingClientRect(); z = 2.5; tx = (r.width / 2 - (e.clientX - r.left)) * 1.5; ty = (r.height / 2 - (e.clientY - r.top)) * 1.5; } else { z = 1; tx = ty = 0; } aplicar(); ult = 0; } else ult = agora;
+        return;
+      }
+      if (z === 1 && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) { const n = i + (dx < 0 ? 1 : -1); if (n >= 0 && n < l.length) { i = n; mostrar(); } }
+      else if (z === 1 && dy > 110) fecharFotos();
+    });
+    mostrar();
+  }
+
   function vPost(id) {
     const p = SO.posts.find(x => x.id === id);
     const cs = (SO.coments[id] || []).filter(c => !SO.bloqueados.has(c.autor));
@@ -820,8 +1086,8 @@
     const el = $("#cs-com-tx"), t = el.value.trim(); if (!t) return;
     if (ofensivo(t)) return toast("Comentário não enviado: tem palavras ofensivas ou preconceituosas.");
     const b = fb.writeBatch(db);
-    b.set(fb.doc(C("posts", id, "comentarios")), { autor: eu(), texto: t.slice(0, 1000), em: TS() });
-    b.update(D("posts", id), { nComent: fb.increment(1) });
+    b.set(fb.doc(C(colP(id), id, "comentarios")), { autor: eu(), texto: t.slice(0, 1000), em: TS() });
+    b.update(D(colP(id), id), { nComent: fb.increment(1) });
     try { await b.commit(); SO.rascunho["c:" + id] = ""; el.value = ""; } catch (e) { toast(msgErro(e)); }
   }
 
@@ -898,7 +1164,7 @@
         <div class="cs-capa" style="--c:${corDe(uid)}"></div>
         <div class="cs-perfil-av">${EXT.perfilAv ? EXT.perfilAv(uid, av(p, 96, uid)) : av(p, 96, uid)}</div>
         <h1>${esc(p.nome)}${seloHtml(p)}</h1>
-        ${meu ? `<span class="muted">@${esc(p.usuario || "")} · é assim que os outros veem você</span>` : ""}
+        ${meu ? `<span class="muted">@${esc(p.usuario || "")}</span>` : ""}
         ${p.inst ? `<span class="pill d1">${K.check} Professor(a) com e-mail institucional</span>` : ""}
         ${p.escola ? `<span class="cs-escola">${K.escola} ${esc(p.escola)}</span>` : ""}
         ${(p.disciplinas || []).length ? `<div class="chips cs-centro-chips">${p.disciplinas.map(d => `<span class="pill">${esc(d)}</span>`).join("")}</div>` : ""}
@@ -1002,7 +1268,7 @@
     const u = SO.user, p = SO.eu || {}, z = typeof ZOOM !== "undefined" ? ZOOM : 1, tm = tema();
     const lin = (s, icone, t, sub, extra) => `<button data-s="${s}">${`<span class="cs-lic">${icone}</span>`}<span><b>${t}</b>${sub ? `<small>${sub}</small>` : ""}</span>${extra == null ? K.dir : extra}</button>`;
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Configurações</b></header>
-      <div class="cs-pag stack">
+      <div class="cs-pag stack cs-cfg">
         <button class="card cs-conta" data-s="editar-perfil">${av(p, 56, eu())}<span><b>${esc(p.nome)}</b><small>@${esc(p.usuario)}</small></span>${K.dir}</button>
         <h2 class="cs-sec">Conta</h2>
         <div class="cs-menu card flat">
@@ -1095,9 +1361,11 @@
     out.innerHTML = `<p class="small muted">Excluindo…</p>`;
     try {
       const posts = await fb.getDocs(fb.query(C("posts"), fb.where("autor", "==", uid)));
+      const postsP = await fb.getDocs(fb.query(C("postsPriv"), fb.where("autor", "==", uid))).catch(() => ({ docs: [] }));
       const seg = await fb.getDocs(C("users", uid, "seguindo"));
       const ops = [];
-      posts.docs.forEach(d => ops.push(b => b.delete(d.ref)));
+      for (const d of [...posts.docs, ...postsP.docs]) { const ar = d.data().arq; if (ar && EXT.midia) await EXT.midia.apagarArquivo(ar.id, "postArqs").catch(() => { }); }
+      [...posts.docs, ...postsP.docs].forEach(d => { ops.push(b => b.delete(d.ref)); (d.data().imgs || []).forEach(m => { ops.push(b => b.delete(D("postImgs", m.id + "m"))); if (m.f) ops.push(b => b.delete(D("postImgs", m.id + "f"))); }); });
       seg.docs.forEach(d => { ops.push(b => b.delete(d.ref)); ops.push(b => b.delete(D("users", d.id, "seguidores", uid))); });
       for (const sub of ["leituras", "bloqueados"]) (await fb.getDocs(C("users", uid, sub))).docs.forEach(d => ops.push(b => b.delete(d.ref)));
       for (let i = 0; i < ops.length; i += 400) { const b = fb.writeBatch(db); ops.slice(i, i + 400).forEach(f => f(b)); await b.commit(); }
@@ -1108,6 +1376,7 @@
       const b = fb.writeBatch(db);
       if (SO.eu && SO.eu.usuario) b.delete(D("usernames", SO.eu.usuario));
       b.delete(D("users", uid)); await b.commit();
+      if (window.CS_CHAMADAS_SAIR) window.CS_CHAMADAS_SAIR();
       await fb.deleteUser(u);
       window.fecharSheet(); SO.tela = "boas-vindas"; toast("Sua conta foi excluída.");
     } catch (e) { falha(msgErro(e)); }
@@ -1164,6 +1433,9 @@
     document.querySelectorAll("#cs-txt,#cs-com-tx").forEach(autosize);
     if ($("#cs-usu-ok")) atualizarChecagem();
     if (t && t.v === "chat" && perto) window.scrollTo(0, document.documentElement.scrollHeight);
+    { const cAt = full && t && t.v === "chat" && SO.chats.find(c => c.id === t.id); seguroTela("chat", !!(cAt && cAt.tipo !== "grupo")); }
+    observarFotos();
+    EXT.depois.forEach(f => { try { f(t); } catch (e) { console.warn(e); } });
     try { document.title = nl ? `(${nl}) ChatMil` : "ChatMil"; } catch (e) { }
     return true;
   }
@@ -1184,8 +1456,9 @@
       case "termos": window.abrirSheet(`<div class="sheet-h"><h2>Termos de uso e privacidade</h2></div>${TXT_TERMOS}<button class="btn primary" data-s="fechar">Entendi</button>`); break;
       case "dicas": window.abrirSheet(`<div class="sheet-h"><h2>Dicas de segurança</h2></div>${TXT_DICAS}<button class="btn primary" data-s="fechar">Entendi</button>`); break;
       case "fechar": window.fecharSheet(); break;
+      case "link": ev.preventDefault(); abrirLink(v); break;
       case "esqueci": esqueci(); break;
-      case "sair": window.fecharSheet(); limparPilha(); SO.tela = "entrar"; SO.cad = { nome: "", email: SO.user ? SO.user.email : "", senha: "", usuario: "", escola: "", disciplinas: [], foto: null, ok: null, verSenha: false }; await fb.signOut(auth); break;
+      case "sair": window.fecharSheet(); limparPilha(); SO.tela = "entrar"; SO.cad = { nome: "", email: SO.user ? SO.user.email : "", senha: "", usuario: "", escola: "", disciplinas: [], foto: null, ok: null, verSenha: false }; if (window.CS_CHAMADAS_SAIR) window.CS_CHAMADAS_SAIR(); await fb.signOut(auth); break;
       case "sug": { const i = $("#cs-usu"); if (i) i.value = v; SO.cad.usuario = v; checarUsuario(); break; }
       case "disc": { const alvo = el.dataset.alvo === "ed" ? SO.ed : SO.cad; const l = alvo.disciplinas; const k = l.indexOf(v); if (k >= 0) l.splice(k, 1); else if (l.length < 8) l.push(v); el.setAttribute("aria-pressed", String(l.includes(v))); break; }
       case "foto-tirar": ctxFoto().foto = null; pintar(); break;
@@ -1260,10 +1533,50 @@
       }
       case "feed": SO.feed = v; pintar(); break;
       case "novo-post": sheetNovoPost(); break;
+      case "mp-fotos": {
+        const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
+        inp.onchange = () => {
+          const fs = [...(inp.files || [])].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic|gif)$/i.test(f.name));
+          const vagas = 6 - (SO.postFotos || []).length; if (fs.length > vagas) toast("Até 6 fotos por publicação.");
+          fs.slice(0, Math.max(0, vagas)).forEach(f => { const prep = prepararFotoPost(f); prep.catch(() => { }); SO.postFotos.push({ url: URL.createObjectURL(f), prep }); });
+          pintarFotosCompositor();
+        };
+        inp.click(); break;
+      }
+      case "mp-arq": case "mp-gravar": {
+        if (!EXT.midia) break;
+        const inp = document.createElement("input"); inp.type = "file";
+        inp.accept = s === "mp-gravar" ? "video/*" : "application/pdf,video/*,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods";
+        if (s === "mp-gravar") inp.setAttribute("capture", "user");
+        inp.onchange = () => {
+          const f = (inp.files || [])[0]; if (!f) return;
+          if (f.size > 20 * 1048576) return toast("Máximo 20 MB.");
+          const prep = EXT.midia.prepararArquivo(f); prep.catch(() => { });
+          SO.postArq = { nome: f.name || "video.webm", prep }; pintarArqCompositor();
+        };
+        inp.click(); break;
+      }
+      case "mp-arq-tirar": SO.postArq = null; pintarArqCompositor(); break;
+      case "mp-live": SO.postLive = !SO.postLive; pintarArqCompositor(); break;
+      case "mp-assistir": abrirAoVivo(v); break;
+      case "mp-abrir": { const p = SO.posts.find(x => x.id === el.dataset.post); if (p && p.arq && EXT.midia) EXT.midia.abrirArquivo({ ...p.arq, col: "postArqs" }); break; }
+      case "mp-tirar": { const k = +v, f = (SO.postFotos || [])[k]; if (f) { URL.revokeObjectURL(f.url); SO.postFotos.splice(k, 1); pintarFotosCompositor(); } break; }
+      case "mp-fig": { const d = $("#cs-mp-figs"); if (d) d.hidden = !d.hidden; break; }
+      case "mp-pub": { const d = $("#cs-mp-pessoas"); if (d) d.hidden = !d.hidden; break; }
+      case "mp-pubv": {
+        SO.postPub = v; document.querySelectorAll('[data-s="mp-pubv"]').forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+        const l = $("#cs-mp-lista"); if (l) l.hidden = v !== "escolher";
+        const b = $("#cs-mp-pub"); if (b) b.lastElementChild.textContent = v === "escolher" ? "Pessoas marcadas" : "Todos";
+        break;
+      }
+      case "mp-seguidos": document.querySelectorAll(".cs-mp-pp").forEach(c => { if (SO.seguindo.has(c.value)) c.checked = true; }); break;
+      case "mf-ver": verFotosPost(el.dataset.post, +v); break;
+      case "mf-fechar": fecharFotos(); break;
+      case "mf-salvar": if (MI.salvar) MI.salvar().catch(() => toast("Não foi possível salvar.")); break;
       case "curtir": {
         const p = SO.posts.find(x => x.id === id); if (!p) break;
         const on = (p.curtidas || []).includes(eu());
-        fb.updateDoc(D("posts", id), { curtidas: on ? fb.arrayRemove(eu()) : fb.arrayUnion(eu()) }).catch(e => toast(msgErro(e)));
+        fb.updateDoc(D(colP(id), id), { curtidas: on ? fb.arrayRemove(eu()) : fb.arrayUnion(eu()) }).catch(e => toast(msgErro(e)));
         break;
       }
       case "abrir-post": ouvirComents(id); abrirTela({ v: "post", id }); break;
@@ -1279,11 +1592,11 @@
       }
       case "apagar-post": {
         if (!ok) return pedirConfirmacao("Apagar publicação?", "A publicação e as curtidas serão apagadas.", "Apagar", el);
-        try { await fb.deleteDoc(D("posts", id)); window.fecharSheet(); delete SO.contagens[eu()]; const t = topo(); if (t && t.v === "post") voltar(); toast("Publicação apagada."); } catch (e) { toast(msgErro(e)); }
+        try { const pp = SO.posts.find(x => x.id === id); await fb.deleteDoc(D(colP(id), id)); apagarFotosPost(pp); window.fecharSheet(); delete SO.contagens[eu()]; const t = topo(); if (t && t.v === "post") voltar(); toast("Publicação apagada."); } catch (e) { toast(msgErro(e)); }
         break;
       }
       case "apagar-com": {
-        const b = fb.writeBatch(db); b.delete(D("posts", el.dataset.post, "comentarios", id)); b.update(D("posts", el.dataset.post), { nComent: fb.increment(-1) });
+        const cp = colP(el.dataset.post), b = fb.writeBatch(db); b.delete(D(cp, el.dataset.post, "comentarios", id)); b.update(D(cp, el.dataset.post), { nComent: fb.increment(-1) });
         try { await b.commit(); } catch (e) { toast(msgErro(e)); } break;
       }
       case "seguir": seguir(id); break;
@@ -1369,6 +1682,9 @@
       case "cs-cod": el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); break;
     }
   });
+  document.addEventListener("input", ev => {
+    if (ev.target.id === "cs-mp-filtro") { const q = semAc(ev.target.value); document.querySelectorAll(".cs-mp-ll label").forEach(l => { l.hidden = !!q && !l.dataset.n.includes(q); }); }
+  });
   document.addEventListener("change", async ev => {
     const el = ev.target;
     if (el.id === "cs-foto-in" && el.files && el.files[0]) {
@@ -1379,6 +1695,7 @@
   });
   const voltarOrig = window.SENOV_voltar;
   window.SENOV_voltar = function () {
+    if (MI.el) { fecharFotos(); return true; }
     if ($("#layer") && $("#layer").innerHTML) { window.fecharSheet(); return true; }
     if (SO.pilha.length) { voltar(); return true; }
     if (SO.user && SO.eu && SO.tab !== "conversas") { SO.tab = "conversas"; lembrarTab(); pintar(); return true; }
@@ -1391,14 +1708,15 @@
   const css = document.createElement("style");
   css.textContent = `
 body.cs-on .topbar{display:none}
-body.cs-on main{padding-top:calc(10px + env(safe-area-inset-top,0px))}
+html:has(> body.cs-on){padding-top:0}
+body.cs-on main{padding-top:calc(6px + env(safe-area-inset-top,0px))}
 body.cs-sem-nav .nav{display:none}
 body.cs-sem-nav .app{padding-left:0}
 body.cs-sem-nav main{padding-bottom:40px}
 body.cs-com-compor main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
 body.cs-chatbg{background-image:radial-gradient(color-mix(in srgb,var(--primary) 11%,transparent) 1.2px,transparent 1.3px);background-size:22px 22px}
-.cs-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px}
-.cs-cab h1{font-size:1.9rem}
+.cs-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
+.cs-cab h1{font-size:1.55rem}
 .cs-marca{display:flex;align-items:center;gap:10px}
 .cs-ico-bt{width:46px;height:46px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none;padding:0}
 .cs-ico-bt:hover{background:var(--surface-2)}
@@ -1456,14 +1774,14 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-atalhos button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink);font-weight:700;font-size:.86rem;min-height:76px;text-align:center}
 .cs-atalhos button svg{width:24px;height:24px;color:var(--primary)}
 .cs-atalhos button:hover{background:var(--primary-soft)}
-.cs-chat-h{position:sticky;top:env(safe-area-inset-top,0px);z-index:22;display:flex;align-items:center;gap:4px;margin:calc(-10px - env(safe-area-inset-top,0px)) -16px 0;padding:calc(6px + env(safe-area-inset-top,0px)) 8px 6px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);min-height:64px}
+.cs-chat-h{position:sticky;top:env(safe-area-inset-top,0px);z-index:22;display:flex;align-items:center;gap:4px;margin:calc(-6px - env(safe-area-inset-top,0px)) -16px 0;padding:calc(2px + env(safe-area-inset-top,0px)) 4px 2px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);min-height:54px}
 .cs-chat-h>b{flex:1;font-family:var(--display);font-size:1.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
 .cs-chat-quem{flex:1;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;cursor:pointer;min-width:0;color:inherit;padding:0}
 .cs-chat-quem>span:not(.cs-av){display:flex;flex-direction:column;min-width:0}
-.cs-chat-quem b{font-size:1.06rem;display:flex;gap:5px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cs-chat-quem small{color:var(--muted);font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-chat-quem b{font-size:1rem;display:flex;gap:5px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-chat-quem small{color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-msgs{display:flex;flex-direction:column;padding:10px 0 12px;min-height:calc(100vh - 170px)}
-.cs-dia{text-align:center;margin:14px 0 6px;position:sticky;top:calc(72px + env(safe-area-inset-top,0px));z-index:3}
+.cs-dia{text-align:center;margin:14px 0 6px;position:sticky;top:calc(60px + env(safe-area-inset-top,0px));z-index:3}
 .cs-dia span{display:inline-block;background:var(--surface);border:1px solid var(--line);padding:4px 12px;border-radius:99px;font-size:.78rem;color:var(--muted);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .cs-dia span::first-letter{text-transform:uppercase}
 .cs-m{display:flex;flex-direction:column;align-items:flex-start;max-width:84%;margin-top:8px;cursor:pointer;align-self:flex-start}
@@ -1519,6 +1837,60 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-acao.on{color:#E11D48}
 .cs-acao.on svg{fill:#E11D48}
 .cs-novo-post{display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;color:var(--muted);font-size:1rem;width:100%;padding:12px 14px}
+.cs-lk{color:inherit;text-decoration:underline;word-break:break-all}
+.cs-yt{position:relative;display:block;width:100%;max-width:300px;aspect-ratio:16/9;border:0;padding:0;margin:6px 0 2px;border-radius:10px;overflow:hidden;background:#000;cursor:pointer}
+.cs-yt img{width:100%;height:100%;object-fit:cover;display:block}
+.cs-yt-play{position:absolute;inset:0;margin:auto;width:54px;height:38px;border-radius:12px;background:rgba(220,38,38,.92);color:#fff;display:grid;place-items:center}
+.cs-yt-play svg{width:22px;height:22px}
+.cs-cfg .cs-menu small:not(.ver){display:none}
+.cs-cfg .cs-menu>button,.cs-cfg .cs-menu>label,.cs-cfg .cs-menu>.cs-linha{min-height:52px;padding:8px 10px}
+.cs-cfg .cs-menu b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-novo-post>span:not(.cs-av){flex:1}.cs-novo-post>svg{width:24px;height:24px;color:var(--primary);flex:none}
+.cs-pc-bar{display:flex;gap:6px;flex-wrap:wrap}.cs-pc-bar .btn{gap:6px}.cs-pc-bar .btn svg{width:18px;height:18px}
+.cs-pc-fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px}.cs-pc-fotos:empty{display:none}
+.cs-pc-f{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--surface-2)}
+.cs-pc-f img{width:100%;height:100%;object-fit:cover;display:block}
+.cs-pc-f button{position:absolute;top:4px;right:4px;width:26px;height:26px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;display:grid;place-items:center;cursor:pointer;padding:0}
+.cs-pc-f button svg{width:14px;height:14px}
+.cs-mp-pessoas{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:14px;padding:10px}
+.cs-mp-ll{display:flex;flex-direction:column;gap:2px;max-height:260px;overflow:auto}
+.cs-mp-ll .cs-aceite{display:flex;align-items:center;gap:10px;padding:6px 4px}
+.cs-pc-prog{height:6px;border-radius:6px;background:var(--surface-2);overflow:hidden}.cs-pc-prog i{display:block;height:100%;width:0;background:var(--primary);transition:width .3s}
+.cs-post-h small svg{width:12px;height:12px;vertical-align:-1px}
+.cs-pc-a{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px}
+.cs-pc-a svg{width:18px;height:18px;color:var(--primary);flex:none}.cs-pc-a span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cs-pc-a button{border:0;background:none;color:var(--muted);cursor:pointer;padding:2px;display:grid}.cs-pc-a button svg{color:var(--muted)}
+.cs-pc-live svg{color:#E5484D}
+.cs-live{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface-2);margin:8px 0 2px}
+.cs-live-tag{font-weight:800;font-size:.78rem;letter-spacing:.06em;color:var(--muted)}
+.cs-live.on .cs-live-tag{color:#fff;background:#E5484D;padding:3px 10px;border-radius:999px;animation:csPulso 1.6s infinite}
+@keyframes csPulso{50%{opacity:.6}}
+.cs-parq{margin:8px 0 2px}
+.cs-parq-v{position:relative;display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:14px;margin:8px 0 2px;background:#111 center/cover no-repeat;cursor:pointer}
+.cs-parq-v i{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.75);color:#fff;font-style:normal;font-size:.76rem;font-weight:700;padding:1px 7px;border-radius:6px}
+.cs-pfotos{display:grid;gap:3px;border-radius:14px;overflow:hidden;margin:8px 0 2px}
+.cs-pfotos.n1{grid-template-columns:1fr}.cs-pfotos.n1 .cs-pf{aspect-ratio:var(--ar,1.33);max-height:72vh}
+.cs-pfotos.n2{grid-template-columns:1fr 1fr}.cs-pfotos.n2 .cs-pf{aspect-ratio:.82}
+.cs-pfotos.n3{grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr;aspect-ratio:1.4}.cs-pfotos.n3 .cs-pf:first-child{grid-row:1/3}
+.cs-pfotos.n4{grid-template-columns:1fr 1fr}.cs-pfotos.n4 .cs-pf{aspect-ratio:1.2}
+.cs-pf{position:relative;border:0;padding:0;margin:0;cursor:pointer;overflow:hidden;background:var(--surface-2) center/cover no-repeat;min-height:0;width:100%;display:block}
+.cs-pf::before{content:"";position:absolute;inset:0;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);transition:opacity .35s}
+.cs-pf.ok::before{opacity:0}
+.cs-pf img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;animation:csfade .35s ease}
+@keyframes csfade{from{opacity:0}to{opacity:1}}
+.cs-pf-mais{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.45);color:#fff;font-style:normal;font-weight:800;font-size:1.6rem;z-index:1}
+.cs-mfv{position:fixed;inset:0;z-index:300;background:#000;display:flex;flex-direction:column;touch-action:none;user-select:none}
+.cs-mfv-top{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 8px;color:#fff;z-index:2}
+.cs-mfv-top b{flex:1;text-align:center;font-size:.95rem}
+.cs-mfv .cs-vbt{width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center;cursor:pointer}
+.cs-mfv .cs-vbt svg{width:22px;height:22px}
+.cs-mfv-palco{flex:1;display:grid;place-items:center;overflow:hidden}
+.cs-mfv-palco img{max-width:100%;max-height:100%;object-fit:contain;transition:transform .2s ease,filter .3s;will-change:transform}
+.cs-mfv-palco img.bor{filter:blur(14px)}
+.cs-mfv-pts{display:flex;justify-content:center;gap:6px;padding:10px 0 calc(14px + env(safe-area-inset-bottom,0px))}
+.cs-mfv-pts i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35)}.cs-mfv-pts i.on{background:#fff}
+
 .cs-seg button{flex:1}
 .cs-com{display:flex;gap:10px;align-items:flex-start}
 .cs-com-b{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:4px 16px 16px 16px;padding:8px 12px;display:flex;flex-direction:column;gap:2px}
@@ -1615,5 +1987,5 @@ button.cs-item:hover{background:var(--surface-2)}
   document.head.appendChild(css);
 
   window.SOCIAL = { render: renderSocial, ext: EXT,
-    _: { SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto } };
+    _: { SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk } };
 })();

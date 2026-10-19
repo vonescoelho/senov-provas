@@ -100,7 +100,7 @@
       imprimirWeb(blob);
     },
     async transmitir() { if (NTP) { try { await NTP.transmitir(); return true; } catch (e) { } } return false; },
-    seguro(on) { if (NTP) NTP.seguro({ ligar: !!on }).catch(() => { }); }
+    seguro(on) { if (window.CS_SEGURO) return window.CS_SEGURO("unica", !!on); if (NTP) NTP.seguro({ ligar: !!on }).catch(() => { }); }
   };
 
   /* ================= Arquivos: guardar e buscar em partes ================= */
@@ -199,12 +199,100 @@
   async function miniPdf(blob) {
     const pdfjs = await carregarPdfjs(), doc = await pdfjs.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
     try {
-      const pg = await doc.getPage(1), v1 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: 220 / v1.width });
+      const pg = await doc.getPage(1), v1 = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: 420 / v1.width });
       const cv = document.createElement("canvas"); cv.width = vp.width; cv.height = vp.height;
       await pg.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
-      const u = cv.toDataURL("image/jpeg", 0.6); cv.width = cv.height = 0;
-      return { thumb: u, paginas: doc.numPages };
+      let u = cv.toDataURL("image/jpeg", 0.62); if (u.length > 90000) u = cv.toDataURL("image/jpeg", 0.45);
+      const r = { thumb: u, paginas: doc.numPages, tw: Math.round(vp.width), th: Math.round(vp.height) }; cv.width = cv.height = 0;
+      return r;
     } finally { destruir(doc); }
+  }
+
+  /* ---------- Word, PowerPoint, Excel, LibreOffice: capa da primeira página ----------
+     1º tenta a miniatura que o próprio programa salva dentro do arquivo;
+     se não houver, desenha uma prévia com o texto da 1ª página/slide/planilha. */
+  async function lerZip(buf) {
+    const u8 = new Uint8Array(buf), dv = new DataView(buf); let e = -1;
+    for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+    if (e < 0) throw new Error("zip");
+    const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true); const ent = new Map(), td = new TextDecoder();
+    for (let k = 0; k < n && p + 46 <= u8.length; k++) {
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const met = dv.getUint16(p + 10, true), csz = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true), off = dv.getUint32(p + 42, true);
+      ent.set(td.decode(u8.subarray(p + 46, p + 46 + nl)), { met, csz, off }); p += 46 + nl + xl + cl;
+    }
+    const ler = async (nome, texto) => {
+      const x = ent.get(nome); if (!x) return null;
+      const ini = x.off + 30 + dv.getUint16(x.off + 26, true) + dv.getUint16(x.off + 28, true), dado = u8.slice(ini, ini + x.csz);
+      let out = dado;
+      if (x.met === 8) { if (!window.DecompressionStream) return null; out = new Uint8Array(await new Response(new Blob([dado]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer()); }
+      else if (x.met !== 0) return null;
+      return texto ? td.decode(out) : out;
+    };
+    return { nomes: [...ent.keys()], ler };
+  }
+  const textoXml = (xml, tag) => { const r = []; const re = new RegExp("<" + tag + "[^>]*>([^<]*)</" + tag + ">", "g"); let m; while ((m = re.exec(xml)) && r.join("").length < 1500) r.push(m[1]); return r; };
+  const desXml = t => t.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
+  function quebrar(cx, txt, larg) { const out = []; String(txt).split(/\n/).forEach(par => { let l = ""; par.split(/\s+/).forEach(w => { const t = l ? l + " " + w : w; if (cx.measureText(t).width > larg && l) { out.push(l); l = w; } else l = t; }); out.push(l); }); return out; }
+  function desenharFolha(paragrafos, titulo) {
+    const W = 420, H = 594, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const cx = cv.getContext("2d");
+    cx.fillStyle = "#fff"; cx.fillRect(0, 0, W, H); let y = 46; const M = 40;
+    paragrafos.slice(0, 40).forEach((p, i) => {
+      if (y > H - 30) return; const t = desXml(p).trim(); if (!t) { y += 8; return; }
+      const big = i === 0 && t.length < 90; cx.fillStyle = big ? "#111827" : "#374151"; cx.font = big ? "bold 19px sans-serif" : "13px sans-serif";
+      quebrar(cx, t, W - 2 * M).forEach(l => { if (y > H - 30) return; cx.fillText(l, M, y); y += big ? 26 : 19; }); y += big ? 10 : 6;
+    });
+    const u = cv.toDataURL("image/jpeg", 0.7); cv.width = cv.height = 0; return { thumb: u, tw: W, th: H };
+  }
+  function desenharSlide(linhas) {
+    const W = 480, H = 270, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const cx = cv.getContext("2d");
+    const gr = cx.createLinearGradient(0, 0, W, H); gr.addColorStop(0, "#1E3A8A"); gr.addColorStop(1, "#7C3AED"); cx.fillStyle = gr; cx.fillRect(0, 0, W, H);
+    const l = linhas.map(desXml).map(x => x.trim()).filter(Boolean); cx.fillStyle = "#fff"; cx.textAlign = "center"; cx.font = "bold 26px sans-serif";
+    let y = H / 2 - 20; quebrar(cx, l[0] || "Apresentação", W - 60).slice(0, 3).forEach(t => { cx.fillText(t, W / 2, y); y += 32; });
+    cx.font = "16px sans-serif"; cx.fillStyle = "rgba(255,255,255,.85)"; quebrar(cx, l.slice(1).join(" · "), W - 80).slice(0, 2).forEach(t => { cx.fillText(t, W / 2, y + 6); y += 22; });
+    const u = cv.toDataURL("image/jpeg", 0.75); cv.width = cv.height = 0; return { thumb: u, tw: W, th: H };
+  }
+  function desenharPlanilha(celulas) {
+    const W = 420, H = 300, cv = document.createElement("canvas"); cv.width = W; cv.height = H; const cx = cv.getContext("2d");
+    cx.fillStyle = "#fff"; cx.fillRect(0, 0, W, H); const cw = 105, ch = 25; cx.font = "12px sans-serif";
+    for (let r = 0; r < 12; r++) for (let c = 0; c < 4; c++) {
+      cx.strokeStyle = "#D1D5DB"; cx.strokeRect(c * cw, r * ch, cw, ch);
+      if (r === 0) { cx.fillStyle = "#DCFCE7"; cx.fillRect(c * cw + 1, 1, cw - 2, ch - 2); }
+      const v = (celulas[r] || [])[c]; if (v != null) { cx.fillStyle = r === 0 ? "#14532D" : "#1F2937"; cx.font = r === 0 ? "bold 12px sans-serif" : "12px sans-serif"; cx.fillText(String(desXml(String(v))).slice(0, 14), c * cw + 6, r * ch + 17); }
+    }
+    const u = cv.toDataURL("image/jpeg", 0.75); cv.width = cv.height = 0; return { thumb: u, tw: W, th: H };
+  }
+  async function imgParaThumb(u8, mime) {
+    const b = new Blob([u8], { type: mime }), url = URL.createObjectURL(b);
+    try { const i = await carregarImg(url); return { thumb: canvasMini(i, i.naturalWidth, i.naturalHeight, 420, 0.65), tw: i.naturalWidth, th: i.naturalHeight }; } finally { URL.revokeObjectURL(url); }
+  }
+  async function miniOffice(blob, g) {
+    const z = await lerZip(await blob.arrayBuffer());
+    /* Word raramente atualiza a miniatura embutida (pode ser a do modelo): para .docx, desenha a 1ª página */
+    const emb = z.nomes.includes("word/document.xml") ? null : (z.nomes.find(n => /^docProps\/thumbnail\.(jpe?g|png)$/i.test(n)) || z.nomes.find(n => /^Thumbnails\/thumbnail\.png$/i.test(n)));
+    let r = null;
+    const nSlides = z.nomes.filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n)).length;
+    if (emb) { try { r = await imgParaThumb(await z.ler(emb), /png$/i.test(emb) ? "image/png" : "image/jpeg"); } catch (e) { r = null; } }
+    if (!r) {
+      if (z.nomes.includes("word/document.xml")) {
+        const x = await z.ler("word/document.xml", true) || "";
+        const pars = x.split(/<\/w:p>/).map(p => textoXml(p, "w:t").join("")).slice(0, 60); r = desenharFolha(pars);
+      } else if (nSlides) {
+        const x = await z.ler("ppt/slides/slide1.xml", true) || ""; r = desenharSlide(x.split(/<\/a:p>/).map(p => textoXml(p, "a:t").join("")));
+      } else if (z.nomes.includes("xl/worksheets/sheet1.xml")) {
+        const ss = z.nomes.includes("xl/sharedStrings.xml") ? (await z.ler("xl/sharedStrings.xml", true) || "").split(/<\/si>/).map(p => textoXml(p, "t").join("")) : [];
+        const x = await z.ler("xl/worksheets/sheet1.xml", true) || "", linhas = [];
+        (x.match(/<row[^>]*>[\s\S]*?<\/row>/g) || []).slice(0, 12).forEach(row => {
+          const l = []; (row.match(/<c [^>]*?(?:\/>|>[\s\S]*?<\/c>)/g) || []).slice(0, 4).forEach(c => { const v = (c.match(/<v>([^<]*)<\/v>/) || c.match(/<t[^>]*>([^<]*)<\/t>/) || [])[1]; l.push(/t="s"/.test(c) && v != null ? ss[+v] : v); }); linhas.push(l);
+        }); r = desenharPlanilha(linhas);
+      } else if (z.nomes.includes("content.xml")) {
+        const x = await z.ler("content.xml", true) || "";
+        const pars = (x.match(/<text:(?:p|h)[^>]*>[\s\S]*?<\/text:(?:p|h)>/g) || []).slice(0, 60).map(p => p.replace(/<[^>]+>/g, ""));
+        r = g === "slides" ? desenharSlide(pars) : desenharFolha(pars);
+      }
+    }
+    if (r && nSlides) r.paginas = nSlides;
+    return r || {};
   }
 
   /* ---------- barra de envio ---------- */
@@ -213,7 +301,7 @@
     el.innerHTML = `<span>Enviando ${esc(nome)}…</span><i style="width:0%"></i>`; document.body.appendChild(el);
     return f => { if (f == null) el.remove(); else el.querySelector("i").style.width = Math.round(f * 100) + "%"; };
   }
-  async function enviarArquivo(chatId, file) {
+  async function enviarArquivo(chatId, file, mais) {
     let blob = file, nome = (file.name || "arquivo").slice(-120), tipo = file.type || tipoPorNome(nome);
     if (ofensivo(nome)) return toast("O nome do arquivo tem palavras não permitidas.");
     if (/^image\/(jpeg|png|webp|heic|heif|bmp)/.test(tipo)) { try { blob = await comprimirImg(file, 1600); tipo = "image/jpeg"; nome = nome.replace(/\.\w+$/, "") + ".jpg"; } catch (e) { } }
@@ -222,15 +310,41 @@
       return toast("Arquivo grande demais (máximo 20 MB). Compacte ou envie o link do Drive.");
     }
     const g = genero({ tipo, nome }); let extra = {};
-    try { if (g === "img") extra = await miniImg(blob); else if (g === "video") extra = await miniVideo(blob); else if (g === "pdf") extra = await miniPdf(blob); else if (g === "audio") extra = { dur: await duracaoAudio(blob) }; } catch (e) { console.warn("miniatura", e); }
+    try { if (g === "img") extra = await miniImg(blob); else if (g === "video") extra = await miniVideo(blob); else if (g === "pdf") extra = await miniPdf(blob); else if (["docx", "slides", "planilha"].includes(g) || /\.(odt|ods|odp)$/i.test(nome)) extra = await miniOffice(blob, g); else if (g === "audio") extra = { dur: await duracaoAudio(blob) }; } catch (e) { console.warn("miniatura", e); }
     const barra = barraEnvio(nome);
     try {
       const id = await subir(chatId, blob, { nome, tipo }, barra);
       guardar("arquivos:" + id, blob);
-      await enviarMsg(chatId, { arquivo: { id, nome, tipo, tamanho: blob.size, ...extra }, prev: ROTULO[g] + (g === "img" ? "" : ": " + nome) });
+      const r = await enviarMsg(chatId, { arquivo: { id, nome, tipo, tamanho: blob.size, ...extra, ...(mais || {}) }, prev: (mais && mais.prova ? "Prova" : ROTULO[g]) + (g === "img" ? "" : ": " + nome) });
+      barra(null); return r !== false;
     } catch (e) { console.warn(e); toast(msgErro(e)); }
-    barra(null);
+    barra(null); return false;
   }
+
+  /* ---------- enviar um arquivo para contatos (quem mais conversa comigo aparece primeiro) ---------- */
+  const ENV = { file: null, mais: null, feitos: new Set() };
+  X.enviarParaContatos = (file, mais, titulo) => {
+    if (!A.SO.user) return toast("Entre no ChatMil para enviar.");
+    ENV.file = file; ENV.mais = mais || null; ENV.feitos = new Set();
+    const pessoas = A.contatosOrdenados().slice(0, 300);
+    const grupos = A.SO.chats.filter(c => c.tipo === "grupo").sort((a, b) => A.ms(b.atualizadoEm) - A.ms(a.atualizadoEm)).slice(0, 50);
+    window.abrirSheet(`<div class="sheet-h"><h2>${esc(titulo || "Enviar para…")}</h2></div>
+      <input class="in" id="env-filtro" placeholder="Buscar pelo nome" aria-label="Buscar contato">
+      <div class="cs-menu cs-env-l">${pessoas.map(u => { const p = A.P(u); return `<button data-s="env-para" data-v="u:${esc(u)}" data-n="${esc(A.semAc(p.nome || ""))}">${A.av(p, 40, u)}<span><b>${esc(p.nome)}</b><small>${esc(p.escola || "Contato")}</small></span><i class="cs-env-ok"></i></button>`; }).join("")}
+        ${grupos.map(c => `<button data-s="env-para" data-v="g:${esc(c.id)}" data-n="${esc(A.semAc(c.nome || ""))}">${A.avGrupo ? A.avGrupo(c, 40) : ""}<span><b>${esc(c.nome)}</b><small>Grupo · ${(c.membros || []).length} pessoas</small></span><i class="cs-env-ok"></i></button>`).join("")}
+        ${!pessoas.length && !grupos.length ? `<p class="small muted">Converse com colegas ou siga alguém para enviar por aqui.</p>` : ""}</div>`);
+    const f = document.getElementById("env-filtro");
+    if (f) f.addEventListener("input", () => { const q = A.semAc(f.value); document.querySelectorAll(".cs-env-l [data-s=env-para]").forEach(b => { b.hidden = !!q && !b.dataset.n.includes(q); }); });
+  };
+  X.acoes["env-para"] = async el => {
+    const v = el.dataset.v; if (!ENV.file || ENV.feitos.has(v) || el.classList.contains("indo")) return;
+    el.classList.add("indo"); const ok = el.querySelector(".cs-env-ok"); if (ok) ok.textContent = "Enviando…";
+    const chatId = v.startsWith("g:") ? v.slice(2) : await A.garantirDireto(v.slice(2));
+    const r = chatId ? await enviarArquivo(chatId, ENV.file, ENV.mais) : false;
+    el.classList.remove("indo");
+    if (r) { ENV.feitos.add(v); el.classList.add("feito"); if (ok) ok.innerHTML = `${I.check || "✓"} Enviado`; }
+    else if (ok) ok.textContent = "Tente de novo";
+  };
   function oferecerCompressao(chatId, file) {
     window.abrirSheet(`<div class="sheet-h"><h2>Vídeo grande (${tamanho(file.size)})</h2></div>
       <p class="cs-just">O limite é 20 MB. Posso deixar o vídeo mais leve para enviar. Demora mais ou menos o tempo do próprio vídeo; deixe o app aberto.</p>
@@ -353,22 +467,33 @@
     }
     if (g === "audio") return abre + htmlAudio({ id: a.id, tipo: a.tipo, dur: a.dur, nome: a.nome }, o) + `</div>`;
     const ext = (extDe(a.nome) || "arq").slice(0, 4).toUpperCase();
+    const capa = a.thumb && /^data:image\/(jpeg|png|webp);base64,/.test(a.thumb);
+    const forma = g === "slides" || (a.tw && a.th && a.tw > a.th) ? "larga" : "folha";
     return `${abre}<div class="cs-b cs-cmsg">${o.nome}
-      <button class="cs-arq" data-s="md-ver" data-v="${esc(a.id)}">
-        ${a.thumb ? `<img class="cs-arq-th" src="${a.thumb}" alt="">` : `<span class="cs-arq-ic" style="--c:${COR[g]}">${I.arq}<b>${esc(ext)}</b></span>`}
-        <span class="cs-arq-t"><b>${esc(a.nome)}</b><small>${ROTULO[g]}${a.paginas ? ` · ${a.paginas} pág.` : ""} · ${tamanho(a.tamanho || 0)}</small></span></button>
+      <button class="cs-arq ${capa ? "cs-arq-capa" : ""}" data-s="md-ver" data-v="${esc(a.id)}">
+        ${capa ? `<span class="cs-capa ${forma}"><img src="${a.thumb}" alt="" loading="lazy">${a.prova ? `<i class="cs-capa-tag">Prova</i>` : ""}</span>` : ""}
+        <span class="cs-arq-row"><span class="cs-arq-ic" style="--c:${COR[g]}">${I.arq}<b>${esc(ext)}</b></span>
+        <span class="cs-arq-t"><b>${esc(a.nome)}</b><small>${a.prova ? "Prova · " : ""}${ROTULO[g]}${a.paginas ? ` · ${a.paginas} ${g === "slides" ? "slide" : "pág."}${g === "slides" && a.paginas > 1 ? "s" : ""}` : ""} · ${tamanho(a.tamanho || 0)}</small></span></span></button>
+      ${a.prova ? `<button class="btn sm primary cs-arq-prova" data-s="md-prova" data-v="${esc(a.id)}">${I.baixar} Salvar em Minhas provas</button>` : ""}
       <span class="cs-h">${o.hr}</span></div></div>`;
+  };
+  X.acoes["md-prova"] = async el => {
+    const a = ACH[el.dataset.v]; if (!a || !a.prova) return;
+    if (!window.SENOV_importarProva) return toast("Abra a aba Provas uma vez e tente de novo.");
+    el.disabled = true; const ok = await window.SENOV_importarProva(a.prova); el.disabled = false;
+    if (ok) el.innerHTML = `${I.check} Salva em Minhas provas`;
   };
   X.acoes["md-ver"] = el => { const a = ACH[el.dataset.v]; if (a) abrirArquivo(a); };
 
   async function comBlob(a, fn) {
     let aviso = null;
-    if (!CACHE.has("arquivos:" + a.id) && (a.tamanho || 0) > 1.5e6) { aviso = document.createElement("div"); aviso.className = "cs-up"; aviso.innerHTML = `<span>Baixando ${esc(a.nome)} (${tamanho(a.tamanho)})…</span>`; document.body.appendChild(aviso); }
-    try { return await fn(await obter(a.id, a.tipo)); }
+    if (!CACHE.has((a.col || "arquivos") + ":" + a.id) && (a.tamanho || 0) > 1.5e6) { aviso = document.createElement("div"); aviso.className = "cs-up"; aviso.innerHTML = `<span>Baixando ${esc(a.nome)} (${tamanho(a.tamanho)})…</span>`; document.body.appendChild(aviso); }
+    try { return await fn(await obter(a.id, a.tipo, a.col)); }
     catch (e) { console.warn(e); toast(e && e.code === "not-found" ? "Este arquivo foi apagado por quem enviou." : "Não foi possível baixar o arquivo. Verifique a internet."); }
     finally { if (aviso) aviso.remove(); }
   }
   function abrirArquivo(a) {
+    ACH[a.id] = a;
     const g = genero(a);
     if (g === "img") return comBlob(a, b => verFoto(a, b));
     if (g === "video") return comBlob(a, b => verVideo(a, b));
@@ -1018,7 +1143,16 @@
   };
 
   /* para outros módulos (Flash, chamadas) */
-  X.midia = { NAT, subir, obter, apagarArquivo, comprimirImg, carregarImg, miniVideo, recodificar, escolher, barraEnvio, urlDe, guardar, mmss, tamanho, ajudaTV, I };
+  /* prepara um arquivo para o mural: miniatura, páginas, duração */
+  async function prepararArquivo(file) {
+    let blob = file, nome = (file.name || "arquivo").slice(-120), tipo = file.type || tipoPorNome(nome);
+    if (blob.size > LIMITE) throw { msg: "Arquivo grande demais (máximo 20 MB)." };
+    const g = genero({ tipo, nome }); let extra = {};
+    try { if (g === "video") extra = await miniVideo(blob); else if (g === "pdf") extra = await miniPdf(blob); else if (["docx", "slides", "planilha"].includes(g) || /\.(odt|ods|odp)$/i.test(nome)) extra = await miniOffice(blob, g); else if (g === "audio") extra = { dur: await duracaoAudio(blob) }; } catch (e) { console.warn("miniatura", e); }
+    if (extra.thumb && extra.thumb.length > 95000) delete extra.thumb;
+    return { blob, nome, tipo, g, extra };
+  }
+  X.midia = { prepararArquivo, abrirArquivo, genero, ROTULO, COR, enviarArquivo, NAT, subir, obter, apagarArquivo, comprimirImg, carregarImg, miniVideo, recodificar, escolher, barraEnvio, urlDe, guardar, mmss, tamanho, ajudaTV, I };
 
   /* ================= Estilos ================= */
   const css = document.createElement("style");
@@ -1031,6 +1165,17 @@
 .cs-arq-ic{width:48px;height:56px;border-radius:10px;background:var(--c);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;gap:1px}
 .cs-arq-ic svg{width:20px;height:20px}.cs-arq-ic b{font-size:.62rem;letter-spacing:.04em}
 .cs-arq-t{display:flex;flex-direction:column;min-width:0}.cs-arq-t b{overflow-wrap:anywhere;line-height:1.25}.cs-arq-t small{opacity:.8;font-size:.8rem}
+.cs-arq-row{display:flex;align-items:center;gap:10px;min-width:0;width:100%}
+.cs-arq-capa{flex-direction:column;align-items:stretch;padding:6px;gap:8px;max-width:300px}
+.cs-arq-capa .cs-arq-ic{width:34px;height:40px;border-radius:8px}.cs-arq-capa .cs-arq-ic svg{width:15px;height:15px}.cs-arq-capa .cs-arq-ic b{font-size:.52rem}
+.cs-capa{position:relative;display:block;border-radius:9px;overflow:hidden;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.cs-capa.folha{aspect-ratio:1.25}.cs-capa.larga{aspect-ratio:16/9}
+.cs-capa img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.cs-capa-tag{position:absolute;left:8px;top:8px;background:#2447C6;color:#fff;font-style:normal;font-weight:800;font-size:.7rem;padding:3px 8px;border-radius:999px}
+.cs-arq-prova{margin-top:6px;width:100%}
+.cs-env-l>button{min-height:56px}.cs-env-l>button.feito{opacity:.75}
+.cs-env-ok{font-style:normal;font-size:.8rem;color:var(--primary);font-weight:700;flex:none;display:flex;align-items:center;gap:4px}.cs-env-ok svg{width:16px;height:16px}
+
 .cs-midia{padding:4px!important;min-width:0}
 .cs-midia .cs-autor{padding:4px 8px 2px}
 .cs-mid{display:block;position:relative;border:0;padding:0;border-radius:14px;overflow:hidden;width:min(68vw,280px);max-height:360px;cursor:pointer;background:#0002}

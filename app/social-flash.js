@@ -170,6 +170,7 @@
     limparMidia();
     const s = VW.s, g = s.grupos[s.g], f = itemAtual(); if (!f) return fecharVisorFl();
     const meu = g.uid === eu(), p = P(g.uid);
+    if (window.CS_SEGURO) window.CS_SEGURO("flash", f.col === "flashesPriv");
     VW.dur = f.tipo === "video" ? (f.dur || 10) : (f.dur || 6); VW.gasto = 0; VW.pausa = false;
     VW.el.innerHTML = `<div class="cs-flv-barras">${g.itens.map((_, i) => `<i><b style="width:${i < s.i ? 100 : 0}%"></b></i>`).join("")}</div>
       <div class="cs-flv-top">${av(p, 38, g.uid)}<span><b>${esc(meu ? "Você" : p.nome || "")}</b><small>${s.tipo === "destaque" ? "Destaque" : haQuanto(f.criado || Date.now())}${f.col === "flashesPriv" ? " · para algumas pessoas" : ""}</small></span>
@@ -240,6 +241,7 @@
   }
   function fecharVisorFl() {
     limparMidia(); if (VW.el) VW.el.remove(); VW.el = null; VW.s = null;
+    if (window.CS_SEGURO) window.CS_SEGURO("flash", false);
     if (!document.querySelector(".cs-vis")) document.body.classList.remove("cs-vis-on");
     pintar();
   }

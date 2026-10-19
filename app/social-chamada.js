@@ -15,6 +15,9 @@
     mic: ic('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),
     micOff: ic('<path d="M15 9.3V6a3 3 0 0 0-5.7-1.3M9 9v2a3 3 0 0 0 5 2.2M5 11a7 7 0 0 0 11.4 5.4M19 11a7 7 0 0 1-.6 2.8M12 18v3M2 2l20 20"/>'),
     virar: ic('<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><path d="M9 13a3 3 0 0 1 5-2.2M15 13a3 3 0 0 1-5 2.2"/><path d="M14 9v2h-2M10 17v-2h2"/>'),
+    alerta: ic('<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/>'),
+    ok: ic('<circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/>'),
+    sino: ic('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/>'),
     grupo: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2a5 5 0 0 1 6 4.8"/>')
   };
   const ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }, { urls: "stun:stun.cloudflare.com:3478" }];
@@ -29,11 +32,12 @@
     const muitos = (c.membros || []).length > MAX;
     window.abrirSheet(`<div class="sheet-h"><h2>Chamada</h2></div><div class="cs-menu">
       ${muitos ? "" : `<button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="video">${I.video}<span><b>Chamada de vídeo</b><small>Toca no celular de ${c.tipo === "grupo" ? "quem está no grupo" : "quem você chamou"}</small></span></button>
-      <button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="voz">${I.fone}<span><b>Chamada de voz</b><small>Gasta menos internet e bateria</small></span></button>`}
+      <button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="voz">${I.fone}<span><b>Chamada de voz</b><small>Gasta menos internet e bateria</small></span></button>
+      ${c.tipo === "grupo" ? "" : `<button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="voz" data-u="1">${I.alerta}<span><b>Chamada urgente (voz)</b><small>Se a pessoa permitir, atende sozinha no alto-falante</small></span></button>`}`}
       ${c.tipo === "grupo" ? `<button data-s="ch-jitsi" data-id="${esc(c.id)}">${I.grupo}<span><b>Reunião grande (Jitsi Meet)</b><small>Para mais de ${MAX} pessoas. Abre no navegador; quem cria a sala pode precisar entrar com uma conta Google.</small></span></button>` : ""}
-    </div><p class="small muted">A pessoa precisa estar com o ChatMil aberto para o celular tocar. Se não estiver, ela entra depois pelo convite na conversa.</p>`);
+    </div><p class="small muted">No app Android, o celular toca mesmo com o ChatMil fechado (quando a pessoa ativou isso em Configurações).</p>`);
   };
-  X.acoes["ch-iniciar"] = el => { window.fecharSheet(); iniciar(el.dataset.id, el.dataset.v); };
+  X.acoes["ch-iniciar"] = el => { window.fecharSheet(); iniciar(el.dataset.id, el.dataset.v, el.dataset.u === "1"); };
   X.acoes["ch-jitsi"] = async el => {
     window.fecharSheet();
     const sala = "ChatMil-" + String(el.dataset.id).replace(/[^A-Za-z0-9]/g, "").slice(0, 10) + "-" + Math.random().toString(36).slice(2, 8);
@@ -78,27 +82,28 @@
   }
 
   /* ---------- iniciar, atender, sair ---------- */
-  async function iniciar(chatId, tipo) {
+  async function iniciar(chatId, tipo, urgente) {
     if (CH.id) return toast("Você já está em uma chamada.");
     const c = SO.chats.find(x => x.id === chatId); if (!c) return;
     const local = await pegarMidia(tipo, true); if (!local) return;
     try {
       const ref = fb.doc(C("chamadas"));
       const membros = c.membros || [];
-      await fb.setDoc(ref, { chatId, de: eu(), membros, tipo, estado: "chamando", dentro: [eu()], tocando: membros.filter(m => m !== eu()), criadoEm: TS(), atualizadoEm: TS() });
-      enviarMsg(chatId, { chamada: ref.id, rtc: true, tipoCh: tipo, prev: tipo === "voz" ? "Chamada de voz" : "Chamada de vídeo" });
+      await fb.setDoc(ref, { chatId, de: eu(), membros, tipo, estado: "chamando", dentro: [eu()], tocando: membros.filter(m => m !== eu()), criadoEm: TS(), atualizadoEm: TS(), ...(urgente ? { urgente: true } : {}) });
+      enviarMsg(chatId, { chamada: ref.id, rtc: true, tipoCh: tipo, prev: urgente ? "Chamada urgente" : tipo === "voz" ? "Chamada de voz" : "Chamada de vídeo" });
       entrar(ref.id, local, tipo, c);
       /* ninguém atendeu em 45 s: encerra */
       setTimeout(() => { if (CH.id === ref.id && CH.d && (CH.d.dentro || []).length <= 1) { toast("Ninguém atendeu."); sair(); } }, 45000);
     } catch (e) { console.warn(e); local.getTracks().forEach(t => t.stop()); toast(msgErro(e)); }
   }
-  async function atender(cid, d) {
+  async function atender(cid, d, auto) {
     fecharEntrada();
     if ((d.dentro || []).length >= MAX) return toast(`A chamada está cheia (máximo de ${MAX} pessoas).`);
     const local = await pegarMidia(d.tipo, true); if (!local) return;
     try {
       await fb.updateDoc(D("chamadas", cid), { dentro: fb.arrayUnion(eu()), tocando: fb.arrayRemove(eu()), estado: "ativa", atualizadoEm: TS() });
       entrar(cid, local, d.tipo, SO.chats.find(x => x.id === d.chatId));
+      if (auto) { if (NV) NV.altoFalante({ ligar: true }).catch(() => { }); toast("Chamada urgente atendida automaticamente."); }
     } catch (e) { console.warn(e); local.getTracks().forEach(t => t.stop()); toast(msgErro(e)); }
   }
   function entrar(cid, local, tipo, chat) {
@@ -135,6 +140,7 @@
     clearInterval(CH.timer); CH.timer = null;
     if (CH.el) CH.el.remove(); CH.el = null; document.body.classList.remove("cs-ch-on");
     Object.assign(CH, { id: null, d: null, local: null, chat: null });
+    if (NV) NV.fimChamada().catch(() => { });
     if (remoto) return;
     try {
       const resto = ((d && d.dentro) || []).filter(x => x !== eu());
@@ -296,12 +302,14 @@
     const chat = SO.chats.find(x => x.id === c.chatId), quem = P(c.de);
     const titulo = chat && chat.tipo === "grupo" ? chat.nome : quem.nome;
     const el = document.createElement("div"); el.className = "cs-ch cs-ch-entra"; el.setAttribute("role", "alertdialog"); el.setAttribute("aria-label", "Chamada recebida");
-    el.innerHTML = `<div class="cs-ch-esp">${av(quem, 120, c.de)}<b>${esc(titulo || "")}</b><span>${c.tipo === "voz" ? "Chamada de voz" : "Chamada de vídeo"}${chat && chat.tipo === "grupo" ? " · " + esc(quem.nome || "") : ""}</span></div>
+    const auto = !!c.urgente && podeAtenderSozinho(c.de);
+    el.innerHTML = `<div class="cs-ch-esp">${c.urgente ? `<i class="cs-ch-urg">URGENTE</i>` : ""}${av(quem, 120, c.de)}<b>${esc(titulo || "")}</b><span>${c.tipo === "voz" ? "Chamada de voz" : "Chamada de vídeo"}${chat && chat.tipo === "grupo" ? " · " + esc(quem.nome || "") : ""}</span>${auto ? `<span>Atendendo automaticamente…</span>` : ""}</div>
       <div class="cs-ch-ctl"><button class="cs-ch-bt fim" data-s="ch-recusar" aria-label="Recusar">${I.desligar}</button>
       <button class="cs-ch-bt ok" data-s="ch-atender" aria-label="Atender">${c.tipo === "voz" ? I.fone : I.video}</button></div>`;
     document.body.appendChild(el); Object.assign(EN, { el, id: c.id, d: c });
     tocar();
     EN.timer = setTimeout(fecharEntrada, 45000);
+    if (auto) setTimeout(() => { if (EN.id === c.id && !CH.id) atender(c.id, c, true); }, 1500);
   }
   function tocar() {
     try {
@@ -323,6 +331,99 @@
     const d = EN.d, id = EN.id; if (!id) return; RECUSADAS.add(id); fecharEntrada();
     try { await fb.updateDoc(D("chamadas", id), { tocando: fb.arrayRemove(eu()), atualizadoEm: TS(), ...((d.membros || []).length <= 2 ? { estado: "fim" } : {}) }); } catch (e) { }
   };
+
+  /* ---------- Android: tocar com o app fechado, atender sozinho (urgente) ---------- */
+  const NV = (() => { try { const c = window.Capacitor; return c && c.isNativePlatform && c.isNativePlatform() && c.Plugins && c.Plugins.Nativo && c.Plugins.Nativo.chamadasEstado ? c.Plugins.Nativo : null; } catch (e) { return null; } })();
+  const NE = { estado: null };
+  const chaveAuto = () => "cs.auto." + eu();
+  function cfgAuto() { try { return JSON.parse(localStorage.getItem(chaveAuto()) || "null") || { modo: "ninguem", uids: [] }; } catch (e) { return { modo: "ninguem", uids: [] }; } }
+  function listaAuto(c) { c = c || cfgAuto(); return c.modo === "seguindo" ? [...(SO.seguindo || [])] : c.modo === "escolhidos" ? (c.uids || []) : []; }
+  function podeAtenderSozinho(uid) { const c = cfgAuto(); return c.modo !== "ninguem" && listaAuto(c).includes(uid); }
+  function salvarAuto(c) {
+    try { localStorage.setItem(chaveAuto(), JSON.stringify(c)); } catch (e) { }
+    if (NV) NV.autoAtender({ modo: c.modo, uids: listaAuto(c).slice(0, 500) }).catch(() => { });
+  }
+  async function lerEstado() { if (!NV) return null; try { NE.estado = await NV.chamadasEstado(); } catch (e) { NE.estado = null; } return NE.estado; }
+  window.CS_CHAMADAS_LOGIN = (email, senha) => { if (NV) NV.chamadasEntrar({ email, senha }).then(lerEstado).catch(e => console.warn("chamadas", e)); };
+  window.CS_CHAMADAS_SAIR = () => { if (NV) NV.chamadasSair().catch(() => { }); NE.estado = null; };
+  async function abrirPendente(p) {
+    if (!p || !p.cid) return;
+    for (let k = 0; k < 100 && !(SO.user && SO.eu); k++) await new Promise(r => setTimeout(r, 150));
+    if (!SO.user) return;
+    try {
+      const s = await fb.getDoc(D("chamadas", p.cid)); const d = s.exists() ? s.data() : null;
+      if (!d || d.estado === "fim" || !(d.dentro || []).length) { toast("A chamada já terminou."); if (NV) NV.fimChamada().catch(() => { }); return; }
+      if (CH.id === p.cid) return;
+      if (p.acao === "atender" || (p.acao === "auto" && d.urgente && podeAtenderSozinho(d.de))) atender(p.cid, d, p.acao === "auto");
+      else if (!CH.id) mostrarEntrada({ id: p.cid, ...d });
+    } catch (e) { console.warn(e); }
+  }
+  if (NV) {
+    try { NV.addListener("chamada", d => abrirPendente(d)); } catch (e) { }
+    X.aoTrocarUsuario.push(u => {
+      if (!u) return;
+      NV.pendente().then(abrirPendente).catch(() => { });
+      lerEstado().then(st => { if (st && st.ativo && st.uid === u.uid) NV.chamadasLigar().catch(() => { }); salvarAuto(cfgAuto()); if (SO.tab === "conversas") A.pintar(); });
+    });
+    /* quem segue muda: atualiza a lista de "atender sozinho" */
+    let ultSeg = "";
+    X.depois.push(() => { const k = [...(SO.seguindo || [])].sort().join(","); if (k !== ultSeg && SO.user) { ultSeg = k; if (cfgAuto().modo === "seguindo") salvarAuto(cfgAuto()); } });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden && SO.user) lerEstado().then(() => { if (A.topo() && A.topo().v === "config") A.pintar(); }); });
+  }
+  const ativoNativo = () => !!(NE.estado && NE.estado.ativo && SO.user && NE.estado.uid === SO.user.uid);
+  X.avisos.push(() => {
+    if (!NV || !SO.user || !NE.estado || ativoNativo()) return "";
+    try { if (localStorage.getItem("cs.avisoCh." + eu()) === "nao") return ""; } catch (e) { }
+    return `<div class="aviso cs-aviso-mail">${I.sino}<span>Ative para o celular <b>tocar com o ChatMil fechado</b> quando alguém ligar.</span><button class="btn sm primary" data-s="chn-ativar">Ativar</button><button class="btn sm ghost" data-s="chn-aviso-nao" aria-label="Agora não">Agora não</button></div>`;
+  });
+  X.acoes["chn-aviso-nao"] = () => { try { localStorage.setItem("cs.avisoCh." + eu(), "nao"); } catch (e) { } A.pintar(); };
+  X.acoes["chn-ativar"] = () => {
+    window.abrirSheet(`<div class="sheet-h"><h2>Tocar com o app fechado</h2></div>
+      <p class="cs-just">Para o celular tocar mesmo com o ChatMil fechado, confirme sua senha <b>uma única vez</b>. Ela não fica guardada: o Android só mantém a conexão de chamadas ativa.</p>
+      <form class="stack" id="chn-f"><input class="in" id="chn-senha" type="password" autocomplete="current-password" placeholder="Sua senha do ChatMil" aria-label="Senha">
+      <button class="btn primary cs-grande">Ativar</button></form>`);
+    setTimeout(() => { const i = $("#chn-senha"); if (i) i.focus(); }, 100);
+  };
+  document.addEventListener("submit", async e => {
+    if (e.target.id !== "chn-f") return; e.preventDefault();
+    const senha = $("#chn-senha").value; if (!senha) return toast("Digite a senha.");
+    const b = e.target.querySelector("button"); b.disabled = true; b.textContent = "Ativando…";
+    try {
+      await NV.chamadasEntrar({ email: SO.user.email, senha }); await lerEstado();
+      window.fecharSheet(); toast("Pronto! Agora falta liberar as permissões.");
+      A.abrirTela({ v: "config" }); setTimeout(() => { const el = document.getElementById("cs-ch-cfg"); if (el) el.scrollIntoView({ block: "start" }); }, 250);
+    } catch (er) { b.disabled = false; b.textContent = "Ativar"; toast(/password|senha|credential|INVALID/i.test(String(er && er.message)) ? "Senha incorreta." : "Não foi possível ativar agora. Verifique a internet."); }
+  });
+  X.acoes["chn-perm"] = el => { if (NV) NV.permissao({ tipo: el.dataset.v }).catch(() => { }); };
+  X.acoes["chn-desligar"] = async () => { if (NV) { await NV.chamadasSair().catch(() => { }); await lerEstado(); A.pintar(); toast("O celular só vai tocar com o app aberto."); } };
+  X.acoes["chn-auto"] = el => {
+    const c = cfgAuto(); c.modo = el.dataset.v;
+    if (c.modo === "escolhidos") {
+      const pessoas = A.contatosOrdenados ? A.contatosOrdenados() : [];
+      window.abrirSheet(`<div class="sheet-h"><h2>Atender sozinho (urgente)</h2></div><p class="small muted">Marque quem pode fazer sua chamada urgente abrir o áudio sozinha.</p>
+        <div class="cs-mp-ll">${pessoas.map(u => { const p = P(u); return `<label class="cs-aceite"><input type="checkbox" class="chn-pp" value="${esc(u)}" ${(c.uids || []).includes(u) ? "checked" : ""}>${av(p, 32, u)}<span>${esc(p.nome)}</span></label>`; }).join("") || `<p class="small muted">Converse com colegas para escolher aqui.</p>`}</div>
+        <button class="btn primary" data-s="chn-auto-ok">Salvar</button>`);
+      return;
+    }
+    salvarAuto(c); A.pintar();
+  };
+  X.acoes["chn-auto-ok"] = () => { const c = cfgAuto(); c.modo = "escolhidos"; c.uids = [...document.querySelectorAll(".chn-pp:checked")].map(x => x.value).slice(0, 300); salvarAuto(c); window.fecharSheet(); A.pintar(); toast(c.uids.length ? `${c.uids.length} pessoa${c.uids.length === 1 ? "" : "s"} podem.` : "Ninguém marcado."); };
+  X.configExtra.push(() => {
+    const c = cfgAuto(), st = NE.estado, ok = ativoNativo();
+    const perm = (v, nome, sub, feito) => `<button data-s="chn-perm" data-v="${v}"><span class="cs-lic ${feito ? "cs-ok" : "cs-pend"}">${feito ? I.ok : I.alerta}</span><span><b>${nome}</b><small>${feito ? "Liberado" : sub}</small></span></button>`;
+    return `<h2 class="cs-sec" id="cs-ch-cfg">Chamadas</h2><div class="cs-menu card flat">
+      ${NV ? (ok ? `<div class="cs-linha"><span class="cs-lic">${I.ok}</span><span><b>Tocar com app fechado</b><small>Ativo neste celular</small></span></div>
+          ${perm("notificacoes", "Notificações", "Toque para permitir: sem isso, não toca", st.notificacoes)}
+          ${perm("telaCheia", "Tela cheia", "Toque para permitir aparecer na tela bloqueada", st.telaCheia)}
+          ${perm("bateria", "Bateria livre", "Toque e escolha “Permitir”: o Android não desliga o ChatMil", st.bateria)}
+          ${perm("sobrepor", "Sobre outros apps", "Necessário para atender sozinho com a tela ligada", st.sobrepor)}
+          <button data-s="chn-desligar"><span class="cs-lic">${I.desligar}</span><span><b>Desativar</b><small>O celular só toca com o app aberto</small></span></button>`
+        : `<button data-s="chn-ativar"><span class="cs-lic">${I.sino}</span><span><b>Tocar com app fechado</b><small>Toque para ativar (pede a senha uma vez)</small></span></button>`)
+        : `<div class="cs-linha"><span class="cs-lic">${I.sino}</span><span><b>Tocar com o app fechado</b><small>Disponível no aplicativo Android</small></span></div>`}
+      <div class="cs-linha"><span class="cs-lic">${I.alerta}</span><span><b>Urgente: atender sozinho</b><small>Abre o áudio no alto-falante, sem tocar no celular</small></span></div>
+      <div class="seg cs-ch-seg">${[["ninguem", "Ninguém"], ["seguindo", "Quem eu sigo"], ["escolhidos", "Escolher"]].map(([k, n]) => `<button data-s="chn-auto" data-v="${k}" aria-pressed="${c.modo === k}">${n}${k === "escolhidos" && c.modo === k ? ` (${(c.uids || []).length})` : ""}</button>`).join("")}</div>
+    </div>`;
+  });
 
   /* ---------- voltar (Android) ---------- */
   const voltarAnt = window.SENOV_voltar;
@@ -367,6 +468,9 @@ body.cs-ch-on{overflow:hidden}
 .cs-ch-entra .cs-ch-ctl{gap:70px;padding-bottom:calc(50px + env(safe-area-inset-bottom,0px))}
 .cs-ch-entra .cs-ch-bt{width:72px;height:72px}
 @keyframes csToque{50%{transform:scale(1.08)}}
+.cs-ch-urg{font-style:normal;background:#E5484D;color:#fff;font-weight:800;letter-spacing:.08em;padding:4px 14px;border-radius:999px;font-size:.8rem}
+.cs-ch-seg{margin:4px 10px 10px}
+.cs-lic.cs-ok{background:#DCFCE7;color:#15803D}.cs-lic.cs-pend{background:#FEF3C7;color:#B45309}
 `;
   document.head.appendChild(css);
 })();

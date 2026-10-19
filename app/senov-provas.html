@@ -366,6 +366,87 @@ label.f>*:not(.ajuda-btn){flex-basis:100%}
 /* ============ Constantes ============ */
 const DISCIPLINAS=["Língua Portuguesa","Matemática","Ciências","História","Geografia","Arte","Educação Física","Língua Inglesa","Ensino Religioso","Biologia","Física","Química","Filosofia","Sociologia"];
 const SERIES={EF:["1º ano","2º ano","3º ano","4º ano","5º ano","6º ano","7º ano","8º ano","9º ano"],EM:["1ª série","2ª série","3ª série"]};
+/* Conteúdos por disciplina e ano (base: BNCC). Chaves: EF1..EF9, EM1..EM3; "EF1-5" vale para 1º ao 5º ano. */
+const CURRICULO={
+"Língua Portuguesa":{
+"EF1-2":["Alfabeto","Consciência fonológica","Sílabas","Leitura de palavras","Escrita do nome","Rimas e parlendas","Listas e bilhetes","Letra maiúscula e minúscula","Interpretação de texto"],
+"EF3-5":["Interpretação de texto","Ortografia","Pontuação","Substantivos","Adjetivos","Verbos","Sinônimos e antônimos","Fábulas","Contos","Cartas e bilhetes","Notícia","Poemas","Acentuação","Paragrafação"],
+"EF6-7":["Interpretação de texto","Classes de palavras","Substantivos","Adjetivos","Verbos","Pronomes","Advérbios","Frase, oração e período","Sujeito e predicado","Gêneros textuais","Notícia e reportagem","Fato e opinião","Variação linguística","Figuras de linguagem","Pontuação","Ortografia"],
+"EF8-9":["Interpretação de texto","Coesão e conectivos","Período composto","Orações coordenadas","Orações subordinadas","Concordância verbal e nominal","Regência","Crase","Vozes verbais","Argumentação","Artigo de opinião","Gêneros textuais","Figuras de linguagem","Variação linguística","Literatura"],
+"EM1-3":["Interpretação de texto","Argumentação","Redação dissertativo-argumentativa","Coesão e coerência","Gêneros textuais","Variação linguística","Funções da linguagem","Figuras de linguagem","Literatura","Trovadorismo e Humanismo","Barroco e Arcadismo","Romantismo","Realismo e Naturalismo","Modernismo","Literatura contemporânea","Sintaxe","Concordância e regência"]},
+"Matemática":{
+"EF1-2":["Contagem","Números até 100","Adição","Subtração","Sistema monetário","Medidas de tempo","Figuras geométricas","Sequências"],
+"EF3-5":["Sistema de numeração decimal","Adição e subtração","Multiplicação","Divisão","Frações","Números decimais","Porcentagem","Sistema monetário","Medidas de comprimento","Medidas de massa e capacidade","Medidas de tempo","Perímetro e área","Figuras geométricas","Gráficos e tabelas","Probabilidade"],
+"EF6":["Números naturais","Operações com números naturais","Múltiplos e divisores","Números primos","Frações","Números decimais","Porcentagem","Ângulos","Polígonos","Perímetro e área","Gráficos e tabelas"],
+"EF7":["Números inteiros","Números racionais","Razão e proporção","Regra de três","Porcentagem","Equações do 1º grau","Ângulos","Triângulos","Circunferência","Área de figuras planas","Estatística","Escala"],
+"EF8":["Potenciação e radiciação","Notação científica","Expressões algébricas","Produtos notáveis","Sistemas de equações","Matemática financeira","Porcentagem","Área e volume","Estatística","Probabilidade"],
+"EF9":["Números reais","Equação do 2º grau","Função","Teorema de Pitágoras","Semelhança de triângulos","Teorema de Tales","Relações métricas no triângulo retângulo","Razões trigonométricas","Volume","Estatística","Probabilidade","Porcentagem e juros"],
+"EM1":["Conjuntos","Função afim","Função quadrática","Função exponencial","Logaritmo","Progressão aritmética","Progressão geométrica","Porcentagem","Estatística"],
+"EM2":["Trigonometria","Matrizes","Determinantes","Sistemas lineares","Análise combinatória","Probabilidade","Geometria plana","Geometria espacial"],
+"EM3":["Geometria analítica","Números complexos","Polinômios","Juros compostos","Matemática financeira","Estatística","Probabilidade","Geometria espacial"]},
+"Ciências":{
+"EF1-2":["Corpo humano","Hábitos de higiene","Seres vivos","Plantas","Animais","Dia e noite","Materiais do dia a dia"],
+"EF3-5":["Seres vivos","Cadeias alimentares","Ciclo da água","Estados físicos da água","Misturas","Solo","Sistema solar","Corpo humano","Alimentação saudável","Microrganismos","Sistema digestório","Reciclagem e lixo"],
+"EF6":["Célula","Níveis de organização","Sistema nervoso","Visão e audição","Misturas e separação","Transformações químicas","Planeta Terra","Camadas da Terra","Rochas e fósseis","Água e saúde"],
+"EF7":["Máquinas simples","Calor e temperatura","Efeito estufa","Clima e ambiente","Ecossistemas brasileiros","Cadeias alimentares","Vacinas","Saneamento e saúde","Doenças infecciosas","Placas tectônicas"],
+"EF8":["Energia elétrica","Circuitos elétricos","Fontes de energia","Sistema reprodutor","Puberdade","Métodos contraceptivos e ISTs","Sistema endócrino","Clima","Movimentos da Terra e da Lua","Estações do ano"],
+"EF9":["Estrutura da matéria","Modelos atômicos","Reações químicas","Ondas e radiação","Genética","Hereditariedade","Evolução","Biodiversidade","Universo e Sistema Solar","Sustentabilidade"]},
+"História":{
+"EF1-2":["Minha história","Família","Escola e comunidade","Brincadeiras de antigamente","Tempo: passado e presente"],
+"EF3-5":["A cidade e o campo","Povos indígenas","Povos africanos","Patrimônio cultural","Migrações","Formas de registro da história","Cidadania e direitos"],
+"EF6":["O que é História","Fontes históricas","Origem da humanidade","Primeiros povos da América","Mesopotâmia","Egito antigo","Grécia antiga","Roma antiga","Idade Média"],
+"EF7":["Renascimento","Reforma Protestante","Grandes navegações","Povos indígenas antes da colonização","Brasil Colônia","Escravidão africana","Resistência à escravidão","Mineração no Brasil"],
+"EF8":["Iluminismo","Revolução Francesa","Revolução Industrial","Independência dos EUA","Independência do Brasil","Brasil Império","Abolição da escravidão","Abolição no Ceará","Pós-abolição"],
+"EF9":["Primeira República","Primeira Guerra Mundial","Revolução Russa","Era Vargas","Segunda Guerra Mundial","Guerra Fria","Ditadura civil-militar","Redemocratização","Direitos humanos"],
+"EM1-3":["Antiguidade","Idade Média","Brasil Colônia","Resistência à escravidão","Brasil Império","Movimentos populares no Ceará","Era Vargas","Ditadura civil-militar","Redemocratização","Guerra Fria","Globalização","Movimentos sociais","História e memória"]},
+"Geografia":{
+"EF1-2":["Lugares de vivência","A escola e a casa","Paisagem","Orientação e localização"],
+"EF3-5":["Paisagem natural e modificada","Campo e cidade","Mapas e legendas","Regiões do Brasil","Clima e vegetação","Recursos naturais","Trabalho e produção"],
+"EF6":["Paisagem e lugar","Cartografia","Coordenadas geográficas","Relevo","Hidrografia","Clima","Vegetação","Ciclo da água"],
+"EF7":["Território brasileiro","Regiões do Brasil","Semiárido","Biomas brasileiros","População brasileira","Urbanização","Indústria e agropecuária"],
+"EF8":["América","África","Fluxos migratórios","Desenvolvimento e desigualdade","Recursos naturais","Blocos econômicos"],
+"EF9":["Globalização","Europa","Ásia","Oceania","Urbanização","Conflitos mundiais","Questões ambientais"],
+"EM1-3":["Cartografia","Clima","Recursos hídricos","Questão agrária","Urbanização","Globalização","Geopolítica","População e migrações","Questões ambientais","Fontes de energia","Semiárido","Industrialização"]},
+"Arte":{
+"EF1-5":["Cores","Desenho","Pintura","Música e ritmo","Teatro","Dança","Brincadeiras cantadas","Arte popular"],
+"EF6-9":["Arte popular","Xilogravura e cordel","Artes visuais","Música","Teatro","Dança","Patrimônio cultural","Arte africana e afro-brasileira","Arte indígena","Arte contemporânea"],
+"EM1-3":["História da arte","Arte brasileira","Arte popular","Música","Teatro","Dança","Artes visuais","Arte e tecnologia"]},
+"Educação Física":{
+"EF1-5":["Brincadeiras e jogos","Danças","Ginástica","Esportes de marca e precisão","Lutas","Jogos cooperativos"],
+"EF6-9":["Esportes","Lutas","Danças","Ginástica","Práticas corporais de aventura","Saúde e atividade física","Jogos eletrônicos"],
+"EM1-3":["Esportes","Saúde e qualidade de vida","Lutas","Danças","Ginástica","Práticas corporais de aventura","Corpo e mídia"]},
+"Língua Inglesa":{
+"EF6-7":["Greetings","Numbers","Colors","Family","Simple present","Verb to be","Daily routine","Reading"],
+"EF8-9":["Simple past","Future","Present continuous","Comparatives","Reading","Vocabulary","Text genres"],
+"EM1-3":["Reading","Interpretação de texto em inglês","Verb tenses","Modal verbs","Connectors","Text genres","Vocabulary"]},
+"Ensino Religioso":{
+"EF1-5":["Identidade e alteridade","Respeito às diferenças","Manifestações religiosas","Festas e celebrações"],
+"EF6-9":["Tradições religiosas","Textos sagrados","Diversidade religiosa","Ética e valores","Direitos humanos"]},
+"Biologia":{
+"EM1":["Citologia","Bioquímica","Ecologia","Saúde coletiva","Origem da vida"],
+"EM2":["Genética","Reprodução","Embriologia","Histologia","Fisiologia humana","Classificação dos seres vivos"],
+"EM3":["Evolução","Biotecnologia","Botânica","Zoologia","Ecologia","Saúde e meio ambiente"]},
+"Física":{
+"EM1":["Cinemática","Leis de Newton","Trabalho e energia","Quantidade de movimento","Gravitação"],
+"EM2":["Termologia","Calorimetria","Termodinâmica","Óptica","Ondas","Acústica"],
+"EM3":["Eletrostática","Eletrodinâmica","Energia elétrica","Magnetismo","Física moderna"]},
+"Química":{
+"EM1":["Matéria e energia","Modelos atômicos","Tabela periódica","Ligações químicas","Funções inorgânicas","Reações químicas","Combustão"],
+"EM2":["Soluções","pH","Estequiometria","Termoquímica","Cinética química","Equilíbrio químico","Eletroquímica"],
+"EM3":["Química orgânica","Funções orgânicas","Isomeria","Polímeros","Química ambiental"]},
+"Filosofia":{
+"EM1-3":["Paulo Freire","Mito e filosofia","Pré-socráticos","Sócrates, Platão e Aristóteles","Ética","Política","Teoria do conhecimento","Filosofia moderna","Existencialismo","Filosofia contemporânea"]},
+"Sociologia":{
+"EM1-3":["Introdução à Sociologia","Cultura e identidade","Desigualdade social","Desigualdade racial","Mundo do trabalho","Movimentos sociais","Cidadania e direitos","Estado e democracia","Gênero e diversidade","Meios de comunicação"]}
+};
+function curriculoDe(disc,serie,nivel){
+  const c=CURRICULO[disc];if(!c)return [];
+  const m=String(serie||"").match(/^(\d)/),niv=/série/.test(serie||"")?"EM":/ano/.test(serie||"")?"EF":(nivel||"");
+  const n=m?+m[1]:0,out=[];
+  Object.keys(c).forEach(k=>{const r=k.match(/^(EF|EM)(\d)(?:-(\d))?$/);if(!r)return;const a=+r[2],b=r[3]?+r[3]:a;
+    if(!niv||(r[1]===niv&&(!n||(n>=a&&n<=b))))c[k].forEach(x=>{if(!out.includes(x))out.push(x);});});
+  return out;
+}
 const NIVEL_NOME={EF:"Ensino Fundamental",EM:"Ensino Médio"};
 const NALT={EF:4,EM:5};
 const LET="ABCDE";
@@ -424,7 +505,8 @@ function juntar(){S.questoes=[...S._banco,...S._privadas];render();}
 const colPrivadas=()=>S.db.doc(`data/users/${S.uid}/perfil`).collection("minhas");
 function mine(q){return S.uid && q.autorId===S.uid;}
 function todasDisciplinas(){return uniq([...DISCIPLINAS,...S.questoes.map(q=>q.disciplina)]);}
-function conteudosDe(disc,nivel,serie){return uniq(S.questoes.filter(q=>(!disc||q.disciplina===disc)&&(!nivel||q.nivel===nivel)&&(!serie||q.serie===serie)).map(q=>q.conteudo));}
+function conteudosBanco(disc,nivel,serie){return uniq(S.questoes.filter(q=>(!disc||q.disciplina===disc)&&(!nivel||q.nivel===nivel)&&(!serie||q.serie===serie)).map(q=>q.conteudo).filter(Boolean));}
+function conteudosDe(disc,nivel,serie){return uniq([...S.questoes.filter(q=>(!disc||q.disciplina===disc)&&(!nivel||q.nivel===nivel)&&(!serie||q.serie===serie)).map(q=>q.conteudo),...(disc?curriculoDe(disc,serie,nivel):[])].filter(Boolean));}
 
 /* ============ Dados (db) ============ */
 async function iniciar(){
@@ -664,7 +746,125 @@ function sequenciaGabarito(n,k,fixos){
   }
   return Array.from({length:n},(_,i)=>fixos[i]??(i%k));
 }
-function entrada(q,pos){
+/* ============ Provas únicas: troca os números das questões de cálculo ============
+   Cada gerador recalcula a resposta certa (sempre na posição 0) e as erradas.
+   Depois, uma conferência garante: alternativas diferentes entre si, quantidade certa,
+   nada vazio ou "NaN". Se algo não bater, a questão fica como está no banco. */
+const VR=(()=>{
+  const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  const pk=l=>l[Math.floor(Math.random()*l.length)];
+  const fmt=(v,d)=>{const n=Number(v);const t=(Math.round(n*100)/100).toFixed(d==null?(Number.isInteger(Math.round(n*100)/100)?0:2):d);const [i,f]=t.split(".");return i.replace(/\B(?=(\d{3})+(?!\d))/g,".")+(f?","+f:"");};
+  const brl=v=>"R$ "+fmt(v,2);
+  const mdc=(a,b)=>b?mdc(b,a%b):Math.abs(a);
+  const fr=(n,d)=>{const g=mdc(n,d);return `${n/g}/${d/g}`;};
+  const pct=v=>fmt(v)+"%";
+  const G={
+    ex02:()=>{const [a,b]=pk([[1,2],[2,3],[3,4],[2,5],[3,5],[4,5],[1,3],[5,6]]),k=ri(2,5);
+      return {e:`Qual das frações abaixo é equivalente a ${a}/${b}?`,a:[`${a*k}/${b*k}`,`${b}/${a}`,`${a}/${b*k}`,`${a+k}/${b+k}`]};},
+    ex03:()=>{for(let t=0;t<60;t++){const b=pk([3,4,5,6]),d=pk([3,4,5,6,8]);if(b===d)continue;const a=ri(1,b-1),c=ri(1,d-1),L=b*d;if(mdc(a,b)>1||mdc(c,d)>1)continue;const lido=a*d+c*b;if(lido>=L)continue;
+        return {e:`Ana leu ${a}/${b} de um livro na segunda-feira e ${c}/${d} na terça-feira. Que fração do livro ela ainda precisa ler?`,a:[fr(L-lido,L),fr(lido,L),fr(a+c,b+d),fr(L-lido+1,L)]};}return null;},
+    ex04:()=>{for(;;){const a=ri(18,69),b=ri(12,48);if(a%10+b%10<10)continue;const s=a+b;return {e:`Quanto é ${a} + ${b}?`,a:[s,s-10,s+10,s-1].map(String)};}},
+    ex05:()=>{const t=ri(8,15),e=ri(25,40),s=t*e;return {e:`Uma escola tem ${t} turmas com ${e} estudantes cada. Quantos estudantes há na escola?`,a:[s,t+e,s-e,s+t].map(String)};},
+    ex11:()=>{const a=ri(2,6),b=ri(1,9),x=ri(2,5),s=a*x+b;return {e:`Na função f(x) = ${a}x + ${b}, quanto vale f(${x})?`,a:[s,a*x,a+b+x,a*(x+b),s+1].map(String)};},
+    ex12:()=>{const B=pk([4,4.5,5,5.5,6]),K=pk([2,2.25,2.5,2.75,3]),d=ri(5,15),s=B+K*d;
+      return {e:`Um táxi cobra ${brl(B)} de bandeirada mais ${brl(K)} por quilômetro rodado. Quanto custa uma corrida de ${d} km?`,a:[s,K*d,(B+K)*d,B*d+K,B+K*(d-1)].map(brl)};},
+    ex13:()=>{const a=ri(2,5),b=pk([-3,-2,-1,1,2,3,4]),x1=ri(0,2),x2=x1+ri(2,3);
+      const f=(m,n)=>`f(x) = ${m}x ${n<0?"− "+(-n):"+ "+n}`.replace(" + 0","").replace("1x","x");
+      const ok=(m,n)=>m*x1+n===a*x1+b&&m*x2+n===a*x2+b;
+      const c=[[a,b],[a,-b],[a+1,b-1],[a-1,b+2],[b,a],[2*a,b],[a+1,b]].filter(([m,n],i)=>i===0||(!ok(m,n)&&m!==0));
+      return {e:`A reta que passa pelos pontos (${x1}, ${a*x1+b}) e (${x2}, ${a*x2+b}) é o gráfico de qual função?`,a:c.slice(0,5).map(([m,n])=>f(m,n))};},
+    ex17:()=>{const n=ri(4,9),p=pk([8,10,12,15,18]);return {e:`Dona Lúcia faz bolos para vender na feira do bairro. No sábado, ela vendeu ${n} bolos a ${brl(p)} cada um. Quanto ela recebeu?`,a:[n*p,n+p,n*p-p,n*p+10].map(brl)};},
+    ex18:()=>{const C=pk([60,80,100,120,150]),D=pk([10,20,25,30,40]);return {e:`A conta de água da família de Dona Rita era de ${brl(C)} por mês. Depois que a associação de moradores ajudou a instalar uma cisterna para guardar água da chuva, a conta diminuiu ${D}%. Quanto a família passou a pagar?`,a:[C*(100-D)/100,C*D/100,C-D,C*(100+D)/100].map(brl)};},
+    ex19:()=>{const D0=ri(10,25)*10,P=ri(3,Math.floor(D0/10)-1)*10,F=ri(3,9)*10,dev=D0-P+F;
+      return {e:`Seu Antônio, vendedor ambulante, começou o mês devendo ${brl(D0)} ao fornecedor. Na primeira semana, pagou ${brl(P)}. Na segunda, comprou fiado mais ${brl(F)} em mercadorias. Qual é a situação dele com o fornecedor ao fim da segunda semana?`,
+        a:[`Deve ${brl(dev)}.`,`Deve ${brl(D0+P-F)}.`,`Deve ${brl(D0-P)}.`,"Está quite com o fornecedor."]};},
+    ex20:()=>{const pf=ri(5,9),ps=pf+ri(1,3),a=ri(2,4),b=ri(4,6),Q=ri(10,30);
+      return {e:`Na feira da agricultura familiar, ${a} kg de feijão custam ${brl(a*pf)}. No supermercado, ${b} kg do mesmo feijão custam ${brl(b*ps)}. Quem compra ${Q} kg na feira, em vez de comprar no supermercado, economiza:`,a:[Q*(ps-pf),ps-pf,Q*pf,Math.abs(b*ps-a*pf)].map(brl)};},
+    ex21:()=>{const E=pk([10000,20000,25000,50000,100000]),c=ri(2,9),cm=c*E;
+      const dist=v=>v>=100000?fmt(v/100000)+" km":fmt(v/100)+" m";
+      return {e:`A turma desenhou um mapa do bairro na escala 1 : ${fmt(E)}. No mapa, a distância em linha reta entre a escola e o posto de saúde é de ${c} cm. Qual é essa distância real?`,a:[dist(cm),dist(cm*10),dist(cm/10),fmt(cm/100)+" km"]};},
+    ex22:()=>{for(let t=0;t<40;t++){const P=pk([1200,1500,1800,2000,2400]),n=pk([10,12]),j=pk([10,15,20,25]),tot=P*(100+j)/100;if((tot*100)%n)continue;const par=tot/n,ex=tot-P;
+        return {e:`Uma loja anuncia uma geladeira por ${brl(P)} à vista ou em ${n} parcelas de ${brl(par)} "sem entrada". Ao escolher o parcelamento, quanto a família paga a mais e quanto isso representa em relação ao preço à vista?`,
+          a:[`${brl(ex)}, ou seja, ${j}% a mais.`,`${brl(par)}, ou seja, ${fmt(par/P*100)}% a mais.`,`${brl(ex)}, ou seja, ${fmt(ex/par*10)}% a mais.`,`${brl(tot)}, ou seja, ${100+j}% a mais.`]};}return null;},
+    ex23:()=>{for(let t=0;t<200;t++){const a=pk([10,15,20]),b=a+pk([5,10,15]),c=b+pk([10,15,20]),d=c+pk([20,25,30,40]),s=2*a+b+c+d;if(s%5)continue;const M=s/5;if(M===b||M===a||M===d)continue;
+        return {e:`Numa pesquisa feita pelos estudantes, cinco famílias da rua informaram quantos litros de água compram por semana em galões: ${a}, ${a}, ${b}, ${c} e ${d} litros. Qual afirmação é verdadeira?`,
+          a:[`A média é ${M} litros e a mediana é ${b} litros.`,`A média é ${b} litros e a mediana é ${M} litros.`,`A média é ${M} litros e a moda é ${d} litros.`,`A média, a mediana e a moda são iguais a ${M} litros.`]};}return null;},
+    ex24:()=>{const [h,d,c]=pk([[8,6,10],[6,8,10],[12,9,15],[12,5,13],[9,12,15],[8,15,17]]);
+      return {e:`Para levar energia elétrica até uma casa do assentamento, um poste de ${h} m de altura será firmado por um cabo esticado do topo do poste até um ponto no chão a ${d} m da base. Qual é o comprimento do cabo?`,a:[c,h+d,c+2,Math.abs(h-d)+1].map(v=>v+" m")};},
+    ex25:()=>{for(;;){const w=ri(4,9),k=ri(2,5);if(k===w||w+k===w+2)continue;const A=w*(w+k);
+      return {e:`Um grupo de mulheres de uma cooperativa vai cercar uma horta comunitária retangular com ${A} m² de área. O comprimento da horta tem ${k} m a mais que a largura. Qual é a largura da horta?`,a:[w,w+k,k,w+2].map(v=>v+" m")};}},
+    ex37:()=>{const P=pk([4000,4500,5500,6000,7500]),t=pk([10,15,20,30]),T=pk([0.7,0.8,0.9,1]),kwh=P/1000*t/60*30,s=kwh*T;
+      return {e:`Um chuveiro elétrico de ${fmt(P)} W (${fmt(P/1000)} kW) é usado ${t} minutos por dia, durante 30 dias. Se o kWh custa ${brl(T)}, quanto esse chuveiro acrescenta à conta de luz no mês?`,a:[s,s*2,s/10,P/1000*t*30*T/10].map(brl)};},
+    ex47:()=>{const m=pk([10,15,20,25]),c=pk([10,12,15,18]),N=ri(30,90),F=m*N,p=c+m;
+      return {e:`Uma cooperativa de costureiras tem custo fixo mensal de ${brl(F)} e gasta ${brl(c)} para produzir cada peça, vendida por ${brl(p)}. Qual é o número mínimo de peças que precisam ser vendidas no mês para que não haja prejuízo?`,a:[N,Math.ceil(F/c),Math.ceil(F/p),N*2,N+m].map(String)};},
+    ex48:()=>{const a=pk([5,8,10,12,15,20]),t=((1+a/100)**2-1)*100;return {e:`Em um ano, o preço da cesta básica subiu ${a}%. No ano seguinte, subiu mais ${a}% sobre o novo preço. O aumento acumulado nos dois anos foi de:`,a:[t,2*a,a,2*a+2,a*a/100].map(pct)};},
+    ex49:()=>{const a1=pk([10,15,20,25,30]),r=pk([3,5,10]),n=pk([10,12]),an=a1+(n-1)*r,S=n*(a1+an)/2;
+      return {e:`Para comprar uma caixa d'água, uma família guarda ${brl(a1)} no 1º mês, ${brl(a1+r)} no 2º, ${brl(a1+2*r)} no 3º, e assim por diante. Quanto terá guardado ao final de ${n} meses?`,a:[S,an,n*a1,n*an,S+r].map(brl)};},
+    ex50:()=>{for(let t=0;t<200;t++){const n=ri(7,11),s=pk([1500,1600,1800,2000]),D=pk([15000,18000,21000,24000]),tot=n*s+D;if(tot%(n+1))continue;const M=tot/(n+1),err=(s+D)/2;if(M===err)continue;
+        return {e:`Em uma empresa, ${n} funcionários ganham ${brl(s)} por mês e o dono retira ${brl(D)}. Sobre a renda mensal dessas ${n+1} pessoas, é correto afirmar que:`,
+          a:[`a média é ${brl(M)}, mas a mediana é ${brl(s)}, o que mostra que a média pode esconder a desigualdade.`,`a média e a mediana são iguais a ${brl(s)}.`,`a média é ${brl(err)} e a mediana é ${brl(M)}.`,`a mediana é ${brl(D)}, pois é o maior valor.`,`a média é ${brl(s)}, pois a maioria ganha esse valor.`]};}return null;},
+    ex51:()=>{for(;;){const T=pk([20,25,40,50]),W=ri(Math.ceil(T*.3),Math.floor(T*.8));const p=(T-W)/T*100;if(!Number.isInteger(p)||p===50||W===T-W)continue;
+      return {e:`Em uma turma de EJA com ${T} estudantes, ${W} trabalham durante o dia. Sorteando-se um estudante ao acaso, qual é a probabilidade de que ele NÃO trabalhe durante o dia?`,a:[pct(p),pct(100-p),pct(W),pct(T-W),`1/${W}`]};}},
+    ex53:()=>{const C=pk([500,1000,2000]),j=pk([5,8,10,12]),n=pk([2,3]),M=C*(1+j/100)**n;
+      return {e:`Uma pessoa usou ${brl(C)} do limite do cartão de crédito, com juros compostos de ${j}% ao mês, e não pagou nada durante ${n} meses. Qual será o valor da dívida ao fim desse período?`,a:[M,C*(1+j*n/100),C*(1+j/100),C*(1+j/100)**(n+1),C*n].map(brl)};},
+    ex62:()=>{for(;;){const d=ri(6,30),t=pk([20,30,40,45,60]),v=d/(t/60);if(!Number.isInteger(v))continue;
+      return {e:`Um estudante da zona rural mora a ${d} km da escola. O ônibus escolar faz esse trajeto em ${t} minutos. Qual é a velocidade média do ônibus?`,a:[v,v*2,v/2,d*t,Math.round(d/t*100)/100].map(x=>fmt(x)+" km/h")};}},
+    ex64:()=>{for(;;){const G=pk([200,240,300,360]),C=pk([300,400,450,480,600]),T=pk([0.8,0.9,1]);if(G>=C)continue;
+      const f=fr(G,C),inv=fr(C,G),r=fr(C-G,C);if(f===r)continue;
+      return {e:`Uma associação comunitária instalou, na escola do bairro, placas solares que geram, em média, ${G} kWh por mês. A escola consome ${C} kWh por mês e a tarifa é de ${brl(T)} por kWh. Qual é a economia mensal da escola e que fração do seu consumo é atendida pelas placas?`,
+        a:[`${brl(G*T)}, atendendo ${f} do consumo.`,`${brl(C*T)}, atendendo todo o consumo.`,`${brl(G*T)}, atendendo ${inv} do consumo.`,`${brl((C-G)*T)}, atendendo ${r} do consumo.`,`${brl(G)}, atendendo ${f} do consumo.`]};}}
+  };
+  function conferir(v,n){
+    if(!v||!Array.isArray(v.a)||v.a.length<n||!v.e)return false;
+    const l=v.a.slice(0,n).map(x=>String(x).trim());
+    if(l.some(x=>!x||/NaN|undefined|Infinity/.test(x))||/NaN|undefined/.test(v.e))return false;
+    return new Set(l.map(x=>x.toLowerCase())).size===l.length;
+  }
+  /* devolve uma cópia da questão com números novos, ou a própria questão */
+  function variar(q,n){
+    const g=G[q.id];if(!g||q.fixarOrdem||!q.exemplo||q.origemId)return q;
+    for(let t=0;t<12;t++){let v=null;try{v=g();}catch(e){v=null;}
+      if(conferir(v,n))return {...q,enunciado:v.e,alternativas:v.a.slice(0,n).map(String),correta:0,variada:true};}
+    return q;
+  }
+  return {variar,conferir,G};
+})();
+/* ============ Turma na prova: nomes, comunidade, cidade e evento ============
+   Nas questões de exemplo troca os personagens; nas do professor, os marcadores
+   [ALUNO] [ALUNA] [COMUNIDADE] [CIDADE] [EVENTO]. Sem dados, nada muda. */
+const LOC={
+  ex01:[["Pedro","N"]], ex03:[["Ana","N"],["ela ainda","N ainda"]], ex17:[["Dona Lúcia","N"],["ela vendeu","vendeu"],["Quanto ela recebeu","Quanto N recebeu"],["na feira do bairro","na feira de C"]],
+  ex18:[["Dona Rita","N"]], ex26:[["Maria","N"],["ela vende","vende"]], ex62:[["Um estudante da zona rural mora","N, estudante da zona rural, mora"]],
+  ex09:[["as ruas do bairro","as ruas de C"]], ex21:[["um mapa do bairro","um mapa de C"]], ex05:[["Uma escola tem","A escola de C tem"]],
+  ex23:[["cinco famílias da rua","cinco famílias de C"]], ex33:[["No sertão,","Em C,"]], ex34:[["Em um bairro sem rede de esgoto","Em uma parte de C sem rede de esgoto"]],
+  ex20:[["Na feira da agricultura familiar","Na feira da agricultura familiar de C"]], ex29:[["acontece todo sábado, na praça central","acontece todo sábado, na praça de C"]],
+  ex28:[["enviada por estudantes à prefeitura","enviada por estudantes à prefeitura de K"]]
+};
+const LOC_NOMES_PADRAO=["Ana","João","Maria","Pedro","Luana","Davi","Clara","Rafael"];
+let locIdx=0;
+function nomesTurma(){const t=S.prova&&S.prova.loc&&S.prova.loc.nomes||"";return t.split(/[,;\n]+/).map(x=>x.trim()).filter(x=>x&&x.length<=40&&!/[<>{}\[\]]/.test(x)).slice(0,60);}
+function personalizar(q){
+  const L=(S.prova&&S.prova.loc)||{},ns=nomesTurma();
+  const comu=L.comunidade||"",cid=L.cidade||"",ev=L.evento||"";
+  let en=q.enunciado,alts=q.alternativas.slice(),mudou=false;
+  let nm;const pegaNome=()=>{if(nm===undefined)nm=ns.length?ns[(locIdx++)%ns.length]:null;return nm;};
+  const troca=(t,a,b)=>t.split(a).join(b);
+  if(q.exemplo&&!q.origemId&&LOC[q.id]){
+    LOC[q.id].forEach(([de,para])=>{
+      const precisaN=/\bN\b/.test(para),precisaC=/\bC\b/.test(para),precisaK=/\bK\b/.test(para);
+      if(precisaN&&!ns.length)return;const nome=precisaN?pegaNome():""; if(precisaC&&!(comu||cid))return; if(precisaK&&!cid)return;
+      const alvo=para.replace(/\bN\b/g,nome||"").replace(/\bC\b/g,comu||cid).replace(/\bK\b/g,cid);
+      const re=new RegExp("(^|[^\\p{L}])"+de.replace(/[.*+?^${}()|[\]\\]/gu,"\\$&")+"(?=$|[^\\p{L}])","gu");
+      const n2=en.replace(re,(m,a)=>a+alvo);if(n2!==en){en=n2;mudou=true;}
+    });
+  }
+  let nF;const marc=t=>{if(nF===undefined)nF=pegaNome()||LOC_NOMES_PADRAO[(locIdx++)%LOC_NOMES_PADRAO.length];const n=nF;
+    return t.replace(/\[(ALUNO|ALUNA|ESTUDANTE)\]/gi,n).replace(/\[COMUNIDADE\]/gi,comu||cid||"nossa comunidade").replace(/\[CIDADE\]/gi,cid||"nossa cidade").replace(/\[EVENTO\]/gi,ev||"a festa da comunidade");};
+  if(/\[(ALUNO|ALUNA|ESTUDANTE|COMUNIDADE|CIDADE|EVENTO)\]/i.test(en+alts.join(" "))){en=marc(en);alts=alts.map(marc);mudou=true;}
+  return mudou?{...q,enunciado:en,alternativas:alts}:q;
+}
+function entrada(q0,pos){
+  const q=personalizar(VR.variar(q0,(q0.alternativas||[]).length));
   let ordem;
   if(q.fixarOrdem||pos==null) ordem=q.alternativas.map((_,j)=>j);
   else{const outros=shuffle(q.alternativas.map((_,j)=>j).filter(j=>j!==q.correta));ordem=[];let o=0;for(let p=0;p<q.alternativas.length;p++)ordem[p]=p===pos?q.correta:outros[o++];}
@@ -1094,12 +1294,20 @@ function vPasso1(){
     <label class="f" for="p-serie">Série/ano<select class="in" id="p-serie">${SERIES[p.nivel].map(s=>`<option ${p.serie===s?"selected":""}>${s}</option>`).join("")}</select></label>
     <label class="f" for="p-prof">Nome do professor(a) ${ajuda("p-prof","Deixe em branco para preencher à mão na folha.")}<input class="in" id="p-prof" value="${esc(p.professor)}" placeholder="Ex.: Prof. Vones Santos"></label>
     <label class="f" for="p-instr">Instruções (opcional)<textarea class="in" id="p-instr" placeholder="Ex.: Leia com atenção e marque apenas uma alternativa.">${esc(p.instrucoes)}</textarea></label>
+    <details class="cs-det" ${p.loc&&(p.loc.nomes||p.loc.comunidade||p.loc.cidade||p.loc.evento)?"open":""}><summary><b>Turma na prova</b> <span class="small muted">(opcional)</span></summary>
+      <div class="stack" style="margin-top:8px">
+        <label class="f" for="p-nomes">Nomes de estudantes<input class="in" id="p-nomes" value="${esc((p.loc&&p.loc.nomes)||"")}" placeholder="Ex.: Ana, João, Maria Clara"></label>
+        <div class="grid2"><label class="f" for="p-com">Comunidade ou bairro<input class="in" id="p-com" value="${esc((p.loc&&p.loc.comunidade)||"")}" placeholder="Ex.: Lagoa Seca"></label>
+        <label class="f" for="p-cid">Cidade<input class="in" id="p-cid" value="${esc((p.loc&&p.loc.cidade)||"")}" placeholder="Ex.: Quixadá"></label></div>
+        <label class="f" for="p-evento">Evento da comunidade<input class="in" id="p-evento" value="${esc((p.loc&&p.loc.evento)||"")}" placeholder="Ex.: Festa de São João"></label>
+        <p class="small muted">Os nomes entram nas questões no lugar dos personagens.</p>
+      </div></details>
   </div>
   <div class="bar"><button class="btn primary" data-a="ir2">Continuar para questões</button></div>`;
 }
 function vPasso2(){
   const p=S.prova,a=S.auto;
-  const conts=conteudosDe(p.disciplina,p.nivel,a.mesmaSerie?p.serie:"");
+  const conts=conteudosBanco(p.disciplina,p.nivel,a.mesmaSerie?p.serie:"");
   const base=filtrarBase(p,a.mesmaSerie,a.conteudos);
   const msg=S._msg;
   return `<div class="card stack">
@@ -1214,7 +1422,7 @@ function vPasso3(){
     <button class="btn sm" data-a="passo" data-n="2" style="align-self:flex-start">${I.plus} Adicionar questões</button>
   </details>
   <div class="card stack">
-    <div class="row" style="justify-content:space-between"><div class="th"><h3>Gabarito</h3>${ajuda("gab","Questões em ordem crescente de dificuldade e agrupadas por conteúdo. As letras foram distribuídas por igual, sem repetir em seguida e sem sequências como A‑B‑A‑B ou A‑B‑C.")}</div><button class="btn sm" data-a="reorganizar">${I.shuffle} Reorganizar</button></div>
+    <div class="row" style="justify-content:space-between"><div class="th"><h3>Gabarito</h3>${ajuda("gab","Questões em ordem crescente de dificuldade e agrupadas por conteúdo. As letras foram distribuídas por igual, sem repetir em seguida e sem sequências como A‑B‑A‑B ou A‑B‑C.")}</div><div class="row" style="gap:6px"><button class="btn sm" data-a="reorganizar" title="Nova ordem e, nas questões de cálculo, números novos">${I.shuffle} Nova versão</button>${S.sample?`<button class="btn sm" data-a="versao-ia" title="A IA reescreve e confere cada questão">${I.wand} Versão inédita com IA</button>`:""}</div></div>
     <div class="dist">${d.map((v,i)=>`<span>${LET[i]}: ${v}</span>`).join("")}</div>
     <div class="dist" aria-label="Gabarito">${p.montagem.map((m,i)=>`<span>${i+1}-${LET[m.correta]}</span>`).join("")}</div>
     <div class="opcao"><label class="switch" for="p-gab"><input type="checkbox" id="p-gab" ${p.incluirGab?"checked":""}><span class="t"><b>Gabarito em folha separada no final</b></span></label>${ajuda("p-gab",`Retire a última folha antes de imprimir para os estudantes.`)}</div>
@@ -1225,6 +1433,8 @@ function vPasso3(){
   <div class="card stack"><h3>Adaptações e organização da folha</h3>
     <div class="opcao"><label class="switch" for="p-bastao"><input type="checkbox" id="p-bastao" ${p.bastao?"checked":""}><span class="t"><b>Letra bastão</b></span></label>${ajuda("p-bastao",`Todo o texto em MAIÚSCULAS, com fonte maior e mais espaçamento.`)}</div>
     <div class="f"><span>Colunas no PDF ${ajuda("cols","A ABNT usa uma coluna. Duas colunas economizam papel, mas para o AEE e letra bastão uma coluna é mais fácil de ler.")}</span><div class="seg" role="group"><button data-a="p-cols" data-v="1" aria-pressed="${p.colunas!==2}">1 coluna</button><button data-a="p-cols" data-v="2" aria-pressed="${p.colunas===2}">2 colunas · economiza papel</button></div>
+    </div>
+    <div class="f"><span>Margens do PDF ${ajuda("marg","Estreitas: 1,2 cm nas laterais e pouco espaço entre as colunas, cabe mais em cada folha. ABNT: 3 cm e 2 cm.")}</span><div class="seg" role="group"><button data-a="p-marg" data-v="estreita" aria-pressed="${p.margem!=="abnt"}">Estreitas · economiza papel</button><button data-a="p-marg" data-v="abnt" aria-pressed="${p.margem==="abnt"}">ABNT</button></div>
     </div>
   </div>
   </div><div class="p3-prev"><div class="paper-wrap">${previewPapel(p)}</div></div></div>
@@ -1267,10 +1477,13 @@ function vEscola(){
 }
 function vIALocal(){
   let c={};try{c=JSON.parse(localStorage.getItem("senov.ia")||"null")||{};}catch(e){}
-  return `<div class="card stack"><div class="th"><h3>Revisão por IA</h3><span class="pill ${c.chave?"d1":"mine"}">${c.chave?"ligada":"desligada"}</span>${ajuda("ia-local","Nesta versão de teste, a revisão usa uma chave da API da Anthropic (console.anthropic.com). A chave fica só neste aparelho e cada revisão é cobrada na sua conta da API. Sem chave, as questões ficam guardadas “só para mim”.")}</div>
-    <label class="f" for="ia-chave">Chave da API<input class="in" id="ia-chave" type="password" autocomplete="off" value="${esc(c.chave||"")}" placeholder="sk-ant-..."></label>
-    <label class="f" for="ia-modelo">Modelo ${ajuda("ia-modelo","Padrão: claude-sonnet-5-5. Pode trocar por outro modelo disponível na sua conta.")}<input class="in" id="ia-modelo" value="${esc(c.modelo||"claude-sonnet-5-5")}"></label>
-    <div class="row"><button class="btn primary" data-a="ia-salvar" style="flex:1">Salvar</button>${c.chave?`<button class="btn danger" data-a="ia-remover" style="flex:1">Remover chave</button>`:""}</div></div>`;
+  const comp=!!window.CS_IA_GEMINI,lig=!!(c.chave||c.gemini||comp);
+  return `<div class="card stack"><div class="th"><h3>Inteligência artificial</h3><span class="pill ${lig?"d1":"mine"}">${lig?"ligada":"desligada"}</span>${ajuda("ia-local","Usada para revisar questões e criar versões inéditas das provas. Gemini (Google) tem cota grátis por dia. Claude (Anthropic) é pago por uso. Se a cota acabar, as provas continuam únicas com a troca automática de números.")}</div>
+    ${comp?`<p class="small">${I.check} A IA gratuita do ChatMil já está ligada para você.</p>`:""}
+    <label class="f" for="ia-gemini">Chave do Gemini (grátis, opcional) ${ajuda("ia-gem","Crie em aistudio.google.com › Chaves de API. Fica só neste aparelho.")}<input class="in" id="ia-gemini" type="password" autocomplete="off" value="${esc(c.gemini||"")}" placeholder="AIza..."></label>
+    <label class="f" for="ia-chave">Chave do Claude (paga, opcional)<input class="in" id="ia-chave" type="password" autocomplete="off" value="${esc(c.chave||"")}" placeholder="sk-ant-..."></label>
+    <label class="f" for="ia-modelo">Modelo do Claude<input class="in" id="ia-modelo" value="${esc(c.modelo||"claude-sonnet-5-5")}"></label>
+    <div class="row"><button class="btn primary" data-a="ia-salvar" style="flex:1">Salvar</button>${c.chave||c.gemini?`<button class="btn danger" data-a="ia-remover" style="flex:1">Remover chaves</button>`:""}</div></div>`;
 }
 function vAdmin(){
   const q=S._banco;const semRev=q.filter(x=>!x.revisao).length;const autores=uniq(q.filter(x=>!x.exemplo).map(x=>x.autorId)).length;
@@ -1331,11 +1544,12 @@ function desenharEditor(){
      <label class="f" for="ed-serie">Série/ano<select class="in" id="ed-serie">${SERIES[d.nivel].map(s=>`<option ${d.serie===s?"selected":""}>${s}</option>`).join("")}</select></label>
    </div>
    <datalist id="dl-disc2">${todasDisciplinas().map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
-   <label class="f" for="ed-cont">Conteúdo ${ajuda("ed-cont","Ex.: Frações, Interpretação de texto, Sistema solar.")}<input class="in" id="ed-cont" list="dl-cont" value="${esc(d.conteudo)}"></label>
-   <datalist id="dl-cont">${conteudosDe(d.disciplina,"","").map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
+   <label class="f" for="ed-cont">Conteúdo ${ajuda("ed-cont","Ex.: Frações, Interpretação de texto, Sistema solar. Dica: escreva [ALUNO], [COMUNIDADE], [CIDADE] ou [EVENTO] no enunciado e a prova troca pelos dados da turma.")}<input class="in" id="ed-cont" list="dl-cont" value="${esc(d.conteudo)}"></label>
+   <datalist id="dl-cont">${conteudosDe(d.disciplina,"",d.serie).map(x=>`<option value="${esc(x)}">`).join("")}</datalist>
    <div class="f"><span>Dificuldade</span><div class="seg">${[1,2,3].map(n=>`<button data-a="ed-dif" data-v="${n}" aria-pressed="${d.dificuldade===n}">${DIF[n]}</button>`).join("")}</div></div>
    <div class="opcao"><label class="switch" for="ed-aee"><input type="checkbox" id="ed-aee" ${d.aee?"checked":""}><span class="t"><b>Adequada ao público do AEE</b></span></label>${ajuda("ed-aee",`Linguagem simples, comando direto, poucas etapas.`)}</div>
    <label class="f" for="ed-en">Enunciado<textarea class="in" id="ed-en" placeholder="Escreva o texto-base e o comando da questão">${esc(d.enunciado)}</textarea></label>
+   <div class="chips" aria-label="Inserir dado da turma">${[["ALUNO","Aluno"],["COMUNIDADE","Comunidade"],["CIDADE","Cidade"],["EVENTO","Evento"]].map(([k,n])=>`<button type="button" class="chip" data-a="ed-marca" data-v="[${k}]">+ ${n}</button>`).join("")}</div>
    <div class="f"><span>Imagem ou gráfico ${ajuda("ed-img","Opcional. Aparece depois do enunciado. Foto: câmera, galeria ou colar um print; ela <b>não fica guardada</b> no banco e vai só para o PDF desta prova. Gráfico: o banco guarda só os dados. Use imagens próprias ou cite a fonte.")}</span>
      ${d.grafico||S._ed.foto||d.temFoto?`<div class="imgbox">${d.grafico?midiaHTML(d):S._ed.foto?`<img src="${S._ed.foto.data}" alt="Imagem da questão">`:`<div class="fotofalta">${I.image}<span>Imagem não anexada</span></div>`}<button class="iconbtn" data-a="ed-img-rem" aria-label="Remover imagem">${I.trash}</button></div>
        ${!d.grafico?`<label class="f" for="ed-tit" style="font-weight:400">Título da figura ${ajuda("ed-tit","Aparece acima da imagem, como pede a ABNT. Opcional.")}<input class="in" id="ed-tit" value="${esc(d.tituloImg||"")}" placeholder="Ex.: Mapa do Brasil"></label>`:""}
@@ -1381,12 +1595,63 @@ function lerLogo(file){
   });
 }
 
+/* IA gratuita configurada pelo administrador do ChatMil: liga sem recarregar */
+window.SENOV_iaPronta=async function(){try{if(window.claude&&window.claude.use){const sm=await window.claude.use("sample");if(sm&&!S.sample){S.sample=sm;render();}}}catch(e){}};
+
+/* ============ Versão inédita com IA: reescreve e confere cada questão ============
+   1) a IA reescreve o enunciado (mesmo sentido, mesma resposta certa);
+   2) uma segunda consulta, sem saber o gabarito, resolve a questão;
+   3) só fica a versão nova se a resposta bater e a IA disser que está clara. */
+async function versaoIA(p,onProg){
+  const n=p.montagem.length;let ok=0,feitas=0;
+  const uma=async(m,i)=>{
+    if(m.grafico||m.temFoto||m.fixarOrdem){feitas++;onProg&&onProg(feitas,n);return;}
+    const N=m.alternativas.length,L=LET.slice(0,N);
+    try{
+      const r=await S.sample.json(`Você é um(a) professor(a) revisor(a) de provas brasileiras. Reescreva a questão abaixo para criar uma versão inédita, com outras palavras e, se fizer sentido, outro contexto do cotidiano dos estudantes (comunidade, trabalho, escola), mantendo EXATAMENTE o mesmo conteúdo, o mesmo nível de dificuldade, os mesmos números e a MESMA alternativa correta.
+Regras: português do Brasil correto; enunciado claro e sem ambiguidade; ${N} alternativas na MESMA ordem; a alternativa correta é a ${L[m.correta]} e deve continuar sendo a única correta; não use "todas as anteriores" nem "nenhuma das anteriores"; não revele a resposta no enunciado.
+Questão (${m.conteudo||""}):
+${m.enunciado}
+${m.alternativas.map((a,k)=>L[k]+") "+a).join("\n")}
+Responda só com JSON: {"enunciado":"...","alternativas":["...",${N>1?'"..."':""}]}`);
+      const en=String(r&&r.enunciado||"").trim(),al=Array.isArray(r&&r.alternativas)?r.alternativas.map(x=>String(x).replace(/^[A-Ea-e]\)\s*/,"").trim()):[];
+      if(en.length<15||en.length>m.enunciado.length*2.2+300||al.length!==N||al.some(x=>!x||x.length>(Math.max(...m.alternativas.map(a=>a.length))*2.5+80))||new Set(al.map(x=>x.toLowerCase())).size!==N)throw 0;
+      const v=await S.sample.json(`Resolva a questão de múltipla escolha abaixo. Pense com cuidado. Diga também se o enunciado está claro e se existe exatamente uma alternativa correta.
+${en}
+${al.map((a,k)=>L[k]+") "+a).join("\n")}
+Responda só com JSON: {"letra":"A","clara":true,"umaCorreta":true}`);
+      if(String(v&&v.letra||"").trim().toUpperCase().charAt(0)!==L[m.correta]||v.clara===false||v.umaCorreta===false)throw 0;
+      p.montagem[i]={...m,enunciado:en,alternativas:al,ia:true};ok++;
+    }catch(e){if(e&&e.code==="rate_limited")throw e;}
+    feitas++;onProg&&onProg(feitas,n);
+  };
+  for(let i=0;i<n;i+=2){await Promise.all([uma(p.montagem[i],i),i+1<n?uma(p.montagem[i+1],i+1):null]);}
+  return ok;
+}
+
+/* o gerador de PDF carrega em segundo plano (abertura mais rápida) */
+function esperarJsPDF(){return new Promise(r=>{let n=0;const t=setInterval(()=>{if(window.jspdf||++n>60){clearInterval(t);r(!!window.jspdf);}},100);});}
+/* ============ Prova recebida pelo ChatMil ============ */
+window.SENOV_importarProva=async function(pv){
+  try{
+    if(!S.db||!S.uid){toast("Abra a aba Provas uma vez e tente de novo.");return false;}
+    if(!pv||!Array.isArray(pv.itens)||!pv.itens.length){toast("Esta prova não pode ser aberta.");return false;}
+    const body={escola:pv.escola||"",logo:pv.logo||"",logoR:pv.logoR||1,professor:pv.professor||"",disciplina:String(pv.disciplina||""),bimestre:String(pv.bimestre||""),nivel:pv.nivel==="EM"?"EM":"EF",serie:String(pv.serie||""),instrucoes:pv.instrucoes||"",aee:!!pv.aee,bastao:!!pv.bastao,incluirGab:pv.incluirGab!==false,colunas:pv.colunas===2?2:1,itens:pv.itens.slice(0,120),montagem:pv.montagem||null,recebida:true,atualizadoEm:agora()};
+    if(!body.montagem)body.montagem=organizar(body.itens,body.nivel);
+    const col=S.db.doc(`data/users/${S.uid}/perfil`).collection("provas");
+    if(!S.perfil.termoAceitoEm&&!(await S.db.doc(`data/users/${S.uid}/perfil`).get()).exists) await salvarPerfil({});
+    await col.add(body);toast("Prova salva em Minhas provas (aba Provas).");return true;
+  }catch(e){console.error(e);toast("Não foi possível salvar a prova.");return false;}
+};
+
 /* ============ PDF ============ */
 function gerarPDF(p,midiaFn,modo){midiaFn=midiaFn||midia;
   /* ABNT NBR 14724: A4, margens 3 cm (sup./esq.) e 2 cm (inf./dir.), fonte 12, entrelinha 1,5,
      numeração no canto superior direito, ilustrações com identificação acima e fonte abaixo (tamanho menor). */
   const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:"mm",format:"a4"});
-  const PW=210,PH=297,ML=30,MR=20,MT=30,MB=20,W=PW-ML-MR,B=p.bastao,pt=.3528;
+  /* margens: "estreita" (padrão, economiza papel) ou "abnt" */
+  const ABNT=p.margem==="abnt";
+  const PW=210,PH=297,ML=ABNT?30:12,MR=ABNT?20:12,MT=ABNT?30:14,MB=ABNT?20:13,W=PW-ML-MR,B=p.bastao,pt=.3528;
   const up=s=>B?String(s).toLocaleUpperCase("pt-BR"):String(s);
   const fs=B?14:12,lh=fs*pt*1.5,fsP=B?11:10,lhP=fsP*pt*1.25;
   const quebrar=(t,w)=>{const out=[];String(t).split(/\n/).forEach(par=>{const ls=doc.splitTextToSize(par,w);if(!ls.length)ls.push("");ls.forEach((l,i)=>out.push({t:l,ult:i===ls.length-1}));});return out;};
@@ -1396,24 +1661,24 @@ function gerarPDF(p,midiaFn,modo){midiaFn=midiaFn||midia;
     if(esp>doc.getTextWidth(" ")*4){doc.text(l.t,x,yy);return;}
     let cx=x;pal.forEach(q=>{doc.text(q,cx,yy);cx+=doc.getTextWidth(q)+esp;});};
   let y=MT;
-  /* ---- Cabeçalho institucional ---- */
-  const lw=p.logo?22:0,tx=ML+(p.logo?27:0),tw=W-(p.logo?27:0);
-  if(p.logo){let w=22,h=22/(p.logoR||1);if(h>22){h=22;w=22*(p.logoR||1);}try{doc.addImage(p.logo,"JPEG",ML+(22-w)/2,y-4+(22-h)/2,w,h);}catch(e){}}
-  doc.setFont("helvetica","bold");doc.setFontSize(12);
+  /* ---- Cabeçalho compacto: escola e dados numa faixa; estudante numa linha; turma, data e nota juntas ---- */
+  const LG=p.logo?16:0,tx=ML+(p.logo?LG+4:0),tw=W-(p.logo?LG+4:0);
+  if(p.logo){let w=LG,h=LG/(p.logoR||1);if(h>LG){h=LG;w=LG*(p.logoR||1);}try{doc.addImage(p.logo,"JPEG",ML+(LG-w)/2,y-3.5+(LG-h)/2,w,h);}catch(e){}}
+  doc.setFont("helvetica","bold");doc.setFontSize(11);
   const nome=doc.splitTextToSize(String(p.escola||"").toLocaleUpperCase("pt-BR"),tw).slice(0,2);
-  doc.text(nome,tx,y+1);let hy=y+1+nome.length*5;
-  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(85);
-  doc.text(`${p.disciplina}  ·  ${p.bimestre}`,tx,hy+.5);doc.text(`${p.serie} – ${NIVEL_NOME[p.nivel]}`,tx,hy+5.3);doc.setTextColor(0);
-  y=Math.max(y+lw-2,hy+9);
-  doc.setDrawColor(20);doc.setLineWidth(.6);doc.line(ML,y,ML+W,y);
-  y+=8;doc.setFontSize(10);
-  const campo=(rot,x,yy,w,val)=>{doc.setFont("helvetica","bold");doc.text(rot,x,yy);const t=doc.getTextWidth(rot)+2;doc.setDrawColor(120);doc.setLineWidth(.2);doc.line(x+t,yy+1.2,x+w,yy+1.2);if(val){doc.setFont("helvetica","normal");doc.text(up(val),x+t+1,yy);}};
-  campo("Professor(a):",ML,y,W,p.professor);y+=8.5;
-  campo("Estudante:",ML,y,W,"");y+=8.5;
-  const c3=(W-12)/3;campo("Turma:",ML,y,c3,"");campo("Data:",ML+c3+6,y,c3,"");campo("Nota:",ML+2*(c3+6),y,c3,"");
-  y+=5;doc.setDrawColor(20);doc.setLineWidth(.25);doc.line(ML,y,ML+W,y);
+  doc.text(nome,tx,y+1);let hy=y+1+nome.length*4.4;
+  doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(85);
+  const info=`${p.disciplina}  ·  ${p.bimestre}  ·  ${p.serie}${p.professor?"  ·  Prof.(a) "+up(p.professor):""}`;
+  const infoL=doc.splitTextToSize(info,tw).slice(0,2);doc.text(infoL,tx,hy+.3);doc.setTextColor(0);
+  y=Math.max(y+LG-3,hy+infoL.length*3.8+1.5);
+  doc.setDrawColor(20);doc.setLineWidth(.5);doc.line(ML,y,ML+W,y);
+  y+=6;doc.setFontSize(10);
+  const campo=(rot,x,yy,w,val)=>{doc.setFont("helvetica","bold");doc.text(rot,x,yy);const t=doc.getTextWidth(rot)+2;doc.setDrawColor(120);doc.setLineWidth(.2);doc.line(x+t,yy+1.2,x+w,yy+1.2);if(val){doc.setFont("helvetica","normal");doc.text(up(val),x+t+1,yy);}doc.setFont("helvetica","normal");};
+  const wEst=W*0.5,c3=(W-wEst-12)/3;
+  campo("Estudante:",ML,y,wEst,"");campo("Turma:",ML+wEst+4,y,c3,"");campo("Data:",ML+wEst+4+c3+4,y,c3,"");campo("Nota:",ML+wEst+4+2*(c3+4),y,c3,"");
+  y+=4;doc.setDrawColor(20);doc.setLineWidth(.25);doc.line(ML,y,ML+W,y);
   /* ---- Título (sem indicativo numérico: centralizado, negrito) ---- */
-  y+=11;doc.setFont("helvetica","bold");doc.setFontSize(fs);
+  y+=7;doc.setFont("helvetica","bold");doc.setFontSize(fs);
   const tit=doc.splitTextToSize(`AVALIAÇÃO DE ${p.disciplina} – ${p.bimestre}`.toLocaleUpperCase("pt-BR"),W);
   tit.forEach(l=>{doc.text(l,ML+W/2,y,{align:"center"});y+=lh;});
   if(p.instrucoes){doc.setFontSize(fsP);doc.setFont("helvetica","bold");doc.text(up("Instruções:"),ML,y);doc.setFont("helvetica","normal");
@@ -1421,7 +1686,7 @@ function gerarPDF(p,midiaFn,modo){midiaFn=midiaFn||midia;
   else y+=lh*.3;
   doc.setFontSize(fs);
   /* ---- Questões ---- */
-  const C2=p.colunas===2,gap=8,colW=C2?(W-gap)/2:W,lim=PH-MB;
+  const C2=p.colunas===2,gap=ABNT?8:5,colW=C2?(W-gap)/2:W,lim=PH-MB;
   let col=0,topo=y;const topos={1:y};
   const novaPag=()=>{doc.addPage();y=MT;topo=y;topos[doc.getNumberOfPages()]=y;doc.setFontSize(fs);};
   const avancar=()=>{if(C2&&col===0){col=1;y=topo;}else{col=0;novaPag();}};
@@ -1509,6 +1774,8 @@ function lerPasso1(){
   const p=S.prova;if(!$("#p-escola"))return;
   p.escola=$("#p-escola").value.trim();p.disciplina=$("#p-disc").value.trim();p.bimestre=$("#p-bim").value;p.serie=$("#p-serie").value;
   p.professor=$("#p-prof").value.trim();p.instrucoes=$("#p-instr").value.trim();
+  const v=id=>(($(id)||{}).value||"").trim().slice(0,400);
+  if($("#p-nomes"))p.loc={nomes:v("#p-nomes"),comunidade:v("#p-com").slice(0,60),cidade:v("#p-cid").slice(0,60),evento:v("#p-evento").slice(0,80)};
 }
 function lerPasso2(){const q=$("#a-qtd");if(q)S.auto.qtd=Math.max(1,Math.min(60,parseInt(q.value)||10));const s=$("#a-serie");if(s)S.auto.mesmaSerie=s.checked;}
 
@@ -1587,7 +1854,7 @@ document.addEventListener("click",async ev=>{
     case "f-aee":S.f.aee=!S.f.aee;lembrar();render();break;
     case "f-minhas":S.f.minhas=!S.f.minhas;lembrar();render();break;
     case "limpar-f":S.f={nivel:"",disciplina:"",dif:"",aee:false,minhas:false,busca:""};lembrar();render();break;
-    case "passo":{if(S.passo===1)lerPasso1();if(S.passo===2)lerPasso2();const n=+el.dataset.n;if(n>=2&&!validarP1())break;if(n===3&&!p.itens.length)break;S.passo=n;render();window.scrollTo(0,0);break;}
+    case "passo":{if(S.passo===1){const ant=JSON.stringify(p.loc||null);lerPasso1();if(ant!==JSON.stringify(p.loc||null)&&p.montagem&&p.montagem.length&&p.itens.length)p.montagem=organizar(p.itens,p.nivel);}if(S.passo===2)lerPasso2();const n=+el.dataset.n;if(n>=2&&!validarP1())break;if(n===3&&!p.itens.length)break;S.passo=n;render();window.scrollTo(0,0);break;}
     case "p-nivel":lerPasso1();if(p.nivel!==el.dataset.v){p.nivel=el.dataset.v;p.serie=SERIES[p.nivel][0];p.itens=[];p.montagem=null;S.auto.conteudos=[];}render();break;
     case "logo-prova":case "logo-perfil":S._logoAlvo=a;$("#logo-file").click();break;
     case "rem-logo":salvarPerfil({logo:"",logoR:1});render();break;
@@ -1609,6 +1876,8 @@ document.addEventListener("click",async ev=>{
     case "limpar-sel":p.itens=[];p.montagem=null;render();break;
     case "ir3":lerPasso2();if(!p.itens.length)break;p.montagem=null;S.passo=3;render();window.scrollTo(0,0);break;
     case "p-cols":if(S.passo===1)lerPasso1();p.colunas=+el.dataset.v;render();break;
+    case "ed-marca":{const t=$("#ed-en");if(!t)break;const i=t.selectionStart??t.value.length,j=t.selectionEnd??i,m=el.dataset.v;t.value=t.value.slice(0,i)+m+t.value.slice(j);t.focus();t.setSelectionRange(i+m.length,i+m.length);break;}
+    case "p-marg":if(S.passo===1)lerPasso1();p.margem=el.dataset.v==="abnt"?"abnt":"estreita";render();break;
     case "r-disc":RAP.disciplina=el.dataset.v;{const ef=contar(q=>q.disciplina===RAP.disciplina&&q.nivel==="EF"),em=contar(q=>q.disciplina===RAP.disciplina&&q.nivel==="EM");if(!ef&&em)RAP.nivel="EM";if(ef&&!em)RAP.nivel="EF";
       if(!SERIES[RAP.nivel].includes(RAP.serie)||!contar(q=>q.disciplina===RAP.disciplina&&q.nivel===RAP.nivel&&q.serie===RAP.serie)){const top=SERIES[RAP.nivel].map(se=>[se,contar(q=>q.disciplina===RAP.disciplina&&q.nivel===RAP.nivel&&q.serie===se)]).sort((a,b)=>b[1]-a[1])[0];RAP.serie=top[0];}}
       S._msgRap=null;lembrarRap();render();break;
@@ -1620,18 +1889,26 @@ document.addEventListener("click",async ev=>{
     case "personalizar":if(!S.prova||S.passo===0){novaProva();}S.passo=1;S.tab="prova";lembrar();render();window.scrollTo(0,0);break;
     case "trocar-q":trocarQuestao(el.dataset.id);render();break;
     case "remover-q":removerDaProva(el.dataset.id);if(!p.itens.length){S.passo=2;}render();break;
-    case "reorganizar":p.montagem=organizar(p.itens,p.nivel);render();toast("Prova reorganizada.");break;
+    case "reorganizar":p.montagem=organizar(p.itens,p.nivel);render();toast("Nova versão: outra ordem e, nas questões de cálculo, outros números.");break;
+    case "versao-ia":{
+      if(!S.sample){toast("Ligue a IA em Escola › Inteligência artificial.");break;}
+      if(el.disabled)break;el.disabled=true;const t0=el.innerHTML;
+      try{const ok=await versaoIA(p,(f,n)=>{el.innerHTML=`${I.wand} Reescrevendo ${f}/${n}…`;});render();
+        toast(ok?`${ok} ${ok===1?"questão reescrita e conferida":"questões reescritas e conferidas"} pela IA. As que não passaram na conferência ficaram como estavam.`:"A IA não conseguiu uma versão segura agora. A prova continua com a versão anterior.");}
+      catch(e){toast(e&&e.code==="rate_limited"?"A cota grátis da IA acabou por hoje. A prova continua única com a troca de números.":"Não foi possível usar a IA agora.");}
+      el.disabled=false;el.innerHTML=t0;break;}
     case "pdf":{
-      if(!window.jspdf){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
+      if(!window.jspdf&&!(await esperarJsPDF())){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
       abrirSheet(`<div class="sheet-h"><h2>PDF da prova</h2></div>
         <div class="clista">
           <button class="btn primary" data-a="pdf-completo">${I.down} Baixar PDF completo (com gabarito)</button>
           <button class="btn" data-a="pdf-duplex">${I.prova} Imprimir frente e verso (manual)</button>
+          ${window.SOCIAL&&window.SOCIAL.ext&&window.SOCIAL.ext.enviarParaContatos?`<button class="btn" data-a="pdf-enviar">${I.send||I.down} Enviar para um contato ou grupo</button>`:""}
         </div>
         <p class="small muted">Para impressoras que não imprimem dos dois lados sozinhas: primeiro as frentes, depois você vira o papel e imprime os versos.</p>`);
       break;}
     case "pdf-completo":case "pdf-frente":case "pdf-verso":{
-      if(!window.jspdf){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
+      if(!window.jspdf&&!(await esperarJsPDF())){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
       el.disabled=true;
       try{
         const falt=p.montagem.filter(precisaFoto).length;if(falt&&a==="pdf-completo")toast(`${falt} ${falt===1?"questão sem imagem anexada saiu":"questões sem imagem anexada saíram"} com espaço em branco.`);
@@ -1642,6 +1919,18 @@ document.addEventListener("click",async ev=>{
         await baixar(nome,blob);
         if(a==="pdf-frente"){const b=$("#dx-2");if(b)b.disabled=false;}
       }catch(e){console.error(e);toast("Não foi possível gerar o PDF.");}
+      el.disabled=false;break;}
+    case "pdf-enviar":{
+      if(!window.jspdf&&!(await esperarJsPDF())){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
+      el.disabled=true;
+      try{
+        const blob=gerarPDF(p,null,null),nome=nomeArquivo(p);
+        const dados={escola:p.escola||"",professor:p.professor||"",disciplina:p.disciplina,bimestre:p.bimestre,nivel:p.nivel,serie:p.serie,instrucoes:p.instrucoes||"",aee:!!p.aee,bastao:!!p.bastao,incluirGab:p.incluirGab!==false,colunas:p.colunas===2?2:1,
+          ...(p.logo&&p.logo.length<80000?{logo:p.logo,logoR:p.logoR||1}:{}),
+          itens:p.itens.map(q=>({id:q.id,nivel:q.nivel,serie:q.serie,disciplina:q.disciplina,conteudo:q.conteudo,dificuldade:q.dificuldade,aee:!!q.aee,enunciado:q.enunciado,alternativas:q.alternativas,correta:q.correta,fixarOrdem:!!q.fixarOrdem,grafico:q.grafico||null,temFoto:!!q.temFoto,legenda:q.legenda||"",tituloImg:q.tituloImg||""})),montagem:p.montagem};
+        const leve=JSON.stringify(dados).length<400000;
+        window.SOCIAL.ext.enviarParaContatos(new File([blob],nome,{type:"application/pdf"}),leve?{prova:dados}:null,"Enviar a prova para…");
+      }catch(e){console.error(e);toast("Não foi possível preparar a prova para envio.");}
       el.disabled=false;break;}
     case "pdf-duplex":{
       abrirSheet(`<div class="sheet-h"><h2>Frente e verso manual</h2></div>
@@ -1655,7 +1944,7 @@ document.addEventListener("click",async ev=>{
       break;}
     case "salvar-prova":{
       if(!S.db||!S.uid){toast("Abra pelo claude.ai para salvar provas.");break;}
-      const body={escola:p.escola,logo:p.logo,logoR:p.logoR,professor:p.professor,disciplina:p.disciplina,bimestre:p.bimestre,nivel:p.nivel,serie:p.serie,instrucoes:p.instrucoes,aee:p.aee,bastao:p.bastao,incluirGab:p.incluirGab,colunas:p.colunas,itens:p.itens.map(q=>({id:q.id,nivel:q.nivel,serie:q.serie,disciplina:q.disciplina,conteudo:q.conteudo,dificuldade:q.dificuldade,aee:!!q.aee,enunciado:q.enunciado,alternativas:q.alternativas,correta:q.correta,fixarOrdem:!!q.fixarOrdem,grafico:q.grafico||null,temFoto:!!q.temFoto,legenda:q.legenda||"",tituloImg:q.tituloImg||"",...(q.origemId?{origemId:q.origemId}:{})})),montagem:p.montagem,atualizadoEm:agora()};
+      const body={escola:p.escola,logo:p.logo,logoR:p.logoR,professor:p.professor,disciplina:p.disciplina,bimestre:p.bimestre,nivel:p.nivel,serie:p.serie,instrucoes:p.instrucoes,aee:p.aee,bastao:p.bastao,incluirGab:p.incluirGab,colunas:p.colunas,margem:p.margem||"estreita",loc:p.loc||null,itens:p.itens.map(q=>({id:q.id,nivel:q.nivel,serie:q.serie,disciplina:q.disciplina,conteudo:q.conteudo,dificuldade:q.dificuldade,aee:!!q.aee,enunciado:q.enunciado,alternativas:q.alternativas,correta:q.correta,fixarOrdem:!!q.fixarOrdem,grafico:q.grafico||null,temFoto:!!q.temFoto,legenda:q.legenda||"",tituloImg:q.tituloImg||"",...(q.origemId?{origemId:q.origemId}:{})})),montagem:p.montagem,atualizadoEm:agora()};
       el.disabled=true;
       try{const col=S.db.doc(`data/users/${S.uid}/perfil`).collection("provas");
         if(!S.perfil.termoAceitoEm&&!(await S.db.doc(`data/users/${S.uid}/perfil`).get()).exists) await salvarPerfil({});
@@ -1664,10 +1953,10 @@ document.addEventListener("click",async ev=>{
       catch(e){toast("Não foi possível salvar a prova.");}
       el.disabled=false;break;}
     case "abrir-prova":{const pv=S.provas.find(x=>x.id===el.dataset.id);if(!pv)break;
-      S.prova={id:pv.id,escola:pv.escola||"",logo:pv.logo||"",logoR:pv.logoR||1,professor:pv.professor||"",disciplina:pv.disciplina,bimestre:pv.bimestre,nivel:pv.nivel,serie:pv.serie,instrucoes:pv.instrucoes||"",aee:!!pv.aee,bastao:!!pv.bastao,incluirGab:pv.incluirGab!==false,colunas:pv.colunas===2?2:1,itens:(pv.itens||[]).slice(),montagem:pv.montagem};
+      S.prova={id:pv.id,escola:pv.escola||"",logo:pv.logo||"",logoR:pv.logoR||1,professor:pv.professor||"",disciplina:pv.disciplina,bimestre:pv.bimestre,nivel:pv.nivel,serie:pv.serie,instrucoes:pv.instrucoes||"",aee:!!pv.aee,bastao:!!pv.bastao,incluirGab:pv.incluirGab!==false,colunas:pv.colunas===2?2:1,margem:pv.margem==="abnt"?"abnt":"estreita",loc:pv.loc||null,itens:(pv.itens||[]).slice(),montagem:pv.montagem};
       S.auto={conteudos:[],qtd:Math.max(1,S.prova.itens.length),distr:"equilibrada",mesmaSerie:true};S.passo=3;S.tab="prova";lembrar();render();window.scrollTo(0,0);break;}
     case "salvar-escola":await salvarPerfil({escola:$("#e-escola").value.trim(),professor:$("#e-prof").value.trim()});toast("Dados salvos.");break;
-    case "ia-salvar":{const k=$("#ia-chave").value.trim(),m=$("#ia-modelo").value.trim()||"claude-sonnet-5-5";try{localStorage.setItem("senov.ia",JSON.stringify({chave:k,modelo:m}));}catch(e){}S.sample=window.claude?await window.claude.use("sample"):null;toast(k?"Revisão por IA ligada.":"Chave removida.");render();break;}
+    case "ia-salvar":{const k=$("#ia-chave").value.trim(),g=($("#ia-gemini")||{value:""}).value.trim(),m=$("#ia-modelo").value.trim()||"claude-sonnet-5-5";try{localStorage.setItem("senov.ia",JSON.stringify({chave:k,gemini:g,modelo:m}));}catch(e){}S.sample=window.claude?await window.claude.use("sample"):null;toast(k||g?"IA ligada.":"Chaves removidas.");render();break;}
     case "ia-remover":try{localStorage.removeItem("senov.ia");}catch(e){}S.sample=null;toast("Chave removida.");render();break;
     case "imp-json":$("#imp-file").click();break;
     case "exp-json":await baixar("banco-chatmil-questoes.json",JSON.stringify(S._banco,null,2));break;
@@ -1695,7 +1984,7 @@ document.addEventListener("change",async ev=>{
   if(t.id==="r-aee"){RAP.aee=t.checked;S._msgRap=null;lembrarRap();render();}
   if(t.id==="p-bastao"&&S.prova){S.prova.bastao=t.checked;render();}
   if(t.id==="ed-aee"&&S._ed){lerEditor();desenharEditor();}
-  if(t.id==="ed-disc"&&S._ed){lerEditor();const dl=$("#dl-cont");if(dl)dl.innerHTML=conteudosDe(S._ed.d.disciplina,"","").map(x=>`<option value="${esc(x)}">`).join("");}
+  if((t.id==="ed-disc"||t.id==="ed-serie")&&S._ed){lerEditor();const dl=$("#dl-cont");if(dl)dl.innerHTML=conteudosDe(S._ed.d.disciplina,"",S._ed.d.serie).map(x=>`<option value="${esc(x)}">`).join("");}
   if(t.id==="ed-img-file"&&t.files&&t.files[0]&&S._ed){
     lerEditor();try{const r=await arquivoParaImagem(t.files[0]);S._ed.foto=r;S._ed.d.grafico=null;S._ed.d.temFoto=true;desenharEditor();}catch(e){toast("Não foi possível ler a imagem. Use JPG ou PNG.");}
   }
