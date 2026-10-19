@@ -61,7 +61,7 @@ titulo = re.search(r"<title>.*?</title>", src).group(0)
 corpo = src[src.index("<style>"):]
 corpo = corpo.replace(
     '<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>',
-    '<script src="vendor/jspdf.umd.min.js"></script>\n<script src="vendor/capacitor.js"></script>\n<script src="local.js"></script>\n'
+    '<script src="vendor/jspdf.umd.min.js" async></script>\n<script src="vendor/capacitor.js"></script>\n<script src="local.js"></script>\n'
     '<script src="vendor/firebase.js"></script>\n<script src="firebase-config.js"></script>\n' + "\n".join(f'<script src="{m}"></script>' for m in MODULOS[1:]))
 assert "vendor/jspdf.umd.min.js" in corpo, "script do jsPDF não encontrado"
 estilo, resto = corpo.split("</style>", 1)
@@ -88,6 +88,8 @@ html = f"""<!doctype html>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
 <link rel="stylesheet" href="fonts.css">
 {estilo}{reset}</style>
 </head>

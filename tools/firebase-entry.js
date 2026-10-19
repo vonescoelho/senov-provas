@@ -8,7 +8,7 @@ export {
   deleteUser, reload, updateProfile, connectAuthEmulator
 } from "firebase/auth";
 export {
-  initializeFirestore, persistentLocalCache, persistentSingleTabManager, memoryLocalCache,
+  initializeFirestore, persistentLocalCache, persistentSingleTabManager, persistentMultipleTabManager, memoryLocalCache,
   doc, collection, getDoc, getDocs, setDoc, updateDoc, deleteDoc, addDoc, onSnapshot,
   query, where, orderBy, limit, limitToLast, startAt, endAt, writeBatch, runTransaction,
   serverTimestamp, arrayUnion, arrayRemove, increment, getCountFromServer, Timestamp, Bytes, connectFirestoreEmulator
