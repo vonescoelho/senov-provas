@@ -6,6 +6,9 @@ service cloud.firestore {
     function logado() { return request.auth != null; }
     function eu() { return request.auth.uid; }
     function mudou() { return request.resource.data.diff(resource.data).affectedKeys(); }
+    function imgsOk() {
+      return !('imgs' in request.resource.data) || (request.resource.data.imgs is list && request.resource.data.imgs.size() <= 6);
+    }
     function textoOk(campo, max) {
       return !(campo in request.resource.data) || request.resource.data[campo] == null
         || (request.resource.data[campo] is string && request.resource.data[campo].size() <= max);
@@ -127,7 +130,7 @@ service cloud.firestore {
       allow read: if logado();
       allow create: if logado()
         && request.resource.data.autor == eu()
-        && textoOk('texto', 3000) && textoOk('fig', 30)
+        && textoOk('texto', 3000) && textoOk('fig', 30) && textoOk('aoVivo', 80) && imgsOk() && !('para' in request.resource.data)
         && request.resource.data.curtidas == [] && request.resource.data.nComent == 0;
       allow update: if logado() && (
         (resource.data.autor == eu() && mudou().hasOnly(['texto', 'editadoEm']) && textoOk('texto', 3000))
@@ -145,6 +148,57 @@ service cloud.firestore {
         allow delete: if logado() && (resource.data.autor == eu()
           || get(/databases/$(database)/documents/posts/$(postId)).data.autor == eu());
       }
+    }
+
+    // Mural só para algumas pessoas ("para" = lista de quem vê; o autor sempre vê)
+    match /postsPriv/{postId} {
+      function pp() { return get(/databases/$(database)/documents/postsPriv/$(postId)).data; }
+      function vePP() { return pp().autor == eu() || eu() in pp().para; }
+      allow read: if logado() && (resource.data.autor == eu() || eu() in resource.data.para);
+      allow create: if logado()
+        && request.resource.data.autor == eu()
+        && textoOk('texto', 3000) && textoOk('fig', 30) && textoOk('aoVivo', 80) && imgsOk()
+        && request.resource.data.curtidas == [] && request.resource.data.nComent == 0
+        && request.resource.data.para is list && request.resource.data.para.size() > 0 && request.resource.data.para.size() <= 400;
+      allow update: if logado() && (resource.data.autor == eu() || eu() in resource.data.para) && (
+        (resource.data.autor == eu() && mudou().hasOnly(['texto', 'editadoEm']) && textoOk('texto', 3000))
+        || (mudou().hasOnly(['curtidas'])
+            && request.resource.data.curtidas.toSet().difference(resource.data.curtidas.toSet()).hasOnly([eu()])
+            && resource.data.curtidas.toSet().difference(request.resource.data.curtidas.toSet()).hasOnly([eu()]))
+        || (mudou().hasOnly(['nComent'])
+            && (request.resource.data.nComent == resource.data.nComent + 1 || request.resource.data.nComent == resource.data.nComent - 1))
+      );
+      allow delete: if logado() && resource.data.autor == eu();
+      match /comentarios/{cid} {
+        allow read: if logado() && vePP();
+        allow create: if logado() && vePP() && request.resource.data.autor == eu() && textoOk('texto', 1000);
+        allow delete: if logado() && (resource.data.autor == eu() || pp().autor == eu());
+      }
+    }
+    // Arquivos do mural (PDF, vídeo, slides…), em partes de até 700 KB. Com "para", só essas pessoas baixam.
+    match /postArqs/{aid} {
+      function pa() { return get(/databases/$(database)/documents/postArqs/$(aid)).data; }
+      function vePA() { return pa().get('para', null) == null || pa().dono == eu() || eu() in pa().para; }
+      allow read: if logado() && (resource.data.get('para', null) == null || resource.data.dono == eu() || eu() in resource.data.para);
+      allow create: if logado() && request.resource.data.dono == eu()
+        && request.resource.data.tamanho is int && request.resource.data.tamanho <= 20971520
+        && request.resource.data.partes is int && request.resource.data.partes <= 40
+        && textoOk('nome', 120)
+        && (request.resource.data.get('para', null) == null || (request.resource.data.para is list && request.resource.data.para.size() <= 400));
+      allow delete: if logado() && resource.data.dono == eu();
+      match /partes/{pid} {
+        allow read: if logado() && vePA();
+        allow create: if logado() && pa().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000;
+        allow delete: if logado() && pa().dono == eu();
+      }
+    }
+    // Fotos do mural (cada tamanho em um documento de até 750 KB). Se tiver "para", só essas pessoas veem.
+    match /postImgs/{iid} {
+      allow read: if logado() && (resource.data.get('para', null) == null || resource.data.dono == eu() || eu() in resource.data.para);
+      allow create: if logado() && request.resource.data.dono == eu()
+        && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000
+        && (request.resource.data.get('para', null) == null || (request.resource.data.para is list && request.resource.data.para.size() <= 400));
+      allow delete: if logado() && resource.data.dono == eu();
     }
 
     // Arquivos enviados nas conversas (guardados em partes de até 700 KB).
@@ -238,12 +292,36 @@ service cloud.firestore {
     match /admins/{uid} {
       allow read: if logado() && uid == eu();
     }
+    function adminVit() { return exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
     match /vitrine/{id} {
-      function admin() { return exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
       allow read: if logado();
-      allow create, update: if logado() && admin() && textoOk('titulo', 120) && textoOk('descricao', 600) && textoOk('imagem', 200000)
+      allow create, update: if logado() && adminVit() && textoOk('titulo', 120) && textoOk('descricao', 1500) && textoOk('imagem', 200000)
+        && textoOk('preco', 40) && textoOk('precoDe', 40)
+        && (!('fotos' in request.resource.data) || (request.resource.data.fotos is list && request.resource.data.fotos.size() <= 6))
         && request.resource.data.link is string && request.resource.data.link.matches('^https://.*');
-      allow delete: if logado() && admin();
+      // quem toca em "Comprar" soma 1 clique (só esse campo, só +1)
+      allow update: if logado() && mudou().hasOnly(['cliques'])
+        && request.resource.data.cliques == resource.data.get('cliques', 0) + 1;
+      allow delete: if logado() && adminVit();
+    }
+    match /vitrineImgs/{iid} {
+      allow read: if logado();
+      allow create: if logado() && adminVit() && request.resource.data.dono == eu()
+        && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000;
+      allow delete: if logado() && adminVit();
+    }
+    // Configurações gerais (ex.: chave da IA gratuita), definidas pela administração
+    match /config/{id} {
+      allow read: if logado();
+      allow write: if logado() && adminVit();
+    }
+    // Resultados de busca do YouTube guardados para não gastar a cota
+    match /ytcache/{k} {
+      allow read: if logado();
+      allow create, update: if logado() && request.resource.data.keys().hasOnly(['q', 'itens', 'ms'])
+        && request.resource.data.q is string && request.resource.data.q.size() <= 200
+        && request.resource.data.itens is list && request.resource.data.itens.size() <= 10
+        && request.resource.data.ms is int;
     }
 
     // Online / visto por último: cada um escreve só o próprio
