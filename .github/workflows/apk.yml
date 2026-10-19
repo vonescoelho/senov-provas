@@ -38,10 +38,49 @@ jobs:
 
       - name: Recursos do Android (imprimir, abrir com, salvar, TV, bloqueio de print, câmera e microfone)
         run: |
-          cp android-extra/MainActivity.java android-extra/NativoPlugin.java android/app/src/main/java/br/com/senov/provas/
+          cp android-extra/*.java android/app/src/main/java/br/com/senov/provas/
           M=android/app/src/main/AndroidManifest.xml
           sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.microphone" android:required="false" />#' $M
           grep -c "RECORD_AUDIO" $M
+
+      - name: Chamadas com o app fechado (serviço, notificação de chamada, Firebase nativo)
+        run: |
+          python3 - <<'PY'
+          p = "android/app/src/main/AndroidManifest.xml"
+          s = open(p).read()
+          perms = ["POST_NOTIFICATIONS", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_SPECIAL_USE", "USE_FULL_SCREEN_INTENT",
+                   "SYSTEM_ALERT_WINDOW", "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", "RECEIVE_BOOT_COMPLETED", "WAKE_LOCK", "VIBRATE", "ACCESS_NETWORK_STATE"]
+          extra = "".join(f'    <uses-permission android:name="android.permission.{x}" />\n' for x in perms if f"android.permission.{x}\"" not in s)
+          s = s.replace("<application", extra + "\n    <application", 1)
+          comp = """
+                  <service android:name=".ChamadasService" android:exported="false" android:foregroundServiceType="specialUse">
+                      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Receber chamadas de voz e video do ChatMil com o app fechado" />
+                  </service>
+                  <receiver android:name=".ChamadaAcaoReceiver" android:exported="false" />
+                  <receiver android:name=".InicioReceiver" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.BOOT_COMPLETED" />
+                          <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                      </intent-filter>
+                  </receiver>
+          """
+          assert "</application>" in s
+          s = s.replace("</application>", comp + "    </application>", 1)
+          open(p, "w").write(s)
+          g = "android/app/build.gradle"
+          t = open(g).read()
+          dep = """
+          dependencies {
+              implementation platform('com.google.firebase:firebase-bom:33.7.0')
+              implementation 'com.google.firebase:firebase-auth'
+              implementation 'com.google.firebase:firebase-firestore'
+          }
+          """
+          t = t + "\n" + dep
+          open(g, "w").write(t)
+          PY
+          grep -n "ChamadasService\|FOREGROUND_SERVICE\|USE_FULL_SCREEN" android/app/src/main/AndroidManifest.xml
+          tail -8 android/app/build.gradle
 
       - name: Assinatura sempre igual (atualizações instalam por cima) e versão final mais leve
         run: |
