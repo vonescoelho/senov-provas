@@ -233,6 +233,7 @@
       const tinha = !!SO.eu;
       SO.eu = s.exists() ? { uid: u.uid, ...s.data() } : null; SO.euCarregado = true;
       if (SO.eu && !tinha) iniciarPresenca();
+      syncNSeg();
       if (SO.eu && SO.eu.fotoPriv) {
         if (SO.fotoPropria !== undefined) SO.eu.foto = SO.fotoPropria;
         else { SO.fotoPropria = null; fb.getDoc(D("fotos", u.uid)).then(f => { SO.fotoPropria = f.exists() ? f.data().foto : null; if (SO.eu) SO.eu.foto = SO.fotoPropria; pintar(); }).catch(() => { }); }
@@ -259,7 +260,13 @@
       pintar();
     }, e => console.warn(e)));
     ouvintes.push(fb.onSnapshot(C("users", u.uid, "leituras"), snap => { SO.leituras = {}; snap.docs.forEach(d => SO.leituras[d.id] = ms(dadosDe(d).em)); pintar(); }));
-    ouvintes.push(fb.onSnapshot(C("users", u.uid, "seguindo"), snap => { SO.seguindo = new Set(snap.docs.map(d => d.id)); pintar(); }));
+    ouvintes.push(fb.onSnapshot(C("users", u.uid, "seguindo"), snap => {
+      SO.seguindo = new Set(snap.docs.map(d => d.id));
+      SO.segOculto = new Set(snap.docs.filter(d => d.data().oculto).map(d => d.id));
+      /* número público de "seguindo" (sem os seguidos em segredo) */
+      if (!(snap.metadata && snap.metadata.hasPendingWrites)) { SO.segPronto = true; syncNSeg(); }
+      pintar();
+    }));
     ouvintes.push(fb.onSnapshot(C("users", u.uid, "bloqueados"), snap => { SO.bloqueados = new Set(snap.docs.map(d => d.id)); pintar(); }));
     {
       /* mural: públicas + "só para algumas pessoas" (as que me incluem e as minhas) */
@@ -273,6 +280,11 @@
       ouvir(fb.query(C("postsPriv"), fb.where("autor", "==", u.uid), fb.limit(60)), "meu", "postsPriv");
     }
   });
+  function syncNSeg() {
+    if (!SO.eu || !SO.segPronto || !SO.segOculto) return;
+    const n = SO.seguindo.size - SO.segOculto.size;
+    if (SO.eu.nSeguindo !== n) fb.updateDoc(D("users", eu()), { nSeguindo: n }).catch(() => { });
+  }
   function naoLidas(c) { return c.ultima && c.ultima.autor !== eu() && ms(c.atualizadoEm) > (SO.leituras[c.id] || 0); }
   const ultLeitura = {};
   function marcarLida(id) {
@@ -633,7 +645,7 @@
     if (!g) ouvirPresenca(t.outro);
     return `<header class="cs-chat-h">
         <button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button>
-        <button class="cs-chat-quem" data-s="${g ? "info-grupo" : "ver-perfil"}" data-id="${esc(g ? c.id : t.outro)}">${t.av(38)}<span><b>${esc(t.nome)}${t.selo || ""}</b><small id="cs-chat-sub" class="${!g && textoPresenca(t.outro) === "online" ? "on" : ""}">${esc((!g && textoPresenca(t.outro)) || t.sub)}</small></span></button>
+        <button class="cs-chat-quem" data-s="${g ? "info-grupo" : "ver-perfil"}" data-id="${esc(g ? c.id : t.outro)}">${t.av(36)}<span><b>${esc(t.nome)}${t.selo || ""}</b><small id="cs-chat-sub" class="${!g && textoPresenca(t.outro) === "online" ? "on" : ""}">${esc((!g && textoPresenca(t.outro)) || t.sub)}</small></span></button>
         ${EXT.chatBotoes ? EXT.chatBotoes(c) : ""}<button class="cs-ico-bt" data-s="${g ? "info-grupo" : "menu-pessoa"}" data-id="${esc(g ? c.id : t.outro)}" aria-label="Opções">${K.mais}</button>
       </header>
       <div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
@@ -828,7 +840,7 @@
     const texto = esc(p.texto || "");
     const longo = !completo && (p.texto || "").length > 420;
     return `<article class="card cs-post">
-      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(a.nome)}${seloHtml(a)}</b><small>${tempoPost(p.em)}${EXT.postMeta.map(f => { try { return f(p) || ""; } catch (e) { return ""; } }).join("")}${p.para ? ` · ${K.lock} ${meu ? `para ${p.para.length} pessoa${p.para.length === 1 ? "" : "s"}` : "só para algumas pessoas"}` : ""}</small></span></button>
+      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(meu ? ((SO.eu && SO.eu.usuario) || a.nome) : a.nome)}${seloHtml(a)}</b><small>${tempoPost(p.em)}${EXT.postMeta.map(f => { try { return f(p) || ""; } catch (e) { return ""; } }).join("")}${p.para ? ` · ${K.lock} ${meu ? `para ${p.para.length} pessoa${p.para.length === 1 ? "" : "s"}` : "só para algumas pessoas"}` : ""}</small></span></button>
         <button class="cs-ico-bt" data-s="menu-post" data-id="${esc(p.id)}" aria-label="Opções da publicação">${K.mais}</button></div>
       ${p.texto ? `<div class="cs-post-tx ${longo ? "corte" : ""}">${texto}</div>${longo ? `<button class="cs-link" data-s="abrir-post" data-id="${esc(p.id)}">Ler tudo</button>` : ""}` : ""}
       ${p.fig ? `<div class="cs-post-fig">${figurinha(p.fig, 140)}</div>` : ""}
@@ -1147,22 +1159,29 @@
       <div class="cs-pag stack"><label class="cs-busca grande">${K.busca}<input id="cs-p-busca" placeholder="Nome ou @usuário" autocomplete="off" autocapitalize="none" value="${esc(SO.busca)}"></label>
       <div id="cs-res">${htmlResultados("m-add")}</div></div>`;
   }
-  async function seguir(uid) {
+  async function seguir(uid, oculto) {
     const b = fb.writeBatch(db);
     if (SO.seguindo.has(uid)) { b.delete(D("users", eu(), "seguindo", uid)); b.delete(D("users", uid, "seguidores", eu())); }
+    else if (oculto) b.set(D("users", eu(), "seguindo", uid), { em: TS(), oculto: true });
     else { b.set(D("users", eu(), "seguindo", uid), { em: TS() }); b.set(D("users", uid, "seguidores", eu()), { em: TS() }); }
     try { await b.commit(); delete SO.contagens[uid]; delete SO.contagens[eu()]; } catch (e) { toast(msgErro(e)); }
   }
   function contar(uid) {
     if (SO.contagens[uid]) return SO.contagens[uid];
-    SO.contagens[uid] = { posts: "…", seguidores: "…", seguindo: "…" };
+    SO.contagens[uid] = { posts: "…", seguidores: "…" };
     Promise.all([
-      fb.getCountFromServer(fb.query(C("posts"), fb.where("autor", "==", uid))),
-      fb.getCountFromServer(C("users", uid, "seguidores")),
-      fb.getCountFromServer(C("users", uid, "seguindo"))
-    ]).then(([a, b, c]) => { SO.contagens[uid] = { posts: a.data().count, seguidores: b.data().count, seguindo: c.data().count }; pintar(); })
-      .catch(() => { SO.contagens[uid] = { posts: "–", seguidores: "–", seguindo: "–" }; });
+      fb.getCountFromServer(fb.query(C("posts"), fb.where("autor", "==", uid))).then(a => a.data().count, () => "–"),
+      fb.getCountFromServer(C("users", uid, "seguidores")).then(b => b.data().count, () => null)
+    ]).then(([a, b]) => { SO.contagens[uid] = { posts: a, seguidores: b }; pintar(); });
     return SO.contagens[uid];
+  }
+  /* seguidores / seguindo que aparecem no perfil (respeitando "esconder") */
+  function numerosRede(uid, p, n) {
+    const meu = uid === eu(), oculto = !meu && p.privRede;
+    return {
+      seguidores: oculto || n.seguidores === null ? K.lock : n.seguidores,
+      seguindo: meu ? SO.seguindo.size : oculto || p.nSeguindo == null ? K.lock : p.nSeguindo
+    };
   }
   function vPerfil(uid, aba) {
     const meu = uid === eu(), p = meu ? (SO.eu || {}) : P(uid), n = contar(uid), seg = SO.seguindo.has(uid);
@@ -1171,7 +1190,7 @@
       : `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>${esc(p.nome)}</b>${meu ? "" : `<button class="cs-ico-bt" data-s="menu-pessoa" data-id="${esc(uid)}" aria-label="Opções">${K.mais}</button>`}</header>`}
       <div class="${aba ? "" : "cs-pag "}stack">
       <section class="card cs-perfil">
-        <div class="cs-capa" style="--c:${corDe(uid)}"></div>
+        <div class="cs-perfil-capa" style="--c:${corDe(uid)}"></div>
         <div class="cs-perfil-av">${EXT.perfilAv ? EXT.perfilAv(uid, av(p, 96, uid)) : av(p, 96, uid)}</div>
         <h1>${esc(p.nome)}${seloHtml(p)}</h1>
         ${meu ? `<span class="muted">@${esc(p.usuario || "")}</span>` : ""}
@@ -1179,9 +1198,9 @@
         ${p.escola ? `<span class="cs-escola">${K.escola} ${esc(p.escola)}</span>` : ""}
         ${(p.disciplinas || []).length ? `<div class="chips cs-centro-chips">${p.disciplinas.map(d => `<span class="pill">${esc(d)}</span>`).join("")}</div>` : ""}
         ${p.bio ? `<p class="cs-bio">${esc(p.bio)}</p>` : ""}
-        <div class="cs-nums"><div><b>${n.posts}</b><span>publicações</span></div><div><b>${n.seguidores}</b><span>seguidores</span></div><div><b>${n.seguindo}</b><span>seguindo</span></div></div>
+        ${(() => { const r = numerosRede(uid, p, n); return `<div class="cs-nums"><div><b>${n.posts}</b><span>publicações</span></div><div><b>${r.seguidores}</b><span>seguidores</span></div><div><b>${r.seguindo}</b><span>seguindo</span></div></div>`; })()}
         ${meu ? `<div class="row cs-perfil-bt"><button class="btn" data-s="editar-perfil">${K.pen} Editar perfil</button><button class="btn" data-s="config">${K.gear} Configurações</button></div>`
-          : p.removido ? "" : `<div class="row cs-perfil-bt"><button class="btn ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(uid)}">${seg ? K.check + " Seguindo" : K.addUser + " Seguir"}</button><button class="btn" data-s="abrir-direto" data-id="${esc(uid)}">${K.chat} Mensagem</button></div>`}
+          : p.removido ? "" : `<div class="row cs-perfil-bt"><button class="btn ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(uid)}">${seg ? ((SO.segOculto || new Set()).has(uid) ? K.lock + " Em segredo" : K.check + " Seguindo") : K.addUser + " Seguir"}</button><button class="btn" data-s="abrir-direto" data-id="${esc(uid)}">${K.chat} Mensagem</button></div>`}
       </section>
       ${EXT.perfilExtra ? EXT.perfilExtra(uid, meu) : ""}
       ${meu && aba ? avisoEmail() : ""}
@@ -1193,6 +1212,8 @@
     const p = P(uid), bloq = SO.bloqueados.has(uid);
     window.abrirSheet(`<div class="sheet-h"><h2>${esc(p.nome)}</h2></div><div class="cs-menu">
       <button data-s="ver-perfil" data-id="${esc(uid)}">${K.user}<span><b>Ver perfil</b></span></button>
+      ${bloq ? "" : SO.seguindo.has(uid) ? `<button data-s="seguir" data-id="${esc(uid)}">${K.addUser}<span><b>Deixar de seguir</b></span></button>`
+        : `<button data-s="seguir-oculto" data-id="${esc(uid)}">${K.lock}<span><b>Seguir em segredo</b><small>A pessoa não fica sabendo</small></span></button>`}
       <button data-s="${bloq ? "desbloquear" : "bloquear"}" data-id="${esc(uid)}" class="${bloq ? "" : "perigo"}">${K.ban}<span><b>${bloq ? "Desbloquear" : "Bloquear"}</b><small>${bloq ? "Voltar a ver mensagens e publicações" : "Esta pessoa não poderá mais mandar mensagens para você"}</small></span></button>
       <button data-s="denunciar" data-tipo="perfil" data-uid="${esc(uid)}" data-id="${esc(uid)}">${K.flag}<span><b>Denunciar perfil</b></span></button>
     </div>`);
@@ -1296,6 +1317,8 @@
             <span class="seg cs-seg-mini"><button data-s="priv-lido" data-v="sim" aria-pressed="${p.privLeitura !== false}">Sim</button><button data-s="priv-lido" data-v="nao" aria-pressed="${p.privLeitura === false}">Não</button></span></span></div>
           <div class="cs-linha"><span class="cs-lic">${K.user}</span><span><b>Quem vê minha foto de perfil</b>
             <span class="seg cs-seg-mini">${[["todos", "Todos"], ["seguindo", "Quem eu sigo"], ["ninguem", "Ninguém"]].map(([v, t]) => `<button data-s="priv-foto" data-v="${v}" aria-pressed="${(p.privFoto || "todos") === v}">${t}</button>`).join("")}</span></span></div>
+          <div class="cs-linha"><span class="cs-lic">${K.grupo}</span><span><b>Mostrar seguidores e quem eu sigo</b>
+            <span class="seg cs-seg-mini"><button data-s="priv-rede" data-v="sim" aria-pressed="${!p.privRede}">Sim</button><button data-s="priv-rede" data-v="nao" aria-pressed="${!!p.privRede}">Esconder</button></span></span></div>
           ${EXT.configPriv.map(f => f(p)).join("")}
           ${lin("bloqueados", K.ban, "Pessoas bloqueadas", SO.bloqueados.size ? SO.bloqueados.size + (SO.bloqueados.size === 1 ? " pessoa" : " pessoas") : "Nenhuma")}
           ${lin("dicas", K.shield, "Dicas de segurança", "Como se proteger no ChatMil")}
@@ -1613,6 +1636,7 @@
         try { await b.commit(); } catch (e) { toast(msgErro(e)); } break;
       }
       case "seguir": seguir(id); break;
+      case "seguir-oculto": window.fecharSheet(); await seguir(id, true); toast("Seguindo em segredo: a pessoa não fica sabendo."); break;
       case "bloquear":
         if (!ok) return pedirConfirmacao("Bloquear " + P(id).nome + "?", "A pessoa não poderá mais mandar mensagens para você, e você deixará de ver as publicações e mensagens dela. Ela não é avisada.", "Bloquear", el);
         bloquear(id, true); break;
@@ -1640,6 +1664,7 @@
       case "senha": sheetSenha(); break;
       case "priv-on": try { const on = v === "sim"; if (!on) await fb.deleteDoc(D("presenca", eu())).catch(() => { }); await fb.updateDoc(D("users", eu()), { privOnline: on }); if (on) setTimeout(iniciarPresenca, 300); toast("Privacidade atualizada."); } catch (e) { toast(msgErro(e)); } break;
       case "priv-lido": try { await fb.updateDoc(D("users", eu()), { privLeitura: v === "sim" }); toast("Privacidade atualizada."); } catch (e) { toast(msgErro(e)); } break;
+      case "priv-rede": try { await fb.updateDoc(D("users", eu()), { privRede: v === "nao" }); toast(v === "nao" ? "Seus seguidores e quem você segue ficaram escondidos." : "Seguidores e quem você segue aparecem no perfil."); } catch (e) { toast(msgErro(e)); } break;
       case "priv": try { await fb.updateDoc(D("users", eu()), { privMsg: v }); toast("Privacidade atualizada."); } catch (e) { toast(msgErro(e)); } break;
       case "bloqueados": abrirTela({ v: "bloqueados" }); break;
       case "tema": aplicarTema(v); pintar(); break;
@@ -1791,7 +1816,9 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-chat-h>b{flex:1;font-family:var(--display);font-size:1.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
 .cs-chat-quem{flex:1;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;cursor:pointer;min-width:0;color:inherit;padding:0}
 .cs-chat-quem>span:not(.cs-av){display:flex;flex-direction:column;min-width:0}
-.cs-chat-quem b{font-size:1rem;display:flex;gap:5px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-chat-quem b{font-size:.98rem;line-height:1.2;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-chat-quem b .cs-selo{vertical-align:-2px;margin-left:4px}
+.cs-chat-quem small{line-height:1.2}
 .cs-chat-quem small{color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-msgs{display:flex;flex-direction:column;padding:10px 0 12px;min-height:calc(100vh - 170px)}
 .cs-dia{text-align:center;margin:14px 0 6px;position:sticky;top:calc(60px + env(safe-area-inset-top,0px));z-index:3}
@@ -1837,7 +1864,8 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-post-h{display:flex;align-items:center;gap:6px}
 .cs-quem{flex:1;display:flex;align-items:center;gap:12px;border:0;background:none;text-align:left;cursor:pointer;min-width:0;color:inherit;padding:0}
 .cs-quem>span:not(.cs-av){display:flex;flex-direction:column;min-width:0}
-.cs-quem b{display:flex;align-items:center;gap:5px;font-size:1.02rem}
+.cs-quem b{display:block;font-size:.98rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-quem b .cs-selo{vertical-align:-2px;margin-left:4px}
 .cs-quem small{color:var(--muted);font-size:.84rem}
 .cs-post-tx{white-space:pre-wrap;overflow-wrap:anywhere;font-size:1.04rem;line-height:1.55;text-align:justify;hyphens:auto}
 .cs-post-tx.corte{max-height:11em;overflow:hidden;-webkit-mask-image:linear-gradient(#000 65%,transparent);mask-image:linear-gradient(#000 65%,transparent)}
@@ -1910,7 +1938,8 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-com-b b{display:flex;align-items:center;gap:5px;font-size:.92rem;flex-wrap:wrap}
 .cs-com-b span{white-space:pre-wrap;overflow-wrap:anywhere}
 .cs-perfil{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:0 16px 18px;overflow:hidden}
-.cs-capa{height:104px;margin:0 -16px;align-self:stretch;background:radial-gradient(circle at 18% 30%,rgba(255,255,255,.22) 0 22px,transparent 23px),radial-gradient(circle at 82% 70%,rgba(255,255,255,.16) 0 34px,transparent 35px),linear-gradient(120deg,var(--c),color-mix(in srgb,var(--c) 40%,#7C5CFF))}
+.cs-nums b svg{width:20px;height:20px;opacity:.7}
+.cs-perfil-capa{height:104px;margin:0 -16px;align-self:stretch;background:radial-gradient(circle at 18% 30%,rgba(255,255,255,.22) 0 22px,transparent 23px),radial-gradient(circle at 82% 70%,rgba(255,255,255,.16) 0 34px,transparent 35px),linear-gradient(120deg,var(--c),color-mix(in srgb,var(--c) 40%,#7C5CFF))}
 .cs-perfil-av{margin-top:-52px}
 .cs-perfil-av .cs-av{border:4px solid var(--surface);box-sizing:content-box}
 .cs-perfil h1{font-size:1.5rem;display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap}

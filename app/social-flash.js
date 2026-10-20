@@ -103,7 +103,18 @@
     if (!FL.meus.length) return abrirCriador("flash");
     window.abrirSheet(`<div class="sheet-h"><h2>Seu Flash</h2></div><div class="cs-menu">
       <button data-s="fl-ver" data-id="${esc(eu())}">${I.olho}<span><b>Ver meus Flashes</b><small>${FL.meus.length} ativo${FL.meus.length > 1 ? "s" : ""} · somem 24 h depois</small></span></button>
-      <button data-s="fl-novo">${I.camera}<span><b>Novo Flash</b><small>Foto ou vídeo de até 30 segundos</small></span></button></div>`);
+      <button data-s="fl-novo">${I.camera}<span><b>Novo Flash</b><small>Foto ou vídeo de até 30 segundos</small></span></button>
+      ${FL.meus.map((f, i) => `<button data-s="fl-apagar-um" data-v="${i}">${f.thumb ? `<img class="cs-flm-t" src="${f.thumb}" alt="">` : I.flash}<span><b>Apagar Flash ${i + 1}</b><small>${haQuanto(f.criado || Date.now())}${f.legenda ? " · " + esc(f.legenda.slice(0, 40)) : ""}</small></span><i class="cs-flm-lixo">${I.lixo}</i></button>`).join("")}</div>`);
+  };
+  X.acoes["fl-apagar-um"] = el => {
+    const f = FL.meus[+el.dataset.v]; if (!f) return;
+    window.abrirSheet(`<div class="sheet-h"><h2>Apagar este Flash?</h2></div>${f.thumb ? `<img class="cs-flm-big" src="${f.thumb}" alt="">` : ""}
+      <button class="btn perigo cs-grande" data-s="fl-apagar-um-ok" data-id="${esc(f.id)}">${I.lixo} Apagar</button><button class="btn ghost" data-s="fechar">Cancelar</button>`);
+  };
+  X.acoes["fl-apagar-um-ok"] = async el => {
+    const f = FL.meus.find(x => x.id === el.dataset.id); window.fecharSheet(); if (!f) return;
+    try { await apagarTudo(f.col, f.id); FL.meus = FL.meus.filter(x => x.id !== f.id); toast("Flash apagado."); pintar(); }
+    catch (e) { toast(msgErro(e)); }
   };
   X.acoes["fl-novo"] = () => { window.fecharSheet(); abrirCriador("flash"); };
   X.acoes["fl-ver"] = el => {
@@ -131,7 +142,7 @@
         ${(l || []).map((d, i) => `<button class="cs-dest-it" data-s="dest-ver" data-id="${esc(uid)}" data-v="${i}" aria-label="Ver destaque ${i + 1}">${d.thumb ? `<img src="${d.thumb}" alt="">` : `<span>${d.tipo === "video" ? I.play : I.img}</span>`}${d.tipo === "video" ? `<i>${I.play}</i>` : ""}</button>`).join("")}
         ${meu && (l || []).length < MAXDEST ? `<button class="cs-dest-it novo" data-s="dest-novo" aria-label="Adicionar destaque">${I.mais}<small>Adicionar</small></button>` : ""}
         ${l == null ? `<span class="spin sm"></span>` : ""}
-      </div>${meu && l && !l.length ? `<p class="small muted">Escolha até ${MAXDEST} fotos ou vídeos para ficarem no seu perfil. Também dá para destacar um Flash.</p>` : ""}</section>`;
+      </div></section>`;
   };
   X.acoes["dest-ver"] = el => { const l = FL.dest.get(el.dataset.id) || []; if (l.length) abrirVisor({ grupos: [{ uid: el.dataset.id, itens: l }], g: 0, i: +el.dataset.v || 0, tipo: "destaque" }); };
   X.acoes["dest-novo"] = () => {
@@ -676,6 +687,9 @@
 .cs-flv-resp{flex:1;background:rgba(255,255,255,.12)!important;color:#fff!important;border-color:rgba(255,255,255,.3)!important;border-radius:24px!important}
 .cs-flv-resp::placeholder{color:rgba(255,255,255,.75)}
 .cs-flv-bt span{white-space:nowrap}
+.cs-flm-t{width:40px;height:40px;border-radius:10px;object-fit:cover;flex:none}
+.cs-flm-lixo{margin-left:auto;color:var(--danger)}
+.cs-flm-big{max-height:42vh;border-radius:16px;align-self:center;object-fit:contain}
 .cs-flv-cur{padding:10px 12px;flex:none}.cs-flv-cur svg{width:24px;height:24px}
 .cs-flv-cur.on{color:#ff3b6b;background:rgba(255,59,107,.18)}.cs-flv-cur.on svg{fill:currentColor}
 .cs-flv-cur.pulo svg{animation:flpulo .35s ease}
