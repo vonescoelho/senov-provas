@@ -49,7 +49,8 @@ jobs:
           p = "android/app/src/main/AndroidManifest.xml"
           s = open(p).read()
           perms = ["POST_NOTIFICATIONS", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_SPECIAL_USE", "USE_FULL_SCREEN_INTENT",
-                   "SYSTEM_ALERT_WINDOW", "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", "RECEIVE_BOOT_COMPLETED", "WAKE_LOCK", "VIBRATE", "ACCESS_NETWORK_STATE"]
+                   "SYSTEM_ALERT_WINDOW", "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", "RECEIVE_BOOT_COMPLETED", "WAKE_LOCK", "VIBRATE", "ACCESS_NETWORK_STATE",
+                   "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
           extra = "".join(f'    <uses-permission android:name="android.permission.{x}" />\n' for x in perms if f"android.permission.{x}\"" not in s)
           s = s.replace("<application", extra + "\n    <application", 1)
           comp = """
@@ -57,6 +58,7 @@ jobs:
                       <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Receber chamadas de voz e video do ChatMil com o app fechado" />
                   </service>
                   <receiver android:name=".ChamadaAcaoReceiver" android:exported="false" />
+                  <activity android:name=".CameraActivity" android:exported="false" android:theme="@style/AppTheme.NoActionBar" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
                   <receiver android:name=".InicioReceiver" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -74,12 +76,21 @@ jobs:
               implementation platform('com.google.firebase:firebase-bom:33.7.0')
               implementation 'com.google.firebase:firebase-auth'
               implementation 'com.google.firebase:firebase-firestore'
+              implementation 'androidx.camera:camera-core:1.4.2'
+              implementation 'androidx.camera:camera-camera2:1.4.2'
+              implementation 'androidx.camera:camera-lifecycle:1.4.2'
+              implementation 'androidx.camera:camera-video:1.4.2'
+              implementation 'androidx.camera:camera-view:1.4.2'
+              implementation 'androidx.media3:media3-transformer:1.8.0'
+              implementation 'androidx.media3:media3-effect:1.8.0'
+              implementation 'androidx.media3:media3-common:1.8.0'
           }
           """
           t = t + "\n" + dep
           open(g, "w").write(t)
           PY
-          grep -n "ChamadasService\|FOREGROUND_SERVICE\|USE_FULL_SCREEN" android/app/src/main/AndroidManifest.xml
+          grep -n "ChamadasService\|CameraActivity\|FOREGROUND_SERVICE\|USE_FULL_SCREEN\|LOCATION" android/app/src/main/AndroidManifest.xml
+          grep -n "AppTheme.NoActionBar" android/app/src/main/res/values/styles.xml
           tail -8 android/app/build.gradle
 
       - name: Assinatura sempre igual (atualizações instalam por cima) e versão final mais leve
