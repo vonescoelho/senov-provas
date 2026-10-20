@@ -283,11 +283,12 @@ service cloud.firestore {
       match /vistos/{uid} { allow read, delete: if logado() && f().dono == eu(); }
     }
 
-    // Foto de perfil reservada: "seguindo" = só quem a pessoa segue; "ninguem" = só a própria pessoa
+    // Foto de perfil reservada: "seguidores" = só quem segue a pessoa; "seguindo" (antigo) = só quem a pessoa segue; "ninguem" = só ela
     match /fotos/{uid} {
       allow read: if logado() && (uid == eu()
-        || (resource.data.priv == 'seguindo' && exists(/databases/$(database)/documents/users/$(uid)/seguindo/$(eu()))));
-      allow create, update: if logado() && uid == eu() && textoOk('foto', 150000) && request.resource.data.priv in ['seguindo', 'ninguem'];
+        || (resource.data.priv == 'seguindo' && exists(/databases/$(database)/documents/users/$(uid)/seguindo/$(eu())))
+        || (resource.data.priv == 'seguidores' && exists(/databases/$(database)/documents/users/$(uid)/seguidores/$(eu()))));
+      allow create, update: if logado() && uid == eu() && textoOk('foto', 150000) && request.resource.data.priv in ['seguindo', 'seguidores', 'ninguem'];
       allow delete: if logado() && uid == eu();
     }
 
