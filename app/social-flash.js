@@ -18,7 +18,8 @@
     estrela: ic('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'),
     pessoas: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2a5 5 0 0 1 6 4.8"/>'),
     som: ic('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>'),
-    semSom: ic('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6M16 9l6 6"/>')
+    semSom: ic('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6M16 9l6 6"/>'),
+    coracao: ic('<path d="M12 20s-7.5-4.6-9.3-9.2A5 5 0 0 1 12 6a5 5 0 0 1 9.3 4.8C19.5 15.4 12 20 12 20z"/>')
   });
   const DIA = 24 * 3600e3, MAXDEST = 5, MAXDUR = 30, PARTE = 700 * 1024;
   const lerLS = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
@@ -178,10 +179,15 @@
         <button class="cs-vbt" data-s="flv-fechar" aria-label="Fechar">${I.fechar}</button></div>
       <div class="cs-flv-palco"><div class="spin"></div></div>
       ${f.legenda ? `<p class="cs-flv-leg">${esc(f.legenda)}</p>` : ""}
-      <div class="cs-flv-pe">${meu ? `${s.tipo === "flash" ? `<button class="cs-flv-bt" data-s="flv-vistos">${I.olho}<span id="flv-nv">Visto por…</span></button><button class="cs-flv-bt" data-s="flv-destacar">${I.estrela}<span>Destacar</span></button>` : ""}
+      <div class="cs-flv-pe">${meu ? `${s.tipo === "flash" ? `<button class="cs-flv-bt" data-s="flv-vistos">${I.olho}<span id="flv-nv">Visto por…</span><span class="cs-flv-nc" id="flv-nc" hidden>${I.coracao}<b></b></span></button><button class="cs-flv-bt" data-s="flv-destacar">${I.estrela}<span>Destacar</span></button>` : ""}
           <button class="cs-flv-bt" data-s="flv-apagar">${I.lixo}<span>${s.tipo === "destaque" ? "Remover" : "Apagar"}</span></button>`
-        : s.tipo === "flash" ? `<input class="in cs-flv-resp" id="flv-resp" maxlength="500" placeholder="Responder a ${esc((p.nome || "").split(" ")[0])}…" aria-label="Responder"><button class="cs-flv-bt env" data-s="flv-responder" aria-label="Enviar resposta">${I.enviar}</button>` : ""}</div>`;
-    if (meu && s.tipo === "flash") fb.getCountFromServer(C(f.col, f.id, "vistos")).then(n => { const e = $("#flv-nv"); if (e) e.textContent = `Visto por ${n.data().count}`; }).catch(() => { });
+        : s.tipo === "flash" ? `<button class="cs-flv-bt cs-flv-cur ${curtiLocal(f.id) ? "on" : ""}" data-s="flv-curtir" aria-pressed="${curtiLocal(f.id)}" aria-label="Curtir">${I.coracao}</button><input class="in cs-flv-resp" id="flv-resp" maxlength="500" placeholder="Responder a ${esc((p.nome || "").split(" ")[0])}…" aria-label="Responder"><button class="cs-flv-bt env" data-s="flv-responder" aria-label="Enviar resposta">${I.enviar}</button>` : ""}</div>`;
+    if (meu && s.tipo === "flash") fb.getDocs(C(f.col, f.id, "vistos")).then(q => {
+      if (itemAtual() !== f) return;
+      const e = $("#flv-nv"), c = $("#flv-nc"), n = q.docs.filter(d => d.data().curtiu).length;
+      if (e) e.textContent = `Visto por ${q.size}`;
+      if (c && n) { c.hidden = false; c.querySelector("b").textContent = n; }
+    }).catch(() => { });
     const meuItem = f;
     try {
       const blob = await baixar(f.col, f.id, "partes", f.mime || (f.tipo === "video" ? "video/webm" : "image/jpeg"));
@@ -268,12 +274,27 @@
       if (ok !== false) { inp.value = ""; inp.blur(); toast("Resposta enviada."); pausar(false); }
     } catch (e) { toast("Não foi possível responder: a pessoa pode aceitar mensagens só de quem ela segue."); }
   };
+  /* curtir (quem vê); o dono vê quem curtiu e quem visualizou */
+  const curtiLocal = id => !!(lerLS("cs.flc." + eu(), {})[id]);
+  X.acoes["flv-curtir"] = async el => {
+    const f = itemAtual(); if (!f || f.dono === eu()) return;
+    const m = lerLS("cs.flc." + eu(), {}), on = !m[f.id];
+    if (on) m[f.id] = Date.now(); else delete m[f.id];
+    const ks = Object.keys(m); if (ks.length > 400) ks.slice(0, ks.length - 400).forEach(k => delete m[k]);
+    gravarLS("cs.flc." + eu(), m);
+    el.classList.toggle("on", on); el.setAttribute("aria-pressed", String(on));
+    if (on) { el.classList.remove("pulo"); void el.offsetWidth; el.classList.add("pulo"); try { navigator.vibrate && navigator.vibrate(18); } catch (e) { } }
+    try { await fb.setDoc(D(f.col, f.id, "vistos", eu()), { em: TS(), curtiu: on }, { merge: true }); }
+    catch (e) { console.warn(e); toast("Não foi possível curtir agora."); }
+  };
   X.acoes["flv-vistos"] = async () => {
     const f = itemAtual(); if (!f) return; pausar(true);
     try {
       const s = await fb.getDocs(C(f.col, f.id, "vistos"));
-      const l = s.docs.map(d => d.id);
-      window.abrirSheet(`<div class="sheet-h"><h2>Visto por ${l.length}</h2></div>${l.length ? `<div class="cs-menu">${l.map(u => { const p = P(u); return `<button data-s="ver-perfil" data-id="${esc(u)}">${av(p, 40, u)}<span><b>${esc(p.nome)}</b><small>@${esc(p.usuario || "")}</small></span></button>`; }).join("")}</div>` : `<p class="muted">Ninguém viu ainda.</p>`}`);
+      const l = s.docs.map(d => ({ u: d.id, ...d.data() })).sort((a, b) => (b.curtiu ? 1 : 0) - (a.curtiu ? 1 : 0) || A.ms(b.em) - A.ms(a.em));
+      const nc = l.filter(x => x.curtiu).length;
+      window.abrirSheet(`<div class="sheet-h"><h2>Visto por ${l.length}${nc ? ` · <span class="cs-flv-nc on">${I.coracao}<b>${nc}</b></span>` : ""}</h2></div>
+        ${l.length ? `<div class="cs-menu">${l.map(x => { const p = P(x.u); return `<button data-s="ver-perfil" data-id="${esc(x.u)}">${av(p, 40, x.u)}<span><b>${esc(p.nome)}</b><small>${x.curtiu ? "Curtiu · " : ""}${x.em ? haQuanto(A.ms(x.em)) : ""}</small></span>${x.curtiu ? `<i class="cs-flv-cur-i">${I.coracao}</i>` : ""}</button>`; }).join("")}</div>` : `<p class="muted">Ninguém viu ainda.</p>`}`);
     } catch (e) { toast(msgErro(e)); }
   };
   X.acoes["flv-apagar"] = async () => {
@@ -651,9 +672,16 @@
 .cs-flv-palco{flex:1;min-height:0;display:grid;place-items:center;position:relative}
 .cs-flv-palco img,.cs-flv-palco video{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}
 .cs-flv-leg{position:absolute;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));text-align:center;font-size:1.05rem;font-weight:600;text-shadow:0 1px 4px #000;margin:0;pointer-events:none}
-.cs-flv-pe{display:flex;align-items:center;gap:8px;padding:10px 10px calc(12px + env(safe-area-inset-bottom,0px))}
+.cs-flv-pe{display:flex;align-items:center;gap:8px;padding:10px 10px calc(12px + env(safe-area-inset-bottom,0px));margin-bottom:var(--kb,0px)}
 .cs-flv-resp{flex:1;background:rgba(255,255,255,.12)!important;color:#fff!important;border-color:rgba(255,255,255,.3)!important;border-radius:24px!important}
 .cs-flv-resp::placeholder{color:rgba(255,255,255,.75)}
+.cs-flv-bt span{white-space:nowrap}
+.cs-flv-cur{padding:10px 12px;flex:none}.cs-flv-cur svg{width:24px;height:24px}
+.cs-flv-cur.on{color:#ff3b6b;background:rgba(255,59,107,.18)}.cs-flv-cur.on svg{fill:currentColor}
+.cs-flv-cur.pulo svg{animation:flpulo .35s ease}
+@keyframes flpulo{50%{transform:scale(1.35)}}
+.cs-flv-nc{display:inline-flex;align-items:center;gap:3px;margin-left:8px;color:#ff3b6b}.cs-flv-nc svg{width:16px;height:16px;fill:currentColor}
+.cs-flv-cur-i{color:#ff3b6b;margin-left:auto}.cs-flv-cur-i svg{width:20px;height:20px;fill:currentColor}
 .cs-flv-bt{border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:99px;display:flex;align-items:center;gap:6px;padding:10px 14px;font:inherit;font-weight:700;cursor:pointer;min-height:46px}
 .cs-flv-bt svg{width:20px;height:20px}
 .cs-flv-bt.env{width:48px;justify-content:center;padding:0;background:var(--primary);color:var(--primary-ink)}

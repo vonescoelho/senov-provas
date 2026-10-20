@@ -53,7 +53,7 @@
   /* ================= Ligação com o Android (APK) ================= */
   const Cap = window.Capacitor, NATIVO = !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform());
   function plug(n) { try { if (window.capacitorExports && capacitorExports.registerPlugin) return capacitorExports.registerPlugin(n); if (Cap && Cap.registerPlugin) return Cap.registerPlugin(n); } catch (e) { } return null; }
-  const FSP = NATIVO ? plug("Filesystem") : null, SHP = NATIVO ? plug("Share") : null, NTP = NATIVO ? plug("Nativo") : null;
+  const FSP = NATIVO ? plug("Filesystem") : null, SHP = NATIVO ? plug("Share") : null, NTP = NATIVO ? plug("Nativo") : null, MDP = NATIVO ? plug("Midia") : null;
   const b64 = blob => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(",")[1] || ""); fr.onerror = rej; fr.readAsDataURL(blob); });
   /* grava o arquivo na pasta temporária do app em pedaços de 3 MB (pouca memória) e devolve o endereço */
   async function paraCache(blob, nome) {
@@ -441,8 +441,49 @@
       <p class="small muted">Qualquer tipo de arquivo: PDF, Word, Excel, PowerPoint, ZIP, aplicativos (APK), músicas… até 20 MB.</p>`);
   };
   const enviarVarios = async (id, fs) => { for (const f of fs) await enviarArquivo(id, f); };
-  X.acoes["md-galeria"] = async el => { window.fecharSheet(); enviarVarios(el.dataset.id, await escolher("image/*,video/*", true)); };
-  X.acoes["md-camera"] = async el => { window.fecharSheet(); enviarVarios(el.dataset.id, await escolher("image/*,video/*", false, "environment")); };
+  /* ---------- câmera e galeria do próprio Android (CameraX + compressão Media3, H.265 quando dá) ----------
+     devolve a lista de arquivos; [] = a pessoa cancelou; null = não há no aparelho (usa o do navegador) */
+  function qualidadeRede() {
+    const c = navigator.connection || {}, t = c.effectiveType || "";
+    if (c.saveData || t === "slow-2g" || t === "2g") return "baixa";
+    if (c.type === "wifi" || c.type === "ethernet") return "alta";
+    return t === "3g" ? "baixa" : "media";
+  }
+  const usarHevc = () => lerLS("cs.hevc", true) !== false;
+  async function midiaNativa(acao, op) {
+    if (!MDP) return null;
+    const barra = barraEnvio(acao === "escolher" ? "vídeos (deixando leves)" : "vídeo (deixando leve)"), el = document.querySelector(".cs-up");
+    if (el) el.hidden = true;
+    let sub = null;
+    try { sub = await MDP.addListener("progresso", e => { if (el) el.hidden = false; barra(Math.min(0.98, ((e.i || 0) + (e.f || 0)) / (e.n || 1))); }); } catch (e) { }
+    try {
+      const r = await MDP[acao]({ ...(op || {}), qualidade: qualidadeRede(), hevc: usarHevc() });
+      const l = r && r.arquivos ? r.arquivos : r && r.caminho ? [r] : [], fs = [];
+      for (const x of l) {
+        if (x.erro) { toast(x.erro); continue; }
+        try { const b = await (await fetch(Cap.convertFileSrc(x.caminho))).blob(); fs.push(new File([b], x.nome || "arquivo", { type: x.tipo || b.type })); }
+        catch (e) { console.warn(e); toast("Não foi possível ler " + (x.nome || "o arquivo") + "."); }
+      }
+      return fs;
+    } catch (e) {
+      if (cancelou(e)) return [];
+      if (/not implemented|UNIMPLEMENTED|não implementado/i.test(String((e && (e.code || e.message)) || e))) return null;
+      console.warn(e); toast("A câmera do aparelho não abriu. Usando a do navegador."); return null;
+    } finally { barra(null); if (sub && sub.remove) sub.remove(); }
+  }
+  X.midia_nativa = midiaNativa;
+  /* vídeo que este aparelho não consegue tocar (ex.: H.265 em computador antigo): avisa e oferece abrir em outro app */
+  document.addEventListener("error", e => {
+    const v = e.target; if (!v || v.tagName !== "VIDEO" || v.dataset.avisou || !v.getAttribute("src")) return;
+    v.dataset.avisou = "1";
+    const d = document.createElement("div"); d.className = "cs-vid-erro";
+    d.innerHTML = `<b>Não deu para tocar este vídeo aqui.</b><span>Ele pode estar em H.265 (formato leve). Use “Baixar” ou “Abrir com” para ver em outro app.</span>`;
+    v.insertAdjacentElement("afterend", d);
+  }, true);
+  X.configExtra.push(() => MDP ? `<h2 class="cs-sec">Vídeos</h2><div class="cs-menu card flat"><label class="cs-linha" for="cfg-hevc" style="display:flex;align-items:center;gap:12px"><span class="cs-lic">${I.video || I.tela}</span><span style="flex:1"><b>Vídeos mais leves (H.265)</b></span><input type="checkbox" class="cs-sw" id="cfg-hevc" ${usarHevc() ? "checked" : ""}></label></div>` : "");
+  document.addEventListener("change", e => { if (e.target.id === "cfg-hevc") { gravarLS("cs.hevc", e.target.checked); toast(e.target.checked ? "Vídeos em H.265 (mais leves)." : "Vídeos em H.264 (tocam em qualquer aparelho)."); } });
+  X.acoes["md-galeria"] = async el => { window.fecharSheet(); const n = await midiaNativa("escolher", { multiplo: true }); enviarVarios(el.dataset.id, n || await escolher("image/*,video/*", true)); };
+  X.acoes["md-camera"] = async el => { window.fecharSheet(); const n = await midiaNativa("camera", { modo: "foto" }); enviarVarios(el.dataset.id, n || await escolher("image/*,video/*", false, "environment")); };
   X.acoes["md-documento"] = async el => { window.fecharSheet(); enviarVarios(el.dataset.id, await escolher("*/*", true)); };
 
   /* ================= Mensagens na conversa ================= */
@@ -1046,17 +1087,30 @@
     } catch (e) { console.warn(e); toast(msgErro(e)); }
     barra(null);
   };
+  /* Mensagem de visualização única: tela própria com o texto no alto e o botão Enviar no topo,
+     para o teclado do celular nunca cobrir o que está sendo escrito */
+  function fecharUnTexto() { const o = document.getElementById("cs-un-ed"); if (o) o.remove(); document.body.classList.remove("cs-un-ed-on"); }
   X.acoes["un-texto"] = el => {
-    window.abrirSheet(`<div class="sheet-h"><h2>${I.um} Mensagem de visualização única</h2></div>
-      <p class="small muted">Quem receber poderá ler uma vez. Depois, a mensagem some.</p>
-      <textarea class="in" id="un-tx" rows="4" maxlength="2000" placeholder="Escreva a mensagem"></textarea>
-      <button class="btn primary cs-grande" data-s="un-texto-env" data-id="${esc(el.dataset.id)}">${I.enviar} Enviar</button>`);
-    setTimeout(() => { const t = $("#un-tx"); if (t) t.focus(); }, 60);
+    window.fecharSheet(); fecharUnTexto();
+    const ov = document.createElement("div"); ov.id = "cs-un-ed"; ov.className = "cs-un-ed"; ov.setAttribute("role", "dialog"); ov.setAttribute("aria-label", "Mensagem de visualização única");
+    ov.innerHTML = `<div class="cs-un-ed-h"><button class="cs-ico-bt" data-s="un-texto-fechar" aria-label="Cancelar">${I.fechar}</button>
+        <b>${I.um} Visualização única</b>
+        <button class="btn primary sm" data-s="un-texto-env" data-id="${esc(el.dataset.id)}">${I.enviar}<span>Enviar</span></button></div>
+      <textarea class="cs-un-ed-tx" id="un-tx" maxlength="2000" placeholder="Escreva a mensagem" aria-label="Mensagem" enterkeyhint="enter"></textarea>
+      <small class="cs-un-ed-c"><span id="un-tx-n">0</span>/2000 · abre uma vez e some</small>`;
+    document.body.appendChild(ov); document.body.classList.add("cs-un-ed-on");
+    try { history.pushState({ cs: SO.pilha.length, csUnEd: 1 }, ""); } catch (e) { }
+    const t = ov.querySelector("#un-tx");
+    t.addEventListener("input", () => { const n = ov.querySelector("#un-tx-n"); if (n) n.textContent = t.value.length; });
+    setTimeout(() => { try { t.focus(); } catch (e) { } }, 60);
   };
+  const sairUnTexto = () => { if (history.state && history.state.csUnEd) history.back(); else fecharUnTexto(); };
+  X.acoes["un-texto-fechar"] = () => sairUnTexto();
+  window.addEventListener("popstate", fecharUnTexto);
   X.acoes["un-texto-env"] = async el => {
     const t = ($("#un-tx") || {}).value || ""; if (!t.trim()) return toast("Escreva a mensagem.");
     if (ofensivo(t)) return toast("Mensagem não enviada: tem palavras ofensivas ou preconceituosas.");
-    window.fecharSheet();
+    sairUnTexto(); window.fecharSheet();
     try {
       const aid = await subir(el.dataset.id, null, { nome: "", tipo: "text/plain", extra: { unica: true, texto: t.trim().slice(0, 2000) } });
       await enviarMsg(el.dataset.id, { unica: { id: aid, tipo: "texto" }, prev: "Mensagem de visualização única" });
@@ -1270,6 +1324,15 @@ body.cs-apres-on{overflow:hidden}
 .cs-grav-un svg{width:18px;height:18px}
 @keyframes csPulso{50%{opacity:.25}}
 .cs-unica-b{min-width:210px}
+.cs-vid-erro{display:flex;flex-direction:column;gap:4px;margin:8px auto;max-width:420px;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.72);color:#fff;font-size:.88rem;text-align:center}
+.cs-un-ed{position:fixed;left:0;right:0;top:0;height:calc(100% - var(--kb,0px));height:calc(100dvh - var(--kb,0px));z-index:90;background:var(--surface);display:flex;flex-direction:column;padding:calc(6px + env(safe-area-inset-top,0px)) 12px 10px;gap:8px;animation:fade .15s}
+.cs-un-ed-h{display:flex;align-items:center;gap:8px;min-height:50px}
+.cs-un-ed-h b{flex:1;display:flex;align-items:center;gap:6px;font-size:1rem}
+.cs-un-ed-h b svg{width:20px;height:20px;color:var(--primary)}
+.cs-un-ed-h .btn{gap:6px}
+.cs-un-ed-tx{flex:0 1 auto;min-height:120px;height:38vh;max-height:46dvh;resize:none;border:1px solid var(--line);border-radius:16px;padding:14px;font:inherit;font-size:1.1rem;line-height:1.45;background:var(--surface-2);color:var(--ink)}
+.cs-un-ed-tx:focus{outline:2px solid var(--primary);outline-offset:0}
+.cs-un-ed-c{color:var(--muted);padding:0 4px}
 .cs-un-bt{display:flex;align-items:center;gap:10px;border:0;background:none;color:inherit;font:inherit;text-align:left;padding:4px 2px;cursor:pointer}
 .cs-un-bt span:last-child{display:flex;flex-direction:column}.cs-un-bt small{opacity:.8}
 .cs-un-bt.usada{cursor:default;opacity:.85}

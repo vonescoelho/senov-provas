@@ -195,6 +195,10 @@ textarea.in{min-height:110px;resize:vertical;line-height:1.45}
 .sheet .grab{width:44px;height:5px;border-radius:99px;background:var(--line);margin:4px auto 0;flex:none}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:-8px;background:var(--surface);padding:8px 0;z-index:2}
 @media (min-width:700px){.scrim{align-items:center}.sheet{border-radius:22px;max-height:88%}}
+.scrim{padding-bottom:var(--kb,0px)}
+.scrim.digitando{align-items:flex-start}
+.scrim.digitando .sheet{border-radius:0 0 22px 22px;max-height:100%;padding-top:calc(8px + env(safe-area-inset-top,0px));padding-bottom:max(40vh,240px);animation:none}
+.scrim.digitando .sheet .grab{display:none}
 @keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
 @keyframes fade{from{opacity:0}}
 .alt-row{display:flex;gap:8px;align-items:center}
@@ -675,7 +679,7 @@ async function gravarQuestao(destino){
   const final=destino==="banco"&&rv&&rv.r&&rv.r.status!=="bloqueada"?{enunciado:rv.r.enunciado,alternativas:rv.r.alternativas}:{enunciado:d.enunciado,alternativas:d.alternativas};
   const ant=S._ed.id?S.questoes.find(x=>x.id===S._ed.id):null;
   const body={autorId:ant&&ant.autorId||S.uid,...(ant&&ant.exemplo?{exemplo:true}:{}),nivel:d.nivel,serie:d.serie,disciplina:d.disciplina,conteudo:d.conteudo,dificuldade:d.dificuldade,aee:d.aee,...final,correta:d.correta,fixarOrdem:d.fixarOrdem,...(d.origemId?{origemId:d.origemId}:{}),autorizado:true,criadoEm:d.criadoEm||agora(),atualizadoEm:agora()};
-  body.grafico=d.grafico||null;body.temFoto=!d.grafico&&!!(d.temFoto||S._ed.foto);body.legenda=(body.grafico||body.temFoto)?(d.legenda||""):"";body.tituloImg=body.temFoto?(d.tituloImg||""):"";
+  body.grafico=d.grafico||null;body.temFoto=!d.grafico&&!!(d.temFoto||S._ed.foto);{const oq=S._ed.origem||ant||(d.origemId&&S.questoes.find(x=>x.id===d.origemId));const k=d.imgApp||(oq&&oq.imgApp);body.imgApp=body.temFoto&&k&&(!S._ed.foto||S._ed.foto===IMGQ[k])?k:null;}body.legenda=(body.grafico||body.temFoto)?(d.legenda||""):"";body.tituloImg=body.temFoto?(d.tituloImg||""):"";
   if(destino==="banco"){
     body.revisao={status:rv.r.status,em:agora(),alteracoes:rv.r.alteracoes.slice(0,12),...(rv.r.status==="ajustada"?{original:{enunciado:rv.orig.enunciado,alternativas:rv.orig.alternativas}}:{})};
   }else{
@@ -689,7 +693,7 @@ async function gravarQuestao(destino){
     if(ant&&ant.privada){id=ant.id;await colPrivadas().doc(id).set(body);}
     else id=(await colPrivadas().add({...body,autorId:S.uid})).id;
   }
-  const foto=S._ed.foto||(d.origemId&&S.fotos[d.origemId])||(ant&&S.fotos[ant.id])||null;if(body.temFoto&&foto)S.fotos[id]=foto;
+  const foto=S._ed.foto||(d.origemId&&S.fotos[d.origemId])||(ant&&S.fotos[ant.id])||null;if(body.temFoto&&foto&&!(body.imgApp&&foto===IMGQ[body.imgApp]))S.fotos[id]=foto;
   if(S._ed.destinoProva&&S.prova){const it=S.prova.itens,k=d.origemId?it.findIndex(x=>x.id===d.origemId):it.findIndex(x=>ant&&x.id===ant.id);if(k>=0)it[k]={id,...body};else it.push({id,...body});S.prova.montagem=null;}
   fecharSheet();S._rev=null;
   toast(destino==="banco"?(d.origemId?"Adaptação revisada, enviada ao banco e colocada na prova.":"Questão revisada e enviada ao banco."):(ant&&!ant.privada?"A versão do banco não mudou. Sua versão editada ficou só para você.":"Questão guardada só para você."));
@@ -834,6 +838,8 @@ const VR=(()=>{
    [ALUNO] [ALUNA] [COMUNIDADE] [CIDADE] [EVENTO]. Sem dados, nada muda. */
 const LOC={
   ex01:[["Pedro","N"]], ex03:[["Ana","N"],["ela ainda","N ainda"]], ex17:[["Dona Lúcia","N"],["ela vendeu","vendeu"],["Quanto ela recebeu","Quanto N recebeu"],["na feira do bairro","na feira de C"]],
+  ex79:[["Dona Rita","N"],["ela gastou","N gastou"]], ex80:[["Marcos","N"],["ele pagou","N pagou"]], ex81:[["Seu José","N"],["Ele pagou","N pagou"]], ex85:[["Ana","N"],["ela pode","N pode"]], ex89:[["Lúcia","N"],["ela gastou","N gastou"]],
+  ex83:[["A cozinha da escola","A cozinha da escola de C"]], ex84:[["Uma família tem","Uma família de C tem"]],
   ex18:[["Dona Rita","N"]], ex26:[["Maria","N"],["ela vende","vende"]], ex62:[["Um estudante da zona rural mora","N, estudante da zona rural, mora"]],
   ex09:[["as ruas do bairro","as ruas de C"]], ex21:[["um mapa do bairro","um mapa de C"]], ex05:[["Uma escola tem","A escola de C tem"]],
   ex23:[["cinco famílias da rua","cinco famílias de C"]], ex33:[["No sertão,","Em C,"]], ex34:[["Em um bairro sem rede de esgoto","Em uma parte de C sem rede de esgoto"]],
@@ -868,7 +874,7 @@ function entrada(q0,pos){
   let ordem;
   if(q.fixarOrdem||pos==null) ordem=q.alternativas.map((_,j)=>j);
   else{const outros=shuffle(q.alternativas.map((_,j)=>j).filter(j=>j!==q.correta));ordem=[];let o=0;for(let p=0;p<q.alternativas.length;p++)ordem[p]=p===pos?q.correta:outros[o++];}
-  return {qid:q.id,grafico:q.grafico||null,temFoto:!!q.temFoto,legenda:q.legenda||"",tituloImg:q.tituloImg||"",enunciado:q.enunciado,alternativas:ordem.map(j=>q.alternativas[j]),correta:ordem.indexOf(q.correta),dificuldade:q.dificuldade,conteudo:q.conteudo};
+  return {qid:q.id,grafico:q.grafico||null,temFoto:!!q.temFoto,...(q.imgApp?{imgApp:q.imgApp}:{}),legenda:q.legenda||"",tituloImg:q.tituloImg||"",enunciado:q.enunciado,alternativas:ordem.map(j=>q.alternativas[j]),correta:ordem.indexOf(q.correta),dificuldade:q.dificuldade,conteudo:q.conteudo};
 }
 /* Refaz só as letras do gabarito, mantendo a ordem das questões */
 function reletrar(lista,nivel){
@@ -912,13 +918,26 @@ function distribuicao(m,nivel){const c=Array(NALT[nivel]).fill(0);m.forEach(x=>c
    Gráficos: o banco guarda só os dados (rótulos e números); a imagem é desenhada na hora. */
 S.fotos={};const cacheGraf={};
 const qidDe=q=>q.qid||q.id;
+/* imagens das questões de exemplo (ficam no app, em img/q/) */
+const IMGQ={},IMGQ_P={};
+function carregarImgQ(k){
+  if(IMGQ[k])return Promise.resolve(IMGQ[k]);if(IMGQ_P[k])return IMGQ_P[k];
+  /* guardadas em WebP (leves); viram JPEG para o PDF */
+  return IMGQ_P[k]=fetch("img/q/"+k+".webp").then(r=>{if(!r.ok)throw new Error("img");return r.blob();})
+    .then(b=>new Promise((ok,no)=>{const u=URL.createObjectURL(b),im=new Image();im.onerror=()=>{URL.revokeObjectURL(u);no(new Error("img"));};im.onload=()=>{
+      const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0);URL.revokeObjectURL(u);
+      IMGQ[k]={data:c.toDataURL("image/jpeg",.9),r:c.width/c.height};ok(IMGQ[k]);clearTimeout(carregarImgQ.t);carregarImgQ.t=setTimeout(()=>{try{render();}catch(e){}},40);};im.src=u;}))
+    .catch(()=>{delete IMGQ_P[k];return null;});
+}
+function appFoto(q){if(!q||!q.imgApp)return null;if(IMGQ[q.imgApp])return IMGQ[q.imgApp];carregarImgQ(q.imgApp);return null;}
+async function garantirImgsApp(p){const ks=[...new Set([...(p&&p.montagem||[]),...(p&&p.itens||[])].map(m=>m&&m.imgApp).filter(Boolean))];await Promise.all(ks.map(carregarImgQ));}
 function midia(q){
   if(!q)return null;
   if(q.grafico){const k=JSON.stringify(q.grafico);if(!cacheGraf[k]){const cv=desenharGrafico(q.grafico,{semTitulo:true});cacheGraf[k]=comprimir(cv,cv.width,cv.height,true);}return cacheGraf[k];}
-  if(q.temFoto)return S.fotos[qidDe(q)]||null;
+  if(q.temFoto)return S.fotos[qidDe(q)]||appFoto(q)||null;
   return null;
 }
-const precisaFoto=q=>!!(q&&q.temFoto&&!q.grafico&&!S.fotos[qidDe(q)]);
+const precisaFoto=q=>!!(q&&q.temFoto&&!q.grafico&&!S.fotos[qidDe(q)]&&!q.imgApp);
 function midiaHTML(q,cls){
   const m=midia(q);
   if(m)return `<img src="${m.data}" class="${cls||""}" alt="${q.grafico?"Gráfico da questão":"Imagem da questão"}">`;
@@ -1506,6 +1525,36 @@ function abrirSheet(html){
   const f=$("#layer .sheet input, #layer .sheet textarea, #layer .sheet button");if(f)f.focus({preventScroll:true});
 }
 function fecharSheet(){$("#layer").innerHTML="";}
+/* Teclado do celular: ao digitar numa janela de baixo, ela sobe para o alto da tela
+   (o teclado cobre a parte de baixo) e o campo fica sempre à vista */
+(function(){
+  const campo=t=>t&&t.matches&&t.matches("textarea,input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]):not([type=color]),[contenteditable=true]");
+  const celular=()=>window.innerWidth<700&&(navigator.maxTouchPoints>0||"ontouchstart" in window||window.matchMedia("(pointer:coarse)").matches);
+  function mostrar(t){setTimeout(()=>{try{t.scrollIntoView({block:"center",behavior:"smooth"});}catch(e){}},280);}
+  function subir(t){const sc=t&&t.closest&&t.closest(".scrim");if(sc&&celular()){sc.classList.add("digitando");mostrar(t);}}
+  /* só quando a pessoa toca no campo (o teclado abre); foco automático ao abrir a janela não mexe nela */
+  let toque=0;
+  document.addEventListener("pointerdown",e=>{const t=e.target;if(!campo(t))return;toque=Date.now();if(t.closest(".scrim"))setTimeout(()=>{if(document.activeElement===t)subir(t);},120);},true);
+  document.addEventListener("focusin",e=>{const t=e.target;if(campo(t)&&Date.now()-toque<1200)subir(t);});
+  document.addEventListener("focusout",e=>{
+    const sc=e.target&&e.target.closest&&e.target.closest(".scrim");if(!sc)return;
+    setTimeout(()=>{const a=document.activeElement;if(!(a&&sc.contains(a)&&campo(a)))sc.classList.remove("digitando");},180);
+  });
+  /* quando a área visível encolhe (teclado abriu), mantém o campo ativo à vista */
+  if(window.visualViewport){let h=visualViewport.height;visualViewport.addEventListener("resize",()=>{const n=visualViewport.height;if(n<h-80){const a=document.activeElement;if(campo(a)&&a.closest(".scrim"))subir(a);else if(campo(a)&&a.closest(".cs-un-ed"))mostrar(a);}h=n;});}
+  /* --kb = quanto o teclado cobre da página (0 quando a página já encolheu sozinha).
+     Vem do Android (SENOV_teclado) ou da área visível do navegador. */
+  let nat=0;
+  function kb(){
+    const vv=window.visualViewport,a=document.activeElement;
+    const kv=vv&&campo(a)?Math.max(0,window.innerHeight-vv.height-vv.offsetTop):0;
+    let v=Math.max(nat,kv);if(v<50)v=0;
+    document.documentElement.style.setProperty("--kb",v+"px");document.documentElement.classList.toggle("kb-aberto",v>0);
+  }
+  window.SENOV_teclado=n=>{nat=Math.max(0,+n||0);kb();const a=document.activeElement;if(nat>0&&campo(a)){if(a.closest(".scrim"))subir(a);else mostrar(a);}};
+  if(window.visualViewport){visualViewport.addEventListener("resize",kb);visualViewport.addEventListener("scroll",kb);}
+  document.addEventListener("focusout",()=>setTimeout(kb,200));document.addEventListener("focusin",()=>setTimeout(kb,300));
+})();
 
 function verQuestao(id){
   const q=S.questoes.find(x=>x.id===id);if(!q)return;
@@ -1513,7 +1562,7 @@ function verQuestao(id){
    <div class="meta row" style="gap:6px"><span class="pill">${esc(q.disciplina)}</span><span class="pill">${esc(q.serie)}</span>${difPill(q.dificuldade)}${q.aee?'<span class="pill aee">AEE</span>':""}${q.fixarOrdem?'<span class="pill">Ordem fixa</span>':""}${selo(q)}</div>
    ${q.privada?`<div class="notice ${q.revisao&&q.revisao.status==="bloqueada"?"bad":""}">${I.info}<div class="stack" style="gap:4px"><span><b>Só você vê esta questão.</b> Ela entra no banco depois de passar pela revisão.</span>${(q.revisao&&q.revisao.problemas||[]).map(x=>`<span class="small">${esc(x)}</span>`).join("")}</div></div>`:""}
    <p style="white-space:pre-wrap">${esc(q.enunciado)}</p>
-   ${q.grafico?midiaHTML(q,"qimg"):q.temFoto?(S.fotos[q.id]?midiaHTML(q,"qimg"):`<div class="notice info">${I.image}<span>Esta questão usa uma imagem. As imagens não ficam guardadas no banco: ela é anexada na hora de montar a prova.</span></div>`):""}
+   ${q.grafico?midiaHTML(q,"qimg"):q.temFoto?(S.fotos[q.id]||q.imgApp?midiaHTML(q,"qimg"):`<div class="notice info">${I.image}<span>Esta questão usa uma imagem. As imagens não ficam guardadas no banco: ela é anexada na hora de montar a prova.</span></div>`):""}
    ${(q.grafico||q.temFoto)&&q.legenda?`<span class="small muted" style="font-style:italic">${esc(q.legenda)}</span>`:""}
    <div class="stack" style="gap:6px">${q.alternativas.map((a,i)=>`<div class="alt-row"><span class="lt" aria-pressed="${i===q.correta}">${LET[i]}</span><span>${esc(a)}</span></div>`).join("")}</div>
    <div class="row">${mine(q)?`<button class="btn" data-a="editar-questao" data-id="${esc(q.id)}" style="flex:1">${I.pen} Editar</button>`:""}${mine(q)||S.isOwner?`<button class="btn danger" data-a="excluir-questao" data-id="${esc(q.id)}" style="flex:1">${I.trash} Excluir</button>`:""}</div>
@@ -1535,7 +1584,7 @@ function desenharEditor(){
   const {d,id}=S._ed;
   const o=S._ed.origem;
   abrirSheet(`<div class="sheet-h"><h2>${o?"Adaptar para o AEE":id?"Editar questão":"Nova questão"}</h2><button class="iconbtn" data-a="fechar" aria-label="Fechar">${I.x}</button></div>
-   ${o?`<div class="origbox"><span class="eyebrow">Questão original</span><p>${esc(o.enunciado)}</p>${o.grafico||S.fotos[o.id]?midiaHTML(o,"qthumb"):""}<ol>${o.alternativas.map((a,i)=>`<li${i===o.correta?' class="ok"':""}><b>${LET[i]})</b> ${esc(a)}</li>`).join("")}</ol></div>
+   ${o?`<div class="origbox"><span class="eyebrow">Questão original</span><p>${esc(o.enunciado)}</p>${o.grafico||S.fotos[o.id]||o.imgApp?midiaHTML(o,"qthumb"):""}<ol>${o.alternativas.map((a,i)=>`<li${i===o.correta?' class="ok"':""}><b>${LET[i]})</b> ${esc(a)}</li>`).join("")}</ol></div>
      ${S.sample?`<button class="btn" data-a="ed-sugerir">${I.wand} Sugerir versão adaptada</button><div class="th" style="margin-top:-6px"><span class="small muted">Gerada pelo Claude</span>${ajuda("sug","Preenche os campos abaixo com uma versão simplificada. Revise antes de salvar.")}</div>`:""}`:""}
    ${d.aee?orientacoesAEE(!!o):""}
    <div class="f" ${o?"hidden":""}><span>Nível de ensino</span><div class="seg"><button data-a="ed-nivel" data-v="EF" aria-pressed="${d.nivel==="EF"}">Fundamental · A–D</button><button data-a="ed-nivel" data-v="EM" aria-pressed="${d.nivel==="EM"}">Médio · A–E</button></div></div>
@@ -1909,6 +1958,7 @@ document.addEventListener("click",async ev=>{
       break;}
     case "pdf-completo":case "pdf-frente":case "pdf-verso":{
       if(!window.jspdf&&!(await esperarJsPDF())){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
+      await garantirImgsApp(p);
       el.disabled=true;
       try{
         const falt=p.montagem.filter(precisaFoto).length;if(falt&&a==="pdf-completo")toast(`${falt} ${falt===1?"questão sem imagem anexada saiu":"questões sem imagem anexada saíram"} com espaço em branco.`);
@@ -1922,12 +1972,13 @@ document.addEventListener("click",async ev=>{
       el.disabled=false;break;}
     case "pdf-enviar":{
       if(!window.jspdf&&!(await esperarJsPDF())){toast("O gerador de PDF não carregou. Verifique a internet e recarregue.");break;}
+      await garantirImgsApp(p);
       el.disabled=true;
       try{
         const blob=gerarPDF(p,null,null),nome=nomeArquivo(p);
         const dados={escola:p.escola||"",professor:p.professor||"",disciplina:p.disciplina,bimestre:p.bimestre,nivel:p.nivel,serie:p.serie,instrucoes:p.instrucoes||"",aee:!!p.aee,bastao:!!p.bastao,incluirGab:p.incluirGab!==false,colunas:p.colunas===2?2:1,
           ...(p.logo&&p.logo.length<80000?{logo:p.logo,logoR:p.logoR||1}:{}),
-          itens:p.itens.map(q=>({id:q.id,nivel:q.nivel,serie:q.serie,disciplina:q.disciplina,conteudo:q.conteudo,dificuldade:q.dificuldade,aee:!!q.aee,enunciado:q.enunciado,alternativas:q.alternativas,correta:q.correta,fixarOrdem:!!q.fixarOrdem,grafico:q.grafico||null,temFoto:!!q.temFoto,legenda:q.legenda||"",tituloImg:q.tituloImg||""})),montagem:p.montagem};
+          itens:p.itens.map(q=>({id:q.id,nivel:q.nivel,serie:q.serie,disciplina:q.disciplina,conteudo:q.conteudo,dificuldade:q.dificuldade,aee:!!q.aee,enunciado:q.enunciado,alternativas:q.alternativas,correta:q.correta,fixarOrdem:!!q.fixarOrdem,grafico:q.grafico||null,temFoto:!!q.temFoto,imgApp:q.imgApp||null,legenda:q.legenda||"",tituloImg:q.tituloImg||""})),montagem:p.montagem};
         const leve=JSON.stringify(dados).length<400000;
         window.SOCIAL.ext.enviarParaContatos(new File([blob],nome,{type:"application/pdf"}),leve?{prova:dados}:null,"Enviar a prova para…");
       }catch(e){console.error(e);toast("Não foi possível preparar a prova para envio.");}

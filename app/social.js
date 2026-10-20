@@ -77,7 +77,7 @@
 
   /* Extensões (social-mais.js): telas, abas, ações e tipos de mensagem extras */
   const EXT = { views: {}, tabViews: {}, acoes: {}, tabs: [], provasSub: [], msg: null, chatBotoes: null, composerBotoes: null, composerFim: null,
-    conversasTopo: null, depois: [], avisos: [], perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [] };
+    conversasTopo: null, depois: [], avisos: [], muralTopo: [], muralSeg: [], muralFiltro: [], muralCab: [], compositorBotoes: [], compositorPainel: [], compositorAbrir: [], postDados: [], postMeta: [], perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [] };
 
   /* ================= Estado ================= */
   const SO = {
@@ -264,9 +264,11 @@
     {
       /* mural: públicas + "só para algumas pessoas" (as que me incluem e as minhas) */
       const PB = { pub: [], pa: [], meu: [] };
-      const juntar = () => { const m = new Map(); [...PB.pub, ...PB.pa, ...PB.meu].forEach(p => m.set(p.col + ":" + p.id, p)); SO.posts = [...m.values()].sort((a, b) => ms(b.em) - ms(a.em)); pintar(); };
+      SO.postsExtra = {};
+      const juntar = () => { const m = new Map(); [...PB.pub, ...PB.pa, ...PB.meu, ...Object.values(SO.postsExtra).flat()].forEach(p => m.set(p.col + ":" + p.id, p)); SO.posts = [...m.values()].sort((a, b) => ms(b.em) - ms(a.em)); pintar(); };
       const ouvir = (q, k, col) => ouvintes.push(fb.onSnapshot(q, snap => { PB[k] = snap.docs.map(d => ({ id: d.id, col, ...dadosDe(d) })); juntar(); }, e => console.warn(e)));
-      ouvir(fb.query(C("posts"), fb.orderBy("em", "desc"), fb.limit(80)), "pub", "posts");
+      SO.juntarPosts = juntar;
+      ouvir(fb.query(C("posts"), fb.orderBy("em", "desc"), fb.limit(120)), "pub", "posts");
       ouvir(fb.query(C("postsPriv"), fb.where("para", "array-contains", u.uid), fb.limit(60)), "pa", "postsPriv");
       ouvir(fb.query(C("postsPriv"), fb.where("autor", "==", u.uid), fb.limit(60)), "meu", "postsPriv");
     }
@@ -826,7 +828,7 @@
     const texto = esc(p.texto || "");
     const longo = !completo && (p.texto || "").length > 420;
     return `<article class="card cs-post">
-      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(a.nome)}${seloHtml(a)}</b><small>${tempoPost(p.em)}${p.para ? ` · ${K.lock} ${meu ? `para ${p.para.length} pessoa${p.para.length === 1 ? "" : "s"}` : "só para algumas pessoas"}` : ""}</small></span></button>
+      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(a.nome)}${seloHtml(a)}</b><small>${tempoPost(p.em)}${EXT.postMeta.map(f => { try { return f(p) || ""; } catch (e) { return ""; } }).join("")}${p.para ? ` · ${K.lock} ${meu ? `para ${p.para.length} pessoa${p.para.length === 1 ? "" : "s"}` : "só para algumas pessoas"}` : ""}</small></span></button>
         <button class="cs-ico-bt" data-s="menu-post" data-id="${esc(p.id)}" aria-label="Opções da publicação">${K.mais}</button></div>
       ${p.texto ? `<div class="cs-post-tx ${longo ? "corte" : ""}">${texto}</div>${longo ? `<button class="cs-link" data-s="abrir-post" data-id="${esc(p.id)}">Ler tudo</button>` : ""}` : ""}
       ${p.fig ? `<div class="cs-post-fig">${figurinha(p.fig, 140)}</div>` : ""}
@@ -838,14 +840,18 @@
       </div></article>`;
   }
   function postsVisiveis() {
-    return SO.posts.filter(p => !SO.bloqueados.has(p.autor) && (SO.feed === "todos" || p.autor === eu() || SO.seguindo.has(p.autor)));
+    return SO.posts.filter(p => !SO.bloqueados.has(p.autor) && (SO.feed !== "seguindo" || p.autor === eu() || SO.seguindo.has(p.autor))
+      && EXT.muralFiltro.every(f => { try { return f(p, SO.feed) !== false; } catch (e) { return true; } }));
   }
   function vMural() {
-    const lista = postsVisiveis(), eup = SO.eu || {};
-    return `<div class="cs-cab"><h1>Mural</h1><button class="cs-ico-bt" data-s="buscar-pessoas" aria-label="Encontrar colegas">${K.busca}</button></div>
+    const lista = postsVisiveis(), eup = SO.eu || {}, h = l => l.map(f => { try { return f() || ""; } catch (e) { console.warn(e); return ""; } }).join("");
+    const segs = [["todos", "Todos"], ...EXT.muralSeg, ["seguindo", "Seguindo"]];
+    if (!segs.some(x => x[0] === SO.feed)) SO.feed = "todos";
+    return `<div class="cs-cab"><h1>Mural</h1>${h(EXT.muralCab)}<button class="cs-ico-bt" data-s="buscar-pessoas" aria-label="Encontrar colegas">${K.busca}</button></div>
       ${avisoEmail()}
+      ${h(EXT.muralTopo)}
       <button class="card cs-novo-post" data-s="novo-post">${av(eup, 40, eu())}<span>Nova publicação</span>${K.foto}</button>
-      <div class="seg cs-seg"><button data-s="feed" data-v="todos" aria-pressed="${SO.feed === "todos"}">Todos</button><button data-s="feed" data-v="seguindo" aria-pressed="${SO.feed === "seguindo"}">Quem eu sigo</button></div>
+      <div class="seg cs-seg">${segs.map(([k, n]) => `<button data-s="feed" data-v="${k}" aria-pressed="${SO.feed === k}">${n}</button>`).join("")}</div>
       ${lista.length ? `<div class="stack">${lista.map(p => htmlPost(p)).join("")}</div>` :
         `<div class="empty">${figurinha("eureca", 96)}<b>Nada por aqui</b>
         <button class="btn primary" data-s="${SO.feed === "seguindo" ? "buscar-pessoas" : "novo-post"}">${SO.feed === "seguindo" ? "Encontrar colegas" : "Publicar"}</button></div>`}
@@ -853,6 +859,7 @@
   }
   function sheetNovoPost() {
     SO.postFig = null; (SO.postFotos || []).forEach(f => URL.revokeObjectURL(f.url)); SO.postFotos = []; SO.postPub = "todos"; SO.postArq = null; SO.postLive = false;
+    EXT.compositorAbrir.forEach(f => { try { f(); } catch (e) { } });
     window.abrirSheet(`<div class="sheet-h"><h2>Nova publicação</h2></div>
       <form class="stack" id="cs-f-post"><textarea class="in" id="cs-post-tx" maxlength="3000" rows="4" placeholder="Escreva para os colegas…"></textarea>
       <div id="cs-post-figsel"></div>
@@ -865,7 +872,9 @@
         <button type="button" class="btn sm" data-s="mp-live">${K.live}<span>Ao vivo</span></button>
         <button type="button" class="btn sm" data-s="mp-fig">${K.smile}<span>Figurinha</span></button>
         <button type="button" class="btn sm" data-s="mp-pub" id="cs-mp-pub">${K.grupo}<span>Todos</span></button>
+        ${EXT.compositorBotoes.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       </div>
+      ${EXT.compositorPainel.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       <div id="cs-mp-figs" hidden>${painelFig("fig-post")}</div>
       <div class="cs-mp-pessoas" id="cs-mp-pessoas" hidden>
         <div class="seg"><button type="button" data-s="mp-pubv" data-v="todos" aria-pressed="true">Todos</button><button type="button" data-s="mp-pubv" data-v="escolher" aria-pressed="false">Só pessoas marcadas</button></div>
@@ -915,7 +924,8 @@
         arq = { id: aid, nome: r.nome, tipo: r.tipo, tamanho: r.blob.size, ...r.extra };
       }
       const aoVivo = live ? "ChatMil-AoVivo-" + eu().slice(0, 6) + "-" + Math.random().toString(36).slice(2, 8) : null;
-      await fb.setDoc(ref, { autor: eu(), texto: t.slice(0, 3000), fig: SO.postFig || null, em: TS(), curtidas: [], nComent: 0, ...(imgs.length ? { imgs } : {}), ...(para ? { para } : {}), ...(arq ? { arq } : {}), ...(aoVivo ? { aoVivo } : {}) });
+      const extraP = Object.assign({}, ...EXT.postDados.map(f => { try { return f(para) || {}; } catch (e) { return {}; } }));
+      await fb.setDoc(ref, { ...extraP, autor: eu(), texto: t.slice(0, 3000), fig: SO.postFig || null, em: TS(), curtidas: [], nComent: 0, ...(imgs.length ? { imgs } : {}), ...(para ? { para } : {}), ...(arq ? { arq } : {}), ...(aoVivo ? { aoVivo } : {}) });
       if (aoVivo) abrirAoVivo(aoVivo);
       fotos.forEach(f => URL.revokeObjectURL(f.url)); SO.postFotos = []; SO.postArq = null; SO.postLive = false;
       window.fecharSheet(); toast(para ? `Publicado só para ${para.length} pessoa${para.length === 1 ? "" : "s"}.` : "Publicado!"); SO.feed = "todos"; if (SO.tab !== "mural") { SO.tab = "mural"; lembrarTab(); } pintar();
@@ -1545,15 +1555,18 @@
       }
       case "mp-arq": case "mp-gravar": {
         if (!EXT.midia) break;
-        const inp = document.createElement("input"); inp.type = "file";
-        inp.accept = s === "mp-gravar" ? "video/*" : "application/pdf,video/*,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods";
-        if (s === "mp-gravar") inp.setAttribute("capture", "user");
-        inp.onchange = () => {
-          const f = (inp.files || [])[0]; if (!f) return;
+        const usar = f => {
+          if (!f) return;
           if (f.size > 20 * 1048576) return toast("Máximo 20 MB.");
           const prep = EXT.midia.prepararArquivo(f); prep.catch(() => { });
           SO.postArq = { nome: f.name || "video.webm", prep }; pintarArqCompositor();
         };
+        /* no app Android: câmera própria (CameraX) e vídeo já comprimido no aparelho */
+        if (s === "mp-gravar" && EXT.midia_nativa) { const n = await EXT.midia_nativa("camera", { modo: "video", frente: true }); if (n) { usar(n[0]); break; } }
+        const inp = document.createElement("input"); inp.type = "file";
+        inp.accept = s === "mp-gravar" ? "video/*" : "application/pdf,video/*,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods";
+        if (s === "mp-gravar") inp.setAttribute("capture", "user");
+        inp.onchange = () => usar((inp.files || [])[0]);
         inp.click(); break;
       }
       case "mp-arq-tirar": SO.postArq = null; pintarArqCompositor(); break;
@@ -1713,7 +1726,7 @@ body.cs-on main{padding-top:calc(6px + env(safe-area-inset-top,0px))}
 body.cs-sem-nav .nav{display:none}
 body.cs-sem-nav .app{padding-left:0}
 body.cs-sem-nav main{padding-bottom:40px}
-body.cs-com-compor main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+body.cs-com-compor main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px) + var(--kb,0px))}
 body.cs-chatbg{background-image:radial-gradient(color-mix(in srgb,var(--primary) 11%,transparent) 1.2px,transparent 1.3px);background-size:22px 22px}
 .cs-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
 .cs-cab h1{font-size:1.55rem}
@@ -1803,7 +1816,7 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-fig{display:flex;flex-direction:column;align-items:inherit}
 .cs-fig .cs-h{background:color-mix(in srgb,var(--surface) 88%,transparent);padding:1px 8px;border-radius:99px;color:var(--ink);opacity:1;margin-top:-6px}
 .cs-m>.cs-autor{padding-left:6px}
-.cs-compor{position:fixed;left:0;right:0;bottom:0;z-index:25;display:flex;align-items:flex-end;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+.cs-compor{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:25;display:flex;align-items:flex-end;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line)}
 .cs-compor .in{flex:1;border-radius:24px;min-height:50px;max-height:140px;resize:none;padding:13px 16px;line-height:1.35;font-size:1.03rem}
 .cs-env{width:50px;min-height:50px;height:50px;border-radius:50%;padding:0;flex:none}
 .cs-env svg{width:22px;height:22px}
@@ -1987,5 +2000,5 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   document.head.appendChild(css);
 
   window.SOCIAL = { render: renderSocial, ext: EXT,
-    _: { SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk } };
+    _: { SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk, itemPessoa, seguir, pub } };
 })();
