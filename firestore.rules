@@ -42,12 +42,15 @@ service cloud.firestore {
         && request.resource.data.get('privMsg', 'todos') in ['todos', 'seguindo'];
       allow delete: if logado() && uid == eu();
 
+      // quem eu sigo: só eu vejo (pode ter "seguir em segredo"); as regras usam exists() normalmente
       match /seguindo/{outro} {
-        allow read: if logado();
+        allow read: if logado() && uid == eu();
         allow write: if logado() && uid == eu();
       }
+      // seguidores: escondidos quando a pessoa ativa "esconder" (privRede)
       match /seguidores/{outro} {
-        allow read: if logado();
+        allow read: if logado() && (uid == eu() || outro == eu()
+          || get(/databases/$(database)/documents/users/$(uid)).data.get('privRede', false) == false);
         allow create, delete: if logado() && outro == eu();
       }
       match /bloqueados/{outro} {
