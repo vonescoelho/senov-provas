@@ -42,9 +42,14 @@ subprocess.run([os.path.join(os.path.abspath(NM), ".bin", "esbuild"), os.path.jo
                 "--format=iife", "--global-name=FB", "--target=es2019", "--legal-comments=none",
                 "--outfile=" + os.path.join(WWW, "vendor", "firebase.js")], check=True, cwd=RAIZ)
 # módulos da rede social (só na versão aplicativo; no claude.ai o app segue sem eles)
-MODULOS = ("firebase-config.js", "social-extras.js", "social.js", "social-midia.js", "social-chamada.js", "social-flash.js", "social-mais.js")
+MODULOS = ("firebase-config.js", "social-extras.js", "social.js", "social-midia.js", "social-chamada.js", "social-flash.js", "social-mais.js", "social-perto.js")
 for arq in MODULOS:
     shutil.copy(os.path.join(RAIZ, "app", arq), os.path.join(WWW, arq))
+# imagens das questões de exemplo (encarte do mercadinho, leitura do AEE)
+os.makedirs(os.path.join(WWW, "img", "q"), exist_ok=True)
+IMGS_Q = sorted(f for f in os.listdir(os.path.join(RAIZ, "app", "img-q")) if f.endswith(".webp"))
+for f in IMGS_Q:
+    shutil.copy(os.path.join(RAIZ, "app", "img-q", f), os.path.join(WWW, "img", "q", f))
 # apresentação de PDF (pdf.js) e de DOCX (mammoth): carregados só quando o professor apresenta um arquivo
 os.makedirs(os.path.join(WWW, "vendor", "pdfjs"), exist_ok=True)
 shutil.copy(os.path.join(NM, "pdfjs-dist", "legacy", "build", "pdf.min.mjs"), os.path.join(WWW, "vendor", "pdfjs", "pdf.min.js"))
@@ -166,7 +171,7 @@ json.dump(manifest, open(os.path.join(WWW, "manifest.webmanifest"), "w", encodin
 
 # ---------- service worker (funciona offline) ----------
 arquivos = ["./", "index.html", "local.js", "fonts.css", "manifest.webmanifest", "vendor/jspdf.umd.min.js", "vendor/capacitor.js",
-            "vendor/firebase.js", *MODULOS,
+            "vendor/firebase.js", *MODULOS, *("img/q/" + f for f in IMGS_Q),
             "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/favicon-32.png", "icons/apple-touch-icon.png"]
 arquivos += ["fonts/" + f for f in sorted(os.listdir(os.path.join(WWW, "fonts")))]
 sw = f"""/* ChatMil — service worker: guarda o app no aparelho para abrir sem internet */
