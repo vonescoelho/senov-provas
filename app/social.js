@@ -84,7 +84,7 @@
     tab: "conversas", pilha: [], carregando: true, user: null, eu: null, euCarregado: false,
     tela: "boas-vindas", erro: "", ocupado: false,
     chats: [], leituras: {}, perfis: {}, buscando: {}, seguindo: new Set(), bloqueados: new Set(),
-    posts: [], feed: "todos", msgs: {}, coments: {}, rascunho: {}, figAberta: false, pacote: 0,
+    posts: [], feed: "todos", msgs: {}, brutas: {}, coments: {}, rascunho: {}, figAberta: false, pacote: 0,
     busca: "", resultados: null, novos: null, filtroChats: "", contagens: {},
     cad: { nome: "", email: "", senha: "", usuario: "", escola: "", disciplinas: [], foto: null, ok: null, verSenha: false },
     un: {}
@@ -201,7 +201,7 @@
   function pintar() {
     if (pintarPend) return; pintarPend = true;
     /* requestAnimationFrame para quando a tela está escondida; o setTimeout garante a atualização mesmo assim */
-    const fazer = () => { if (!pintarPend) return; pintarPend = false; window.render(); };
+    const fazer = () => { if (!pintarPend) return; pintarPend = false; if (typeof window.render === "function") window.render(); else { pintarPend = true; setTimeout(fazer, 60); } };
     requestAnimationFrame(fazer); setTimeout(fazer, 120);
   }
   function abrirTela(t) { SO.pilha.push(t); SO.figAberta = false; try { history.pushState({ cs: SO.pilha.length }, ""); } catch (e) { } pintar(); window.scrollTo(0, 0); }
@@ -221,7 +221,7 @@
     const trocou = (SO.user && SO.user.uid) !== (u && u.uid);
     SO.user = u; SO.pres = SO.pres || {}; SO.eu = null; SO.euCarregado = false; SO.fotoPropria = undefined; SO.chats = []; SO.posts = []; SO.pilha = [];
     if (trocou) {
-      SO.perfis = {}; SO.buscando = {}; SO.msgs = {}; SO.coments = {}; SO.rascunho = {}; SO.contagens = {}; SO.novos = null; SO.leituras = {};
+      SO.perfis = {}; SO.buscando = {}; SO.msgs = {}; SO.brutas = {}; SO.coments = {}; SO.rascunho = {}; SO.contagens = {}; SO.novos = null; SO.leituras = {};
       if (u) { SO.tab = "conversas"; lembrarTab(); }
       try { if (typeof CHAT !== "undefined") { CHAT.msgs = []; CHAT.d = {}; CHAT.perg = null; CHAT.espera = null; } } catch (e) { }
     }
@@ -343,9 +343,20 @@
   function ouvirMsgs(id) {
     if (SO.un["m:" + id]) return;
     SO.un["m:" + id] = fb.onSnapshot(fb.query(C("chats", id, "msgs"), fb.orderBy("em"), fb.limitToLast(200)), snap => {
-      SO.msgs[id] = snap.docs.map(d => ({ id: d.id, ...dadosDe(d) }));
+      const l = snap.docs.map(d => ({ id: d.id, ...dadosDe(d) }));
+      SO.brutas[id] = l;
+      const repintar = () => { if (SO.brutas[id] !== l) return; SO.msgs[id] = window.CS_E2E ? CS_E2E.abrirLista(l) : l; const t = topo(); if (t && t.v === "chat" && t.id === id) pintarMsgs(); };
+      SO.msgs[id] = window.CS_E2E ? CS_E2E.abrirLista(l, repintar) : l;
       const t = topo(); if (t && t.v === "chat" && t.id === id) { marcarLida(id); pintarMsgs(); }
     }, e => { console.warn(e); SO.msgs[id] = SO.msgs[id] || []; pintarMsgs(); });
+  }
+  /* depois de digitar o PIN (ou criar chaves), reabre as mensagens já carregadas */
+  function reabrirMsgs() {
+    Object.keys(SO.brutas).forEach(id => {
+      const l = SO.brutas[id], f = () => { if (SO.brutas[id] !== l) return; SO.msgs[id] = CS_E2E.abrirLista(l); const t = topo(); if (t && t.v === "chat" && t.id === id) pintarMsgs(); };
+      SO.msgs[id] = CS_E2E.abrirLista(l, f);
+    });
+    pintar();
   }
   const colP = id => ((SO.posts.find(x => x.id === id) || {}).col) || "posts";
   function ouvirComents(id) {
@@ -578,7 +589,8 @@
     return { nome: p.nome, sub: p.escola || "", av: t => av(p, t, outro), p, outro, selo: seloHtml(p) };
   }
   function prevUltima(c) {
-    const u = c.ultima; if (!u) return c.tipo === "grupo" ? "Grupo criado" : "Diga olá 👋";
+    let u = c.ultima; if (!u) return c.tipo === "grupo" ? "Grupo criado" : "Diga olá 👋";
+    if (u.e2e && window.CS_E2E) u = { ...u, ...CS_E2E.previa(c) };
     const quem = u.autor === eu() ? "Você: " : c.tipo === "grupo" ? (P(u.autor).nome || "").split(" ")[0] + ": " : "";
     return quem + (u.fig ? "Figurinha" : u.texto || "");
   }
@@ -648,6 +660,9 @@
         <button class="cs-chat-quem" data-s="${g ? "info-grupo" : "ver-perfil"}" data-id="${esc(g ? c.id : t.outro)}">${t.av(36)}<span><b>${esc(t.nome)}${t.selo || ""}</b><small id="cs-chat-sub" class="${!g && textoPresenca(t.outro) === "online" ? "on" : ""}">${esc((!g && textoPresenca(t.outro)) || t.sub)}</small></span></button>
         ${EXT.chatBotoes ? EXT.chatBotoes(c) : ""}<button class="cs-ico-bt" data-s="${g ? "info-grupo" : "menu-pessoa"}" data-id="${esc(g ? c.id : t.outro)}" aria-label="Opções">${K.mais}</button>
       </header>
+      ${window.CS_E2E ? (() => { const fa = CS_E2E.faltam(); const sem = fa && fa.chat === c.id ? fa.uids.filter(u => u !== eu()) : [];
+        return sem.length ? `<button class="cs-e2e-chat" data-s="e2e-info">🔓 ${esc(sem.map(u => P(u).nome).join(", "))} ainda não ativou a criptografia (precisa atualizar o app)</button>`
+          : CS_E2E.pronto() ? `<button class="cs-e2e-chat" data-s="${g ? "e2e-info" : "e2e-codigo"}" data-id="${esc(g ? "" : t.outro)}">${K.lock} Protegida de ponta a ponta</button>` : ""; })() : ""}
       <div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
       ${podeEscrever ? `${SO.figAberta ? painelFig("fig-msg") : ""}
       <form class="cs-compor ${EXT.composerFim && !(SO.rascunho[id] || "").trim() ? "vazio" : ""}" id="cs-f-msg" data-id="${esc(id)}">
@@ -666,6 +681,7 @@
       const meu = m.autor === eu(), seq = ant && ant.autor === m.autor && ms(m.em) - ms(ant.em) < 5 * 60e3;
       const nome = c.tipo === "grupo" && !meu && !seq ? `<b class="cs-autor" style="color:${corDe(m.autor)}">${esc(P(m.autor).nome)}</b>` : "";
       const hr = (m.em ? new Date(ms(m.em)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "") + tique(c, m);
+      if (m.cifrada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-id="${esc(m.id)}"><div class="cs-b cs-trancada">${nome}<span class="cs-tx">${m.cifrada === "pin" ? "🔒 Digite seu PIN para abrir" : m.cifrada === "abrindo" ? "🔒 Abrindo…" : "🔒 Mensagem protegida que este celular não consegue abrir"}</span><span class="cs-h">${hr}</span></div></div>`; ant = m; return; }
       if (EXT.msg && (m.arquivo || m.chamada || m.audio || m.unica)) { h += EXT.msg(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
       if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
       else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b">${nome}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
@@ -708,10 +724,19 @@
       if (ofensivo(t)) { toast("Mensagem não enviada: tem palavras ofensivas ou preconceituosas."); return false; }
       conteudo = { texto: t.slice(0, 2000) };
     }
-    const b = fb.writeBatch(db);
-    b.set(fb.doc(C("chats", id, "msgs")), { autor: eu(), em: TS(), ...conteudo });
     const prev = conteudo.prev || ""; delete conteudo.prev;
-    b.update(D("chats", id), { ultima: { autor: eu(), texto: conteudo.texto ? conteudo.texto.slice(0, 120) : prev.slice(0, 120), fig: conteudo.fig || null }, atualizadoEm: TS() });
+    const ult = { texto: conteudo.texto ? conteudo.texto.slice(0, 120) : prev.slice(0, 120), fig: conteudo.fig || null };
+    /* criptografia de ponta a ponta: tranca a mensagem para cada participante */
+    let sel = null;
+    if (window.CS_E2E) { CS_E2E.anexarChaves(conteudo); try { sel = await CS_E2E.selar(c, conteudo, ult); } catch (e) { console.warn("e2e", e); sel = null; } }
+    const b = fb.writeBatch(db);
+    if (sel) {
+      b.set(fb.doc(C("chats", id, "msgs")), { autor: eu(), em: TS(), ...sel.msg });
+      b.update(D("chats", id), { ultima: { autor: eu(), ...sel.ultima }, atualizadoEm: TS() });
+    } else {
+      b.set(fb.doc(C("chats", id, "msgs")), { autor: eu(), em: TS(), ...conteudo });
+      b.update(D("chats", id), { ultima: { autor: eu(), ...ult }, atualizadoEm: TS() });
+    }
     try { await b.commit(); return true; } catch (e) { toast(msgErro(e)); return false; }
   }
   function sheetMsg(chatId, msgId) {
@@ -1212,6 +1237,7 @@
     const p = P(uid), bloq = SO.bloqueados.has(uid);
     window.abrirSheet(`<div class="sheet-h"><h2>${esc(p.nome)}</h2></div><div class="cs-menu">
       <button data-s="ver-perfil" data-id="${esc(uid)}">${K.user}<span><b>Ver perfil</b></span></button>
+      ${window.CS_E2E ? `<button data-s="e2e-codigo" data-id="${esc(uid)}">${K.lock}<span><b>Código de segurança</b><small>Conferir a criptografia</small></span></button>` : ""}
       ${bloq ? "" : SO.seguindo.has(uid) ? `<button data-s="seguir" data-id="${esc(uid)}">${K.addUser}<span><b>Deixar de seguir</b></span></button>`
         : `<button data-s="seguir-oculto" data-id="${esc(uid)}">${K.lock}<span><b>Seguir em segredo</b><small>A pessoa não fica sabendo</small></span></button>`}
       <button data-s="${bloq ? "desbloquear" : "bloquear"}" data-id="${esc(uid)}" class="${bloq ? "" : "perigo"}">${K.ban}<span><b>${bloq ? "Desbloquear" : "Bloquear"}</b><small>${bloq ? "Voltar a ver mensagens e publicações" : "Esta pessoa não poderá mais mandar mensagens para você"}</small></span></button>
@@ -1236,7 +1262,9 @@
     const i = +(document.querySelector('input[name="motivo"]:checked') || { value: 4 }).value;
     const d = SO.den || {};
     try {
-      await fb.addDoc(C("denuncias"), { autor: eu(), tipo: d.tipo || "", alvo: d.uid || "", id: d.id || "", chat: d.chat || "", post: d.post || "", motivo: MOTIVOS[i], detalhes: $("#cs-den-tx").value.trim().slice(0, 500), em: TS() });
+      const mm = d.tipo === "mensagem" && d.chat ? (SO.msgs[d.chat] || []).find(x => x.id === d.id) : null;
+      const conteudo = mm ? (mm.texto || (mm.arquivo && "[arquivo] " + mm.arquivo.nome) || (mm.fig && "[figurinha]") || "").slice(0, 2000) : "";
+      await fb.addDoc(C("denuncias"), { autor: eu(), tipo: d.tipo || "", alvo: d.uid || "", id: d.id || "", chat: d.chat || "", post: d.post || "", motivo: MOTIVOS[i], detalhes: $("#cs-den-tx").value.trim().slice(0, 500), ...(conteudo ? { conteudo } : {}), em: TS() });
       window.fecharSheet(); toast("Denúncia enviada. Obrigado por ajudar a manter o ChatMil seguro.");
     } catch (e) { toast(msgErro(e)); }
   }
@@ -2030,5 +2058,5 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   document.head.appendChild(css);
 
   window.SOCIAL = { render: renderSocial, ext: EXT,
-    _: { SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk, itemPessoa, seguir, pub } };
+    _: { SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk, itemPessoa, seguir, pub, reabrirMsgs } };
 })();

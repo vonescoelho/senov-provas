@@ -135,6 +135,14 @@
   }
   const urlDe = (id, blob) => { if (!URLS.has(id)) URLS.set(id, URL.createObjectURL(blob)); return URLS.get(id); };
   async function subir(chatId, blob, meta, onProg, colecao) {
+    /* conversa com criptografia: o arquivo (e o texto da visualização única) sobe trancado; a chave vai dentro da mensagem */
+    let fk = null;
+    if (chatId && !colecao && window.CS_E2E && CS_E2E.pronto()) {
+      const ex = { ...(meta.extra || {}) };
+      if (ex.texto != null) { blob = new Blob([String(ex.texto)], { type: "text/plain" }); delete ex.texto; }
+      if (blob) { const r = await CS_E2E.cifrarArquivo(blob); blob = r.blob; fk = r.fk; }
+      meta = { nome: "", tipo: "application/octet-stream", extra: { ...ex, e2e: 1 } };
+    }
     const col = colecao || "arquivos", ref = fb.doc(C(col)), n = blob ? Math.max(1, Math.ceil(blob.size / PARTE)) : 0;
     await fb.setDoc(ref, { dono: eu(), ...(chatId ? { chatId } : {}), nome: (meta.nome || "").slice(0, 120), tipo: meta.tipo || "", tamanho: blob ? blob.size : 0, partes: n, criadoEm: TS(), ...(meta.extra || {}) });
     if (blob) {
@@ -142,6 +150,7 @@
       const um = async () => { while (prox < n) { const i = prox++; await fb.setDoc(D(col, ref.id, "partes", String(i).padStart(4, "0")), { d: fb.Bytes.fromUint8Array(buf.subarray(i * PARTE, (i + 1) * PARTE)) }); feitos++; if (onProg) onProg(feitos / n); } };
       await Promise.all([um(), um(), um()]);
     }
+    if (fk) CS_E2E.guardarChaveArq(ref.id, fk);
     return ref.id;
   }
   function obter(id, tipo, colecao) {
@@ -150,7 +159,8 @@
     if (BAIXANDO.has(chave)) return BAIXANDO.get(chave);
     const p = fb.getDocs(C(colecao || "arquivos", id, "partes")).then(s => {
       if (!s.docs.length) throw { code: "not-found" };
-      const b = new Blob(s.docs.slice().sort((x, y) => x.id.localeCompare(y.id)).map(d => d.data().d.toUint8Array()), { type: tipo || "application/octet-stream" });
+      let b = new Blob(s.docs.slice().sort((x, y) => x.id.localeCompare(y.id)).map(d => d.data().d.toUint8Array()), { type: tipo || "application/octet-stream" });
+      if (!colecao && window.CS_E2E && CS_E2E.temChaveArq(id)) return CS_E2E.decifrarArquivo(id, b, tipo).then(d => { guardar(chave, d); return d; });
       guardar(chave, b); return b;
     });
     BAIXANDO.set(chave, p); p.then(() => BAIXANDO.delete(chave), () => BAIXANDO.delete(chave));
@@ -1131,7 +1141,7 @@
     try {
       const s = await fb.getDoc(D("arquivos", u.id)); if (!s.exists()) throw { code: "not-found" };
       const dados = s.data();
-      if (u.tipo === "texto") palco.innerHTML = `<div class="cs-un-tx">${esc(dados.texto || "")}</div>`;
+      if (u.tipo === "texto") { const tx = dados.texto != null ? dados.texto : await (await obter(u.id, "text/plain")).text(); CACHE.delete("arquivos:" + u.id); palco.innerHTML = `<div class="cs-un-tx">${esc(tx || "")}</div>`; }
       else if (u.tipo === "foto") {
         const b = await obter(u.id, "image/jpeg"), url = URL.createObjectURL(b);
         const img = await carregarImg(url); URL.revokeObjectURL(url); CACHE.delete("arquivos:" + u.id);
