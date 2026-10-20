@@ -122,6 +122,12 @@ service cloud.firestore {
           // criptografia de ponta a ponta: conteúdo trancado (c), chaves por participante (k), chave pública de quem enviou (spk)
           && textoOk('c', 400000) && textoOk('spk', 200)
           && (!('k' in request.resource.data) || (request.resource.data.k is map && request.resource.data.k.size() <= 520));
+        // "Apagar para todos": a mensagem vira só {autor, em, apagada, por}. Quem enviou ou administrador do grupo.
+        allow update: if logado() && eu() in chat().membros
+          && (resource.data.autor == eu() || (chat().tipo == 'grupo' && eu() in chat().get('admins', [])))
+          && request.resource.data.keys().hasOnly(['autor', 'em', 'apagada', 'por'])
+          && request.resource.data.autor == resource.data.autor && request.resource.data.em == resource.data.em
+          && request.resource.data.apagada == true && request.resource.data.por == eu();
         allow delete: if logado() && resource.data.autor == eu();
       }
     }
@@ -320,6 +326,44 @@ service cloud.firestore {
       allow create: if logado() && adminVit() && request.resource.data.dono == eu()
         && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000;
       allow delete: if logado() && adminVit();
+    }
+    // Banco de questões compartilhado: quem autorizou envia as próprias questões; todos os professores leem.
+    match /banco/{id} {
+      allow read: if logado();
+      allow create: if logado() && request.resource.data.dono == eu() && id.matches(eu() + '_.+') && questaoOk();
+      allow update: if logado() && ((resource.data.dono == eu() && request.resource.data.dono == eu() && questaoOk()) || adminVit());
+      allow delete: if logado() && (resource.data.dono == eu() || adminVit());
+    }
+    function questaoOk() {
+      return request.resource.data.enunciado is string && request.resource.data.enunciado.size() <= 6000
+        && request.resource.data.alternativas is list && request.resource.data.alternativas.size() >= 2 && request.resource.data.alternativas.size() <= 5
+        && textoOk('disciplina', 80) && textoOk('serie', 30) && textoOk('conteudo', 200) && textoOk('grafico', 20000)
+        && textoOk('legenda', 500) && textoOk('tituloImg', 200) && textoOk('bncc', 20) && textoOk('autorNome', 80);
+    }
+    // Provas salvas (cópia para a administração): só o dono e a administração leem.
+    match /bancoProvas/{id} {
+      allow read: if logado() && (resource.data.dono == eu() || adminVit());
+      allow create, update: if logado() && request.resource.data.dono == eu() && id.matches(eu() + '_.+')
+        && request.resource.data.questoes is list && request.resource.data.questoes.size() <= 60;
+      allow delete: if logado() && (resource.data.dono == eu() || adminVit());
+    }
+    // Verificação de idade (só maiores de 18). A selfie é analisada no celular; aqui fica só o resultado.
+    // O próprio usuário só grava "ok pela selfie"; recusa/aprovação por chamada é da administração.
+    match /idade/{uid} {
+      allow read: if logado() && (uid == eu() || adminVit());
+      allow create: if logado() && ((uid == eu() && selfieOk()) || adminVit());
+      allow update: if logado() && ((uid == eu() && resource.data.metodo == 'selfie' && selfieOk()) || adminVit());
+      allow delete: if logado() && adminVit();
+    }
+    function selfieOk() {
+      return request.resource.data.keys().hasOnly(['ok', 'metodo', 'em', 'v'])
+        && request.resource.data.ok == true && request.resource.data.metodo == 'selfie';
+    }
+    match /pedidosIdade/{uid} {
+      allow read: if logado() && (uid == eu() || adminVit());
+      allow create, update: if logado() && ((uid == eu() && request.resource.data.keys().hasOnly(['nome', 'usuario', 'motivo', 'estado', 'em'])
+        && request.resource.data.estado == 'pendente' && textoOk('nome', 80) && textoOk('usuario', 40) && textoOk('motivo', 40)) || adminVit());
+      allow delete: if logado() && (uid == eu() || adminVit());
     }
     // Configurações gerais (ex.: chave da IA gratuita), definidas pela administração
     match /config/{id} {
