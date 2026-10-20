@@ -257,7 +257,7 @@ service cloud.firestore {
       allow delete: if logado() && resource.data.dono == eu();
       match /partes/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
       match /som/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
-      match /vistos/{uid} { allow create: if logado() && uid == eu(); allow read, delete: if logado() && f().dono == eu(); }
+      match /vistos/{uid} { allow create, update: if logado() && uid == eu() && request.resource.data.keys().hasOnly(['em', 'curtiu']); allow read, delete: if logado() && f().dono == eu(); }
     }
     match /flashesPriv/{id} {
       function f() { return get(/databases/$(database)/documents/flashesPriv/$(id)).data; }
@@ -267,7 +267,7 @@ service cloud.firestore {
       allow delete: if logado() && resource.data.dono == eu();
       match /partes/{pid} { allow read: if logado() && pode(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
       match /som/{pid} { allow read: if logado() && pode(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
-      match /vistos/{uid} { allow create: if logado() && uid == eu() && pode(); allow read, delete: if logado() && f().dono == eu(); }
+      match /vistos/{uid} { allow create, update: if logado() && uid == eu() && pode() && request.resource.data.keys().hasOnly(['em', 'curtiu']); allow read, delete: if logado() && f().dono == eu(); }
     }
     // Destaques do perfil (até 5, controlado pelo app)
     match /destaques/{id} {
