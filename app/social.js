@@ -1316,7 +1316,7 @@
           <div class="cs-linha"><span class="cs-lic">${K.check}</span><span><b>Confirmação de leitura</b><small>Os ✓✓ azuis. Se desligar, você também não vê a dos outros</small>
             <span class="seg cs-seg-mini"><button data-s="priv-lido" data-v="sim" aria-pressed="${p.privLeitura !== false}">Sim</button><button data-s="priv-lido" data-v="nao" aria-pressed="${p.privLeitura === false}">Não</button></span></span></div>
           <div class="cs-linha"><span class="cs-lic">${K.user}</span><span><b>Quem vê minha foto de perfil</b>
-            <span class="seg cs-seg-mini">${[["todos", "Todos"], ["seguindo", "Quem eu sigo"], ["ninguem", "Ninguém"]].map(([v, t]) => `<button data-s="priv-foto" data-v="${v}" aria-pressed="${(p.privFoto || "todos") === v}">${t}</button>`).join("")}</span></span></div>
+            <span class="seg cs-seg-mini">${[["todos", "Todos"], ["seguidores", "Seguidores"], ["ninguem", "Ninguém"]].map(([v, t]) => `<button data-s="priv-foto" data-v="${v}" aria-pressed="${((p.privFoto === "seguindo" ? "seguidores" : p.privFoto) || "todos") === v}">${t}</button>`).join("")}</span></span></div>
           <div class="cs-linha"><span class="cs-lic">${K.grupo}</span><span><b>Mostrar seguidores e quem eu sigo</b>
             <span class="seg cs-seg-mini"><button data-s="priv-rede" data-v="sim" aria-pressed="${!p.privRede}">Sim</button><button data-s="priv-rede" data-v="nao" aria-pressed="${!!p.privRede}">Esconder</button></span></span></div>
           ${EXT.configPriv.map(f => f(p)).join("")}
@@ -1649,7 +1649,7 @@
         if (v === "todos") { b.update(D("users", eu()), { foto, fotoPriv: false, privFoto: "todos" }); b.delete(D("fotos", eu())); }
         else { b.set(D("fotos", eu()), { foto, priv: v }); b.update(D("users", eu()), { foto: null, fotoPriv: !!foto, privFoto: v }); }
         SO.fotoPropria = foto;
-        try { await b.commit(); toast(v === "todos" ? "Todos podem ver sua foto." : v === "seguindo" ? "Só quem você segue vê sua foto." : "Ninguém vê sua foto."); } catch (e) { toast(msgErro(e)); }
+        try { await b.commit(); toast(v === "todos" ? "Todos podem ver sua foto." : v === "seguidores" ? "Só seus seguidores veem sua foto." : "Ninguém vê sua foto."); } catch (e) { toast(msgErro(e)); }
         break;
       }
       case "aviso-mail-nao": try { localStorage.setItem("cs.avisoMail", "nao"); } catch (e) { } pintar(); break;
