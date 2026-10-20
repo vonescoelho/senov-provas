@@ -946,7 +946,9 @@ function midiaHTML(q,cls){
 }
 const fonteLimpa=t=>String(t||"").trim().replace(/^fonte\s*:\s*/i,"");
 function tipoFig(m){return m.grafico?(m.grafico.tipo==="tabela"?"Tabela":"Gráfico"):"Figura";}
-function tituloFig(m){return ((m.grafico?m.grafico.titulo:m.tituloImg)||"").trim();}
+/* título da figura sem repetir a fonte (provas antigas guardavam o nome do encarte como título) */
+const TIT_IMGQ={ex79:"Arroz e feijão",ex80:"Material escolar",ex81:"Tapioca e café",ex82:"Frios e mercearia",ex83:"Panela de 4 litros",ex84:"Produtos para a casa",ex85:"Bolo",ex86:"Arroz em pacote de 5 kg",ex87:"Lanche da tarde",ex88:"Sapato",ex89:"Caju e manga"};
+function tituloFig(m){let t=((m.grafico?m.grafico.titulo:m.tituloImg)||"").trim();if(m.imgApp&&TIT_IMGQ[m.imgApp]&&/Mercadinho da Turma/i.test(t))t=TIT_IMGQ[m.imgApp];return t;}
 function fonteFig(m){const f=fonteLimpa(m.legenda);return f||(m.grafico?"Elaborado pelo(a) professor(a).":"");}
 function numerarFiguras(mont){const c={};return mont.map(m=>{if(!(m.grafico||m.temFoto))return null;const t=tipoFig(m);c[t]=(c[t]||0)+1;return `${t} ${c[t]}`;});}
 function anexarBtn(q){return precisaFoto(q)?`<button class="btn sm" data-a="anexar" data-id="${esc(qidDe(q))}">${I.image} Anexar imagem</button>`:"";}

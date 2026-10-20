@@ -662,7 +662,7 @@
     if (!lista.length) return `<div class="cs-vazio-chat">${figurinha(c.tipo === "grupo" ? "parabens" : "bomdia", 110)}<p>${c.tipo === "grupo" ? "Grupo criado. Dê as boas-vindas!" : "Mande a primeira mensagem ou uma figurinha."}</p></div>`;
     let h = "", dia = "", ant = null;
     lista.forEach(m => {
-      const d = diaSep(m.em); if (d !== dia) { h += `<div class="cs-dia"><span>${esc(d)}</span></div>`; dia = d; ant = null; }
+      const d = diaSep(m.em); if (d !== dia) { h += `${dia ? "</div>" : ""}<div class="cs-dia-g"><div class="cs-dia"><span>${esc(d)}</span></div>`; dia = d; ant = null; }
       const meu = m.autor === eu(), seq = ant && ant.autor === m.autor && ms(m.em) - ms(ant.em) < 5 * 60e3;
       const nome = c.tipo === "grupo" && !meu && !seq ? `<b class="cs-autor" style="color:${corDe(m.autor)}">${esc(P(m.autor).nome)}</b>` : "";
       const hr = (m.em ? new Date(ms(m.em)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "") + tique(c, m);
@@ -671,7 +671,7 @@
       else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b">${nome}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
       ant = m;
     });
-    return h;
+    return h + (dia ? "</div>" : "");
   }
   function pintarMsgs() {
     const t = topo(); const el = $("#cs-msgs"); if (!t || t.v !== "chat" || !el) return;
@@ -1812,7 +1812,7 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-atalhos button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink);font-weight:700;font-size:.86rem;min-height:76px;text-align:center}
 .cs-atalhos button svg{width:24px;height:24px;color:var(--primary)}
 .cs-atalhos button:hover{background:var(--primary-soft)}
-.cs-chat-h{position:sticky;top:env(safe-area-inset-top,0px);z-index:22;display:flex;align-items:center;gap:4px;margin:calc(-6px - env(safe-area-inset-top,0px)) -16px 0;padding:calc(2px + env(safe-area-inset-top,0px)) 4px 2px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);min-height:54px}
+.cs-chat-h{position:sticky;top:0;z-index:22;display:flex;align-items:center;gap:4px;margin:calc(-6px - env(safe-area-inset-top,0px)) -16px 0;padding:calc(2px + env(safe-area-inset-top,0px)) 4px 2px;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);min-height:54px}
 .cs-chat-h>b{flex:1;font-family:var(--display);font-size:1.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
 .cs-chat-quem{flex:1;display:flex;align-items:center;gap:10px;border:0;background:none;text-align:left;cursor:pointer;min-width:0;color:inherit;padding:0}
 .cs-chat-quem>span:not(.cs-av){display:flex;flex-direction:column;min-width:0}
@@ -1821,7 +1821,8 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-chat-quem small{line-height:1.2}
 .cs-chat-quem small{color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-msgs{display:flex;flex-direction:column;padding:10px 0 12px;min-height:calc(100vh - 170px)}
-.cs-dia{text-align:center;margin:14px 0 6px;position:sticky;top:calc(60px + env(safe-area-inset-top,0px));z-index:3}
+.cs-dia-g{display:flex;flex-direction:column}
+.cs-dia{text-align:center;margin:14px 0 6px;position:sticky;top:calc(58px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none}
 .cs-dia span{display:inline-block;background:var(--surface);border:1px solid var(--line);padding:4px 12px;border-radius:99px;font-size:.78rem;color:var(--muted);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .cs-dia span::first-letter{text-transform:uppercase}
 .cs-m{display:flex;flex-direction:column;align-items:flex-start;max-width:84%;margin-top:8px;cursor:pointer;align-self:flex-start}
