@@ -53,6 +53,10 @@ service cloud.firestore {
           || get(/databases/$(database)/documents/users/$(uid)).data.get('privRede', false) == false);
         allow create, delete: if logado() && outro == eu();
       }
+      // cópia da chave secreta trancada pelo PIN (só a própria pessoa lê)
+      match /privado/{doc} {
+        allow read, write: if logado() && uid == eu();
+      }
       match /bloqueados/{outro} {
         allow read, write: if logado() && uid == eu();
       }
@@ -114,7 +118,10 @@ service cloud.firestore {
           && (chat().tipo != 'direto'
               || (!exists(/databases/$(database)/documents/users/$(chat().membros[0])/bloqueados/$(eu()))
                   && !exists(/databases/$(database)/documents/users/$(chat().membros[1])/bloqueados/$(eu()))))
-          && textoOk('texto', 2000) && textoOk('fig', 30);
+          && textoOk('texto', 2000) && textoOk('fig', 30)
+          // criptografia de ponta a ponta: conteúdo trancado (c), chaves por participante (k), chave pública de quem enviou (spk)
+          && textoOk('c', 400000) && textoOk('spk', 200)
+          && (!('k' in request.resource.data) || (request.resource.data.k is map && request.resource.data.k.size() <= 520));
         allow delete: if logado() && resource.data.autor == eu();
       }
     }
