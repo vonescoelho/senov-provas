@@ -43,7 +43,7 @@
   };
   X.I = I;
   const tamanho = n => n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + " KB" : (n / 1048576).toFixed(1).replace(".", ",") + " MB";
-  const mmss = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  const mmss = s => { s = Number(s); if (!isFinite(s)) s = 0; s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   const base = () => new URL(".", location.href).href;
   const nomeSeguro = n => String(n || "arquivo").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_").slice(-80) || "arquivo";
   function carregarScript(src) { return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
@@ -193,13 +193,22 @@
     const url = URL.createObjectURL(blob);
     try { const i = await carregarImg(url); return { thumb: canvasMini(i, i.naturalWidth, i.naturalHeight, 360, 0.55), w: i.naturalWidth, h: i.naturalHeight }; } finally { URL.revokeObjectURL(url); }
   }
+  /* vídeos gravados no navegador (webm) chegam com duração "Infinity": força o cálculo da duração real */
+  async function duracaoReal(v) {
+    if (isFinite(v.duration) && v.duration > 0) return v.duration;
+    await new Promise(r => { const ok = () => { if (isFinite(v.duration)) { v.removeEventListener("durationchange", ok); r(); } }; v.addEventListener("durationchange", ok); try { v.currentTime = 1e101; } catch (e) { } setTimeout(r, 3000); });
+    try { v.currentTime = 0; } catch (e) { }
+    return isFinite(v.duration) ? v.duration : 0;
+  }
+  const durDe = v => isFinite(v.duration) ? v.duration : 0;
   async function miniVideo(blob) {
     const url = URL.createObjectURL(blob), v = document.createElement("video");
     v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = url;
     try {
       await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = rej; setTimeout(rej, 8000); });
-      v.currentTime = Math.min(1, (v.duration || 2) / 3); await new Promise(r => { v.onseeked = r; setTimeout(r, 3000); });
-      return { thumb: canvasMini(v, v.videoWidth, v.videoHeight, 360, 0.55), w: v.videoWidth, h: v.videoHeight, dur: Math.round(v.duration || 0) };
+      const total = await duracaoReal(v);
+      v.currentTime = Math.min(1, (total || 2) / 3); await new Promise(r => { v.onseeked = r; setTimeout(r, 3000); });
+      return { thumb: canvasMini(v, v.videoWidth, v.videoHeight, 360, 0.55), w: v.videoWidth, h: v.videoHeight, dur: Math.round(total) };
     } finally { v.removeAttribute("src"); v.load(); URL.revokeObjectURL(url); }
   }
   async function duracaoAudio(blob) {
@@ -423,7 +432,7 @@
 
   /* ================= Menu do clipe ================= */
   X.composerBotoes = c => `<button type="button" class="cs-ico-bt" data-s="md-clipe" data-id="${esc(c.id)}" aria-label="Enviar foto, vídeo, documento ou arquivo">${I.clipe}</button>`;
-  X.composerFim = c => `<button type="button" class="btn primary cs-env cs-mic" data-s="au-gravar" data-id="${esc(c.id)}" aria-label="Gravar áudio">${I.mic}</button>`;
+  X.composerFim = c => `<button type="button" class="btn primary cs-env cs-mic" data-s="au-mic" data-id="${esc(c.id)}" aria-label="Gravar áudio: segure para gravar, solte para enviar">${I.mic}</button>`;
   function escolher(accept, multiplo, capture) {
     return new Promise(res => {
       const inp = document.createElement("input"); inp.type = "file"; inp.accept = accept || "*/*"; inp.multiple = !!multiplo;
@@ -513,7 +522,7 @@
     if ((g === "img" || g === "video") && a.thumb) {
       const prop = a.w && a.h ? Math.max(0.56, Math.min(1.6, a.w / a.h)) : 1;
       return `${abre}<div class="cs-b cs-midia">${o.nome}<button class="cs-mid" data-s="md-ver" data-v="${esc(a.id)}" style="aspect-ratio:${prop}" aria-label="${g === "img" ? "Ver foto" : "Assistir vídeo"}">
-        <img src="${URLS.has("arquivos:" + a.id) && g === "img" ? URLS.get("arquivos:" + a.id) : a.thumb}" alt="">${g === "video" ? `<span class="cs-mid-play">${I.play}</span><span class="cs-mid-dur">${mmss(a.dur)}</span>` : ""}</button>
+        <img src="${URLS.has("arquivos:" + a.id) && g === "img" ? URLS.get("arquivos:" + a.id) : a.thumb}" alt="">${g === "video" ? `<span class="cs-mid-play">${I.play}</span>${a.dur > 0 && isFinite(a.dur) ? `<span class="cs-mid-dur">${mmss(a.dur)}</span>` : ""}` : ""}</button>
         <span class="cs-h">${o.hr}</span></div></div>`;
     }
     if (g === "audio") return abre + htmlAudio({ id: a.id, tipo: a.tipo, dur: a.dur, nome: a.nome }, o) + `</div>`;
@@ -611,7 +620,7 @@
         <div class="cs-vv-meio"><button class="cs-vbt g" data-s="vv-pular" data-v="-10" aria-label="Voltar 10 segundos">${I.voltar10}</button>
           <button class="cs-vbt gg" data-s="vv-play" id="vv-play" aria-label="Reproduzir">${I.play}</button>
           <button class="cs-vbt g" data-s="vv-pular" data-v="10" aria-label="Avançar 10 segundos">${I.avancar10}</button></div></div>
-      <div class="cs-vv-ctl"><span id="vv-t">0:00</span><input type="range" id="vv-seek" min="0" max="1000" value="0" aria-label="Posição do vídeo"><span id="vv-d">${mmss(a.dur)}</span>
+      <div class="cs-vv-ctl"><span id="vv-t">0:00</span><input type="range" id="vv-seek" min="0" max="1000" value="0" aria-label="Posição do vídeo"><span id="vv-d">${a.dur > 0 && isFinite(a.dur) ? mmss(a.dur) : ""}</span>
         <button class="cs-vbt" data-s="vv-vel" id="vv-vel" aria-label="Velocidade">1x</button><button class="cs-vbt" data-s="vv-cheia" aria-label="Tela cheia">${I.cheia}</button></div>
       ${barraAcoes([["vv-tv", I.tv, "Projetar na TV"], ...ACOES_PADRAO])}`);
     const v = el.querySelector("#vv"), seek = el.querySelector("#vv-seek");
@@ -619,9 +628,15 @@
     const mostrar = () => { el.classList.remove("cs-vv-oculto"); clearTimeout(esconder); esconder = setTimeout(() => { if (!v.paused) el.classList.add("cs-vv-oculto"); }, 3000); };
     v.addEventListener("play", () => { el.querySelector("#vv-play").innerHTML = I.pausa; mostrar(); });
     v.addEventListener("pause", () => { el.querySelector("#vv-play").innerHTML = I.play; el.classList.remove("cs-vv-oculto"); });
-    v.addEventListener("loadedmetadata", () => { el.querySelector("#vv-d").textContent = mmss(v.duration); });
-    v.addEventListener("timeupdate", () => { el.querySelector("#vv-t").textContent = mmss(v.currentTime); if (!arrastando && v.duration) seek.value = Math.round(v.currentTime / v.duration * 1000); });
-    seek.addEventListener("input", () => { arrastando = true; if (v.duration) v.currentTime = seek.value / 1000 * v.duration; });
+    let total = a.dur > 0 && isFinite(a.dur) ? a.dur : 0, corrigindo = false;
+    v.addEventListener("loadedmetadata", async () => {
+      if (!isFinite(v.duration)) { corrigindo = true; const tocando = !v.paused; v.pause(); total = (await duracaoReal(v)) || total; corrigindo = false; if (tocando) v.play().catch(() => { }); }
+      else total = v.duration;
+      el.querySelector("#vv-d").textContent = total ? mmss(total) : "";
+    });
+    v.addEventListener("durationchange", () => { if (isFinite(v.duration) && v.duration > 0) { total = v.duration; el.querySelector("#vv-d").textContent = mmss(total); } });
+    v.addEventListener("timeupdate", () => { if (corrigindo) return; el.querySelector("#vv-t").textContent = mmss(v.currentTime); if (!arrastando && total) seek.value = Math.round(v.currentTime / total * 1000); });
+    seek.addEventListener("input", () => { arrastando = true; if (total) v.currentTime = seek.value / 1000 * total; });
     seek.addEventListener("change", () => { arrastando = false; });
     let ultToque = 0;
     el.querySelector("#vv-palco").addEventListener("click", e => {
@@ -635,7 +650,7 @@
   }
   const vv = () => VIS.el && VIS.el.querySelector("#vv");
   X.acoes["vv-play"] = () => { const v = vv(); if (v) v.paused ? v.play() : v.pause(); };
-  X.acoes["vv-pular"] = el => { const v = vv(); if (v) v.currentTime = Math.max(0, Math.min(v.duration || 0, v.currentTime + +el.dataset.v)); };
+  X.acoes["vv-pular"] = el => { const v = vv(); if (v) v.currentTime = Math.max(0, Math.min(durDe(v) || 1e9, v.currentTime + +el.dataset.v)); };
   X.acoes["vv-vel"] = el => { const v = vv(); if (!v) return; const i = (VELS.indexOf(v.playbackRate) + 1) % VELS.length; v.playbackRate = VELS[i]; el.textContent = String(VELS[i]).replace(".", ",") + "x"; };
   X.acoes["vv-cheia"] = async () => {
     const el = VIS.el; if (!el) return;
@@ -916,7 +931,9 @@
       <div class="cs-grav-m"><i class="cs-grav-dot"></i><b id="gr-t">0:00</b><span class="cs-grav-onda" id="gr-onda"></span></div>
       <button class="cs-grav-bt" data-s="au-pausar" id="gr-p" aria-label="Pausar">${I.pausa}</button>
       <button class="cs-grav-bt env" data-s="au-enviar" aria-label="Enviar áudio">${I.enviar}</button>
-      ${GR.unica ? `<span class="cs-grav-un">${I.um} Visualização única</span>` : ""}`;
+      ${GR.unica ? `<span class="cs-grav-un">${I.um} Visualização única</span>` : ""}
+      <span class="cs-grav-dica" aria-hidden="true"><span class="cs-grav-seta">${I.lixo}</span><b>Arraste para cima para apagar</b><small>Solte para enviar</small></span>`;
+    if (SEG.ativo) el.classList.add("segura");
     document.body.appendChild(el); GR.el = el;
     try { navigator.vibrate && navigator.vibrate(30); } catch (e) { }
     const buf = new Uint8Array(256);
@@ -942,6 +959,36 @@
     return s;
   }
   X.acoes["au-gravar"] = el => iniciarGravacao(el.dataset.id, false);
+  /* microfone estilo WhatsApp: segurar grava; soltar envia; arrastar para cima apaga.
+     Um toque rápido mantém o modo antigo (grava sem segurar, com botões de pausar/apagar/enviar). */
+  const SEG = { ativo: false, y0: 0, t0: 0, cancelar: false, id: null };
+  const LIMITE_CANCELAR = 70;
+  document.addEventListener("pointerdown", e => {
+    const b = e.target.closest && e.target.closest(".cs-mic[data-s=au-mic]"); if (!b || GR.el || (e.button && e.button !== 0)) return;
+    e.preventDefault();
+    Object.assign(SEG, { ativo: true, y0: e.clientY, t0: Date.now(), cancelar: false, id: b.dataset.id });
+    iniciarGravacao(b.dataset.id, false).then(() => { if (!SEG.ativo && GR.el) GR.el.classList.remove("segura"); });
+  });
+  document.addEventListener("pointermove", e => {
+    if (!SEG.ativo || !GR.el) return;
+    const dy = Math.max(0, SEG.y0 - e.clientY);
+    SEG.cancelar = dy > LIMITE_CANCELAR;
+    GR.el.classList.toggle("cancelar", SEG.cancelar);
+    const seta = GR.el.querySelector(".cs-grav-seta"); if (seta) seta.style.transform = `translateY(${-Math.min(dy, LIMITE_CANCELAR + 20)}px)`;
+  });
+  const soltar = e => {
+    if (!SEG.ativo) return; SEG.ativo = false;
+    const curto = Date.now() - SEG.t0 < 350;
+    if (!GR.el) return;                                   /* permissão ainda pendente: fica no modo de toque */
+    if (curto && !SEG.cancelar) { GR.el.classList.remove("segura", "cancelar"); return; }   /* toque rápido: modo travado */
+    if (SEG.cancelar || (e && e.type === "pointercancel")) { X.acoes["au-cancelar"](); try { navigator.vibrate && navigator.vibrate([20, 40, 20]); } catch (x) { } toast("Áudio apagado."); return; }
+    X.acoes["au-enviar"]();
+  };
+  document.addEventListener("pointerup", soltar);
+  document.addEventListener("pointercancel", soltar);
+  document.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest(".cs-mic")) e.preventDefault(); });
+  /* teclado (Enter/Espaço no botão): grava no modo de toque */
+  X.acoes["au-mic"] = (el, ev) => { if (ev && ev.detail === 0) iniciarGravacao(el.dataset.id, false); };
   X.acoes["un-audio"] = el => { window.fecharSheet(); iniciarGravacao(el.dataset.id, true); };
   X.acoes["au-cancelar"] = () => { if (GR.rec) { GR.rec.onstop = null; try { GR.rec.stop(); } catch (e) { } } GR.rec = null; encerrarGravacao(); };
   X.acoes["au-pausar"] = el => {
@@ -993,7 +1040,7 @@
   function htmlAudio(au, o) {
     const ativo = PL.id === au.id, tocando = ativo && !PL.el.paused;
     const ondaTxt = au.onda || "3455667665544556676554456677654433".slice(0, 34);
-    const prog = ativo && PL.el.duration ? PL.el.currentTime / PL.el.duration : 0;
+    const prog = ativo && durDe(PL.el) ? PL.el.currentTime / durDe(PL.el) : 0;
     const tr = TRANSC[au.id];
     return `<div class="cs-b cs-aud" data-aud="${esc(au.id)}" data-dur="${au.dur || 0}">${o.nome}
       <div class="cs-aud-l"><button class="cs-aud-play" data-s="au-play" data-v="${esc(au.id)}" data-t="${esc(au.tipo || "")}" aria-label="${tocando ? "Pausar" : "Ouvir"}">${tocando ? I.pausa : I.play}</button>
@@ -1015,8 +1062,8 @@
   };
   X.acoes["au-vel"] = () => { const v = [1, 1.5, 2]; PL.vel = v[(v.indexOf(PL.vel) + 1) % v.length]; PL.el.playbackRate = PL.vel; gravarLS("cs.vel", PL.vel); document.querySelectorAll(".cs-aud-vel").forEach(b => b.textContent = String(PL.vel).replace(".", ",") + "x"); };
   X.acoes["au-seek"] = (el, ev) => {
-    if (PL.id !== el.dataset.v || !PL.el.duration) return;
-    const r = el.getBoundingClientRect(); PL.el.currentTime = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * PL.el.duration;
+    if (PL.id !== el.dataset.v || !durDe(PL.el)) return;
+    const r = el.getBoundingClientRect(); PL.el.currentTime = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) * durDe(PL.el);
   };
 
   /* ---- transcrição (reconhecimento de voz no próprio aparelho, sem enviar o áudio a ninguém) ---- */
@@ -1073,7 +1120,7 @@
     const visto = VISTOS.has(u.id), est = o.meu ? (ESTADO_UN[u.id] || "Enviada") : visto ? "Aberta" : "Toque para abrir";
     if (o.meu && (!ESTADO_UN[u.id] || (ESTADO_UN[u.id] === "Enviada" && Date.now() - (CHECADO[u.id] || 0) > 15000))) checarUnica(u.id, o.chat);
     return `<div class="cs-b cs-unica-b">${o.nome}<button class="cs-un-bt ${visto || o.meu ? "usada" : ""}" data-s="un-abrir" data-v="${esc(m.id)}" ${visto || o.meu ? "disabled" : ""}>
-      <span class="cs-un-ic">${I.um}</span><span><b>${rot}${u.dur ? " · " + mmss(u.dur) : ""}</b><small>${est}</small></span></button><span class="cs-h">${o.hr}</span></div>`;
+      <span class="cs-un-ic">${I.um}</span><span><b>${rot}${u.dur > 0 && isFinite(u.dur) ? " · " + mmss(u.dur) : ""}</b><small>${est}</small></span></button><span class="cs-h">${o.hr}</span></div>`;
   }
   const ESTADO_UN = {}, CHECADO = {};
   async function checarUnica(id, chat) {
@@ -1330,6 +1377,15 @@ body.cs-apres-on{overflow:hidden}
 .cs-grav.pausado .cs-grav-dot{animation:none;opacity:.4}
 .cs-grav-onda{flex:1;height:36px;display:flex;align-items:center;gap:2px;overflow:hidden;color:var(--primary)}
 .cs-grav-onda i{flex:1;min-width:3px;max-width:6px;background:currentColor;border-radius:2px}
+.cs-mic{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.cs-grav-dica{display:none;flex-direction:column;align-items:center;gap:2px;position:absolute;right:10px;bottom:calc(100% + 8px);background:var(--surface);color:var(--ink);border-radius:18px;padding:10px 12px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:.8rem;text-align:center;max-width:150px}
+.cs-grav-dica small{color:var(--muted)}
+.cs-grav-seta{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);transition:background .15s,color .15s}
+.cs-grav-seta svg{width:22px;height:22px}
+.cs-grav.segura .cs-grav-bt{display:none}.cs-grav.segura .cs-grav-dica{display:flex}
+.cs-grav.segura .cs-grav-m::after{content:"Solte para enviar";color:var(--muted);font-size:.85rem;white-space:nowrap}
+.cs-grav.cancelar .cs-grav-seta{background:#E5484D;color:#fff}.cs-grav.cancelar .cs-grav-m{opacity:.45}
+.cs-grav.cancelar .cs-grav-dica b{color:#E5484D}
 .cs-grav-un{width:100%;display:flex;align-items:center;gap:6px;justify-content:center;color:#7C3AED;font-weight:700;font-size:.85rem}
 .cs-grav-un svg{width:18px;height:18px}
 @keyframes csPulso{50%{opacity:.25}}

@@ -45,7 +45,7 @@
   const palavras = t => semAc(t).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(w => w.length >= 4 && !PARADAS.has(w));
   const desHtml = t => { const x = document.createElement("textarea"); x.innerHTML = String(t || ""); return x.value; };
   const isoSeg = d => { const m = String(d || "").match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); return m ? (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0) : 0; };
-  const mmss = s => { s = Math.round(s || 0); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
+  const mmss = s => { s = Number(s); if (!isFinite(s)) s = 0; s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(x).padStart(2, "0"); };
   function categorias() {
     const ass = (R.assunto || "").trim(), disc = R.disciplina || "", ser = R.serie || "", fim = R.fim || "aula";
     const iniciais = /^[1-5]º ano/.test(ser), cie = /Ciências|Biologia|Física|Química/.test(disc), arte = /Arte|Língua|Inglesa/.test(disc);

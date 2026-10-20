@@ -22,7 +22,7 @@
   };
   const ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }, { urls: "stun:stun.cloudflare.com:3478" }];
   const MAX = 6;
-  const mmss = s => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  const mmss = s => { s = Number(s); if (!isFinite(s)) s = 0; s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   const CH = { id: null, d: null, local: null, pcs: new Map(), el: null, un: [], tipo: "video", mic: true, cam: true, frente: true, t0: 0, timer: null, feitos: new Set(), fila: Promise.resolve(), seq: 0, chat: null, aviso: null };
 
   /* ---------- botões no topo da conversa ---------- */

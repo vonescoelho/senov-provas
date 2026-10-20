@@ -67,6 +67,7 @@
     enviar: ic('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>'),
     mais2: ic('<path d="M12 5v14M5 12h14"/>'),
     lixo: ic('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>'),
+    proibido: ic('<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>'),
     info: ic('<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>'),
     varinha: ic('<path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M12.2 6.2 11 5M3 21l9-9"/>'),
     escola: ic('<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/>'),
@@ -77,7 +78,7 @@
 
   /* Extensões (social-mais.js): telas, abas, ações e tipos de mensagem extras */
   const EXT = { views: {}, tabViews: {}, acoes: {}, tabs: [], provasSub: [], msg: null, chatBotoes: null, composerBotoes: null, composerFim: null,
-    conversasTopo: null, depois: [], avisos: [], muralTopo: [], muralSeg: [], muralFiltro: [], muralCab: [], compositorBotoes: [], compositorPainel: [], compositorAbrir: [], postDados: [], postMeta: [], perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [] };
+    conversasTopo: null, depois: [], avisos: [], muralTopo: [], muralSeg: [], muralFiltro: [], muralCab: [], compositorBotoes: [], compositorPainel: [], compositorAbrir: [], postDados: [], postMeta: [], perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [], portao: null };
 
   /* ================= Estado ================= */
   const SO = {
@@ -672,7 +673,8 @@
       </form>` : `<div class="cs-compor cs-aviso-comp">${bloq ? `Você bloqueou esta pessoa. <button class="cs-link" data-s="desbloquear" data-id="${esc(t.outro)}">Desbloquear</button>` : "Só administradores enviam mensagens neste grupo."}</div>`}`;
   }
   function htmlMsgs(c) {
-    const lista = (SO.msgs[c.id] || []).filter(m => !SO.bloqueados.has(m.autor));
+    const ocultas = ocultasDe();
+    const lista = (SO.msgs[c.id] || []).filter(m => !SO.bloqueados.has(m.autor) && !ocultas.has(c.id + "/" + m.id));
     if (!SO.msgs[c.id]) return `<div class="cs-carr"><div class="spin"></div></div>`;
     if (!lista.length) return `<div class="cs-vazio-chat">${figurinha(c.tipo === "grupo" ? "parabens" : "bomdia", 110)}<p>${c.tipo === "grupo" ? "Grupo criado. Dê as boas-vindas!" : "Mande a primeira mensagem ou uma figurinha."}</p></div>`;
     let h = "", dia = "", ant = null;
@@ -681,6 +683,7 @@
       const meu = m.autor === eu(), seq = ant && ant.autor === m.autor && ms(m.em) - ms(ant.em) < 5 * 60e3;
       const nome = c.tipo === "grupo" && !meu && !seq ? `<b class="cs-autor" style="color:${corDe(m.autor)}">${esc(P(m.autor).nome)}</b>` : "";
       const hr = (m.em ? new Date(ms(m.em)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "") + tique(c, m);
+      if (m.apagada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-apagada">${nome}<span class="cs-tx">${K.proibido}${m.por && m.por !== m.autor ? "Mensagem apagada pelo administrador" : meu ? "Você apagou esta mensagem" : "Mensagem apagada"}</span><span class="cs-h">${hr.replace(/<svg[\s\S]*$/, "")}</span></div></div>`; ant = m; return; }
       if (m.cifrada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-id="${esc(m.id)}"><div class="cs-b cs-trancada">${nome}<span class="cs-tx">${m.cifrada === "pin" ? "🔒 Digite seu PIN para abrir" : m.cifrada === "abrindo" ? "🔒 Abrindo…" : "🔒 Mensagem protegida que este celular não consegue abrir"}</span><span class="cs-h">${hr}</span></div></div>`; ant = m; return; }
       if (EXT.msg && (m.arquivo || m.chamada || m.audio || m.unica)) { h += EXT.msg(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
       if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
@@ -739,13 +742,19 @@
     }
     try { await b.commit(); return true; } catch (e) { toast(msgErro(e)); return false; }
   }
+  /* "apagar para mim": some só neste aparelho */
+  function ocultasDe() { const k = "cs.ocultas." + eu(); if (!SO.ocultas || SO.ocultas.k !== k) { let a = []; try { a = JSON.parse(localStorage.getItem(k) || "[]"); } catch (e) { } SO.ocultas = { k, s: new Set(a) }; } return SO.ocultas.s; }
+  function ocultar(chatId, msgId) { const s = ocultasDe(); s.add(chatId + "/" + msgId); try { localStorage.setItem(SO.ocultas.k, JSON.stringify([...s].slice(-3000))); } catch (e) { } }
   function sheetMsg(chatId, msgId) {
     const m = (SO.msgs[chatId] || []).find(x => x.id === msgId); if (!m) return;
-    const meu = m.autor === eu();
+    const meu = m.autor === eu(), c = SO.chats.find(x => x.id === chatId);
+    const adminGrupo = c && c.tipo === "grupo" && (c.admins || []).includes(eu());
+    const paraTodos = !m.apagada && !m.cifrada && (meu || adminGrupo);
     window.abrirSheet(`<div class="sheet-h"><h2>Mensagem</h2></div><div class="cs-menu">
-      ${m.texto ? `<button data-s="copiar" data-v="${esc(m.texto)}">${K.copiar}<span><b>Copiar texto</b></span></button>` : ""}
-      ${meu ? `<button data-s="apagar-msg" data-chat="${esc(chatId)}" data-id="${esc(msgId)}" class="perigo">${K.lixo}<span><b>Apagar para todos</b></span></button>`
-        : `<button data-s="denunciar" data-tipo="mensagem" data-uid="${esc(m.autor)}" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.flag}<span><b>Denunciar</b><small>A equipe do ChatMil vai analisar</small></span></button>
+      ${m.texto && !m.apagada ? `<button data-s="copiar" data-v="${esc(m.texto)}">${K.copiar}<span><b>Copiar texto</b></span></button>` : ""}
+      ${paraTodos ? `<button data-s="apagar-msg" data-chat="${esc(chatId)}" data-id="${esc(msgId)}" class="perigo">${K.lixo}<span><b>Apagar para todos</b>${!meu ? "<small>Como administrador do grupo</small>" : ""}</span></button>` : ""}
+      <button data-s="apagar-mim" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.lixo}<span><b>Apagar para mim</b><small>Some só neste celular</small></span></button>
+      ${meu || m.apagada ? "" : `<button data-s="denunciar" data-tipo="mensagem" data-uid="${esc(m.autor)}" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.flag}<span><b>Denunciar</b><small>A equipe do ChatMil vai analisar</small></span></button>
            <button data-s="ver-perfil" data-id="${esc(m.autor)}">${K.user}<span><b>Ver perfil de ${esc(P(m.autor).nome)}</b></span></button>`}
     </div>`);
   }
@@ -1471,11 +1480,12 @@
     const ae = document.activeElement, fid = ae && ae.id;
     let sel = null; try { if (fid && ae.selectionStart != null) sel = [ae.selectionStart, ae.selectionEnd]; } catch (e) { }
     const t = topo(), perto = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160;
-    let html, full = false, semNav = false;
+    let html, full = false, semNav = false, gate = "";
     if (SO.carregando) { html = splash(); semNav = true; }
     else if (!SO.user) { semNav = true; html = SO.tela === "criar" ? vCriar() : SO.tela === "entrar" ? vEntrar() : vBoasVindas(); }
     else if (!SO.euCarregado) { html = splash(); semNav = true; }
     else if (!SO.eu) { semNav = true; html = vPerfilInicial(); }
+    else if (EXT.portao && (gate = EXT.portao())) { semNav = true; html = gate; }
     else if (t) { full = true; html = vTela(t); }
     else html = EXT.tabViews[SO.tab] ? EXT.tabViews[SO.tab]() : SO.tab === "mural" ? vMural() : SO.tab === "provas" ? vProvas() : SO.tab === "perfil" ? vPerfil(eu(), true) : vConversas();
     const b = document.body;
@@ -1504,6 +1514,21 @@
   function limparPilha() { const n = SO.pilha.length; SO.pilha = []; if (n) { try { history.go(-n); } catch (e) { } } }
   function ctxFoto() { const t = topo(); return t && t.v === "editar" ? SO.ed : t && t.v === "novo-grupo" ? SO.ng : t && t.v === "editar-grupo" ? SO.eg : SO.cad; }
   const chatAtual = () => { const t = topo(); return t && SO.chats.find(c => c.id === t.id); };
+
+  /* ================= Segurar a mensagem abre o menu (como no WhatsApp) ================= */
+  { let lpT = null, lpXY = null, lpFez = false;
+    document.addEventListener("pointerdown", e => {
+      const m = e.target.closest && e.target.closest(".cs-m[data-s=msg]");
+      if (!m || e.target.closest("button,a,audio,video,input,textarea,[data-s]:not(.cs-m)")) return;
+      lpFez = false; lpXY = [e.clientX, e.clientY]; clearTimeout(lpT);
+      lpT = setTimeout(() => { lpT = null; lpFez = true; try { navigator.vibrate && navigator.vibrate(25); } catch (x) { } const t = topo(); if (t && t.v === "chat") sheetMsg(t.id, m.dataset.id); }, 480);
+    });
+    document.addEventListener("pointermove", e => { if (lpT && lpXY && Math.hypot(e.clientX - lpXY[0], e.clientY - lpXY[1]) > 10) { clearTimeout(lpT); lpT = null; } });
+    ["pointerup", "pointercancel"].forEach(n => document.addEventListener(n, () => { clearTimeout(lpT); lpT = null; }, true));
+    window.addEventListener("scroll", () => { clearTimeout(lpT); lpT = null; }, true);
+    document.addEventListener("click", e => { if (lpFez) { lpFez = false; e.stopPropagation(); e.preventDefault(); } }, true);
+    document.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest(".cs-m")) e.preventDefault(); });
+  }
 
   /* ================= Eventos ================= */
   document.addEventListener("click", async ev => {
@@ -1545,13 +1570,20 @@
       case "apagar-msg": {
         if (!ok) return pedirConfirmacao("Apagar mensagem?", "A mensagem será apagada para todos da conversa.", "Apagar", el);
         const chat = el.dataset.chat, lista = SO.msgs[chat] || [], ult = lista[lista.length - 1];
+        const m = lista.find(x => x.id === id), bruta = ((SO.brutas[chat] || []).find(x => x.id === id)) || m || {};
         try {
-          await fb.deleteDoc(D("chats", chat, "msgs", id));
+          /* fica "Mensagem apagada" para todos; o conteúdo (texto, cifra, arquivo) sai do servidor */
+          const mud = { apagada: true, por: eu() };
+          Object.keys(bruta).forEach(k => { if (!["id", "autor", "em", "apagada", "por"].includes(k)) mud[k] = fb.deleteField(); });
+          await fb.updateDoc(D("chats", chat, "msgs", id), mud);
+          const arqId = m && ((m.arquivo && m.arquivo.id) || (m.audio && m.audio.id) || (m.unica && m.unica.id));
+          if (arqId && m.autor === eu() && EXT.midia) EXT.midia.apagarArquivo(arqId).catch(() => { });
           if (ult && ult.id === id) await fb.updateDoc(D("chats", chat), { ultima: { autor: eu(), texto: "Mensagem apagada", fig: null } }).catch(() => { });
-          window.fecharSheet();
+          window.fecharSheet(); toast("Mensagem apagada para todos.");
         } catch (e) { toast(msgErro(e)); }
         break;
       }
+      case "apagar-mim": ocultar(el.dataset.chat, id); window.fecharSheet(); pintarMsgs(); toast("Mensagem apagada para você."); break;
       case "denunciar": window.fecharSheet(); sheetDenuncia({ tipo: el.dataset.tipo, uid: el.dataset.uid, id, chat: el.dataset.chat, post: el.dataset.post }); break;
       case "g-sug": { const i = $("#cs-g-nome"); if (i) i.value = v; if (SO.ng) SO.ng.nome = v; break; }
       case "g-add": if (SO.ng && !SO.ng.membros.includes(id)) SO.ng.membros.push(id); SO.busca = ""; SO.resultados = null; pintar(); break;
@@ -2051,6 +2083,10 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-just{text-align:justify;hyphens:auto}
 .cs-aviso-mail .btn{min-height:34px}
 .cs-splash{min-height:70vh;display:grid;place-items:center}
+.cs-m{-webkit-touch-callout:none}
+.cs-b.cs-apagada .cs-tx{font-style:italic;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.cs-b.cs-apagada .cs-tx svg{width:15px;height:15px;flex:none}
+.cs-m.eu .cs-b.cs-apagada .cs-tx{color:inherit;opacity:.85}
 .cs-cod-in{font-family:var(--display);font-size:1.5rem!important;letter-spacing:.3em;text-transform:uppercase;text-align:center}
 .cs-sug{margin-top:-4px}
 .empty .fig{margin-bottom:-4px}

@@ -292,6 +292,17 @@ ins{background:var(--ok-soft);color:var(--ok);text-decoration:none;border-radius
 }
 .ajuda-btn{width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);color:var(--muted);font:700 12px/1 var(--body);display:inline-grid;place-items:center;cursor:pointer;flex:none;padding:0;vertical-align:middle;margin-left:4px;transition:all .15s;position:relative}
 .ajuda-btn::before{content:"";position:absolute;inset:-11px}
+div.f{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:.9rem}
+.ia-rot{display:flex;align-items:center;gap:6px}
+.ia-reco{border:1.5px solid var(--primary);border-radius:16px;padding:14px;background:var(--primary-soft)}
+.ia-reco-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ia-vant{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:.9rem}
+.ia-vant li{display:flex;gap:6px;align-items:center}.ia-vant svg{width:16px;height:16px;color:var(--primary);flex:none}
+.ia-outras summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--muted);padding:6px 0}
+.ia-passos{list-style:none;counter-reset:p;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
+.ia-passos li{counter-increment:p;display:grid;grid-template-columns:32px 1fr;column-gap:12px;row-gap:2px;align-items:start}
+.ia-passos li::before{content:counter(p);grid-row:span 2;width:32px;height:32px;border-radius:50%;background:var(--primary);color:var(--primary-ink,#fff);font-weight:800;display:grid;place-items:center}
+.ia-passos li span{font-size:.92rem;color:var(--muted);line-height:1.45}
 .ajuda-btn:hover,.ajuda-btn[aria-expanded="true"]{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
 .dica-txt{display:block;flex-basis:100%;width:100%;font-size:.84rem;font-weight:400;line-height:1.45;color:var(--ink);background:var(--surface-2);border-radius:10px;padding:8px 11px;margin-top:6px;text-transform:none;letter-spacing:0;animation:dica .18s ease-out}
 .dica-txt[hidden]{display:none!important}
@@ -545,6 +556,13 @@ function podeGravar(){return !!(S.db&&S.uid&&S.canWrite!==false);}
 const TERMO_V=2;
 const TEXTO_TAXA="O acesso às questões de todos os professores (<b>banco completo</b>) terá uma taxa para cobrir os custos do site e da plataforma. Valor e forma de pagamento serão informados antes de qualquer cobrança. Durante os testes, o acesso está liberado.";
 function termoOk(){return !!(S.perfil.termoAceitoEm&&(S.perfil.termoVersao||1)>=TERMO_V);}
+/* no assistente: a autorização aparece quando a pessoa vai criar a primeira prova */
+async function termoAssistente(){
+  if(termoOk()||!podeGravar())return true;
+  if(await exigirTermo())return true;
+  chatBot("Tudo bem. Para montar provas eu preciso da sua autorização de compartilhamento. Quando quiser, toque em <b>Nova prova</b>.",menuChips());
+  return false;
+}
 function exigirTermo(){
   return new Promise(res=>{
     if(termoOk()) return res(true);
@@ -556,7 +574,7 @@ function exigirTermo(){
         <span>Você <b>continua com acesso</b> a todas as suas questões, pode editá-las e usá-las em suas provas sempre que quiser.</span>
         <span>Antes de entrar no banco, cada questão passa por uma <b>revisão da IA</b>, que corrige o texto mudando o mínimo e garante que não haja dúvida sobre a resposta. Você vê cada ajuste antes de enviar.</span>
         <span class="taxa">${TEXTO_TAXA}</span></div></div>
-      <label class="switch" for="termo-ok"><input type="checkbox" id="termo-ok"><span class="t"><b>Li e autorizo o compartilhamento</b><span>Você pode ler este termo novamente em Escola.</span></span></label>
+      <label class="switch" for="termo-ok"><input type="checkbox" id="termo-ok"><span class="t"><b>Li e autorizo o compartilhamento</b></span></label>
       <div class="row"><button class="btn" data-a="termo-nao" style="flex:1">Agora não</button><button class="btn primary" data-a="termo-sim" style="flex:1" disabled id="termo-btn">Autorizar</button></div>`);
     $("#termo-ok").onchange=e=>{$("#termo-btn").disabled=!e.target.checked;};
     S._termoRes=res;
@@ -1196,7 +1214,7 @@ function vRapida(){
 const CHAT={msgs:[],d:{},perg:null,espera:null,digitando:false};
 const hora=()=>new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
 const semAcento=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-const menuChips=()=>[{t:"Nova prova",a:"c-nova"},{t:"Minhas provas",a:"c-minhas"},{t:"Cadastrar questão",a:"c-questao"}];
+const menuChips=()=>[{t:"Nova prova",a:"c-nova"},{t:"Minhas provas",a:"c-minhas"},{t:"Cadastrar questão",a:"c-questao"},...(S.sample?[]:[{t:"Ligar IA grátis",a:"ia-passos",v:"gemini"}])];
 function renderChat(){if(S.tab!=="inicio")return;render();requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.scrollHeight));}
 function chatEu(t){CHAT.msgs.push({de:"eu",html:esc(t),h:hora()});}
 function chatBot(html,chips,extra){CHAT.digitando=true;renderChat();setTimeout(()=>{CHAT.digitando=false;CHAT.msgs.push({de:"bot",html,chips:chips||[],extra:extra||"",h:hora()});renderChat();},350);}
@@ -1213,18 +1231,32 @@ function vConversa(){
 }
 function perguntar(){
   const d=CHAT.d;
+  if(!termoOk()&&podeGravar()){termoAssistente().then(ok=>{if(ok)perguntar();});return;}
   if(!S.perfil.escola&&!d.pulouEscola){CHAT.perg="escola";CHAT.espera={campo:"escola",ph:"Nome da escola"};return chatBot("Qual é o nome da sua escola? Ele vai no cabeçalho da prova.",[{t:"Pular",a:"c-pular"}]);}
   CHAT.espera=null;
+  const ia=iaOn();
   if(!d.disciplina){const ds=disciplinasDoBanco();CHAT.perg="disciplina";
-    if(!ds.length)return chatBot("O banco ainda não tem questões. Cadastre a primeira para montar provas.",[{t:"Cadastrar questão",a:"c-questao"}]);
+    if(ia){const m=new Map(ds);return chatBot("Qual disciplina?",uniq([...ds.map(x=>x[0]),...DISCIPLINAS]).sort((a,b)=>(m.get(b)||0)-(m.get(a)||0)||a.localeCompare(b,"pt-BR")).map(n=>({t:m.get(n)?`${n} (${m.get(n)})`:n,a:"c-resp",v:"disciplina|"+n})));}
+    if(!ds.length)return chatBot("O banco ainda não tem questões. Cadastre a primeira ou ligue a IA grátis para criar questões novas.",[{t:"Ligar IA grátis",a:"ia-passos",v:"gemini"},{t:"Cadastrar questão",a:"c-questao"}]);
     return chatBot("Qual disciplina?",ds.map(([n,c])=>({t:`${n} (${c})`,a:"c-resp",v:"disciplina|"+n})));}
-  if(!d.serie){CHAT.perg="serie";const ops=[];["EF","EM"].forEach(nv=>SERIES[nv].forEach(se=>{const c=contar(q=>q.disciplina===d.disciplina&&q.nivel===nv&&q.serie===se);if(c)ops.push({t:`${se} (${c})`,a:"c-resp",v:`serie|${nv}|${se}`});}));
+  if(!d.serie){CHAT.perg="serie";const ops=[];["EF","EM"].forEach(nv=>SERIES[nv].forEach(se=>{const c=contar(q=>q.disciplina===d.disciplina&&q.nivel===nv&&q.serie===se);if(c||ia)ops.push({t:c?`${se} (${c})`:se,a:"c-resp",v:`serie|${nv}|${se}`});}));
     return chatBot("Para qual série ou ano?",ops.length?ops:[{t:"Outra disciplina",a:"c-resp",v:"disciplina|"}]);}
   if(!d.bimestre){CHAT.perg="bimestre";return chatBot("Qual bimestre?",BIM.map(b=>({t:b,a:"c-resp",v:"bimestre|"+b})));}
   if(!d.qtd){CHAT.perg="qtd";return chatBot("Quantas questões?",[5,10,15,20].map(n=>({t:String(n),a:"c-resp",v:"qtd|"+n})));}
+  if(d.dist==null){CHAT.perg="dist";const ex=conteudosDe(d.disciplina,d.nivel,d.serie).slice(0,2);
+    return chatBot(`Quer direcionar os conteúdos?${ex.length===2&&d.qtd>3?` Por exemplo: ${d.qtd-Math.round(d.qtd/3)} de <i>${esc(ex[0])}</i> e ${Math.round(d.qtd/3)} de <i>${esc(ex[1])}</i>.`:""}`,[{t:"Não, pode variar",a:"c-resp",v:"dist|0"},{t:"Sim, escolher conteúdos",a:"c-resp",v:"dist|1"}]);}
+  if(d.escolhendo){const resta=d.qtd-d.dist.reduce((t,x)=>t+x.n,0);
+    if(resta<=0){d.escolhendo=false;return perguntar();}
+    if(d.contAtual){CHAT.perg="distn";const ns=[...new Set([1,2,3,5,resta].filter(n=>n<=resta))].sort((a,b)=>a-b);
+      return chatBot(`Quantas questões sobre <b>${esc(d.contAtual)}</b>? Faltam ${resta}.`,ns.map(n=>({t:n===resta&&n>1?`${n} (todas)`:String(n),a:"c-resp",v:"distn|"+n})));}
+    CHAT.perg="distc";const lista=conteudosDe(d.disciplina,d.nivel,d.serie).filter(c=>!d.dist.some(x=>x.c===c)).slice(0,16);
+    const chips=lista.map(c=>({t:c,a:"c-resp",v:"distc|"+c}));if(d.dist.length)chips.push({t:`As outras ${resta} variadas`,a:"c-resp",v:"distfim|"});
+    return chatBot(d.dist.length?`Anotado: ${d.dist.map(x=>`${x.n} de ${esc(x.c)}`).join(", ")}. Faltam ${resta}. Qual outro conteúdo?`:`Escolha o conteúdo ou escreva, por exemplo: <i>7 de ${esc(lista[0]||"frações")} e 3 de ${esc(lista[1]||"geometria")}</i>.`,chips);}
   if(d.aee==null){CHAT.perg="aee";return chatBot("É uma prova adaptada para estudantes do AEE?",[{t:"Não",a:"c-resp",v:"aee|0"},{t:"Sim, adaptada",a:"c-resp",v:"aee|1"}]);}
-  CHAT.perg=null;gerarNoChat();
+  if(ia&&!d.fonte){CHAT.perg="fonte";return chatBot("Quer que a IA crie questões novas (alinhadas à BNCC)? Elas também entram no banco.",[{t:"Banco + novas com IA",a:"c-resp",v:"fonte|misto"},{t:"Só novas com IA",a:"c-resp",v:"fonte|ia"},{t:"Só do banco",a:"c-resp",v:"fonte|banco"}]);}
+  CHAT.perg=null;gerarNoChat().catch(e=>{console.warn(e);CHAT.digitando=false;chatBot("Algo deu errado ao montar a prova. Tente de novo.",menuChips());});
 }
+const iaOn=()=>!!S.sample;
 function responder(v){
   const [k,a,b]=String(v).split("|"),d=CHAT.d;
   if(k==="disciplina"){d.disciplina=a||"";d.serie=null;}
@@ -1232,6 +1264,11 @@ function responder(v){
   else if(k==="bimestre")d.bimestre=a;
   else if(k==="qtd")d.qtd=+a;
   else if(k==="aee")d.aee=a==="1";
+  else if(k==="dist"){d.dist=[];d.escolhendo=a==="1";d.contAtual=null;}
+  else if(k==="distc")d.contAtual=a;
+  else if(k==="distn"&&d.contAtual){d.dist.push({c:d.contAtual,n:+a});d.contAtual=null;}
+  else if(k==="distfim"){d.escolhendo=false;d.contAtual=null;}
+  else if(k==="fonte")d.fonte=a;
   perguntar();
 }
 function chatTexto(t){
@@ -1240,6 +1277,9 @@ function chatTexto(t){
   if(CHAT.espera&&CHAT.espera.campo==="escola"){salvarPerfil({escola:t});CHAT.espera=null;return perguntar();}
   if(/^(oi|ola|bom dia|boa tarde|boa noite|menu|inicio|ajuda)\b/.test(n)){CHAT.d={};CHAT.perg=null;return chatBot("O que vamos fazer?",menuChips());}
   let achou=false;
+  if(CHAT.perg==="distn"&&/^\d{1,2}$/.test(n)&&d.contAtual){const resta=d.qtd-d.dist.reduce((t,x)=>t+x.n,0);d.dist.push({c:d.contAtual,n:Math.max(1,Math.min(resta,+n))});d.contAtual=null;return perguntar();}
+  if(["dist","distc","distn"].includes(CHAT.perg)){const pl=lerDivisao(t,d);if(pl.length){d.dist=pl;d.contAtual=null;d.escolhendo=pl.reduce((s,x)=>s+x.n,0)<d.qtd;return perguntar();}
+    if(CHAT.perg==="distc"&&t.length>2&&!/^\d/.test(n)){d.contAtual=t.replace(/^./,c=>c.toUpperCase());return perguntar();}}
   if(CHAT.perg==="qtd"&&/^\d{1,2}$/.test(n)){d.qtd=Math.min(40,Math.max(1,+n));achou=true;}
   if(CHAT.perg==="bimestre"&&/^[1-4]$/.test(n)){d.bimestre=BIM[+n-1];achou=true;}
   if(CHAT.perg==="aee"&&/^(sim|s|nao|n)\b/.test(n)){d.aee=n[0]==="s";achou=true;}
@@ -1254,16 +1294,88 @@ function chatTexto(t){
   if(!achou)return chatBot("Não entendi. Escreva, por exemplo, <i>Matemática, 6º ano, 10 questões</i>, ou toque em uma opção.",menuChips());
   perguntar();
 }
-function gerarNoChat(){
+/* "7 de frações e 3 de geometria" → [{c:"Frações",n:7},{c:"Geometria",n:3}] */
+function lerDivisao(t,d){
+  const lista=conteudosDe(d.disciplina,d.nivel,d.serie),out=[];let soma=0;
+  String(t).split(/,|;|\s+e\s+/i).forEach(parte=>{
+    const m=parte.trim().match(/^(\d{1,2})\s*(?:quest\S*\s*)?(?:de|sobre|do|da|em)?\s+(.{2,80})$/i);if(!m)return;
+    const n=Math.min(+m[1],d.qtd-soma);if(n<=0)return;
+    const alvo=semAcento(m[2]).trim(),ach=lista.find(c=>semAcento(c)===alvo)||lista.find(c=>semAcento(c).includes(alvo)||alvo.includes(semAcento(c)));
+    const c=ach||m[2].trim().replace(/^./,x=>x.toUpperCase());
+    const ex=out.find(x=>x.c===c);if(ex)ex.n+=n;else out.push({c,n});soma+=n;
+  });
+  return out;
+}
+/* escolhe do banco equilibrando fácil / média / difícil */
+function escolherEquilibrado(base,n,aee){
+  if(aee){const pri=shuffle(base.filter(q=>q.aee)),sec=shuffle(base.filter(q=>!q.aee&&q.dificuldade===1));return [...pri,...sec].slice(0,n);}
+  const alvo=DISTR.equilibrada,b={1:shuffle(base.filter(q=>q.dificuldade===1)),2:shuffle(base.filter(q=>q.dificuldade===2)),3:shuffle(base.filter(q=>q.dificuldade===3))},sel=[];
+  [1,2,3].forEach(k=>sel.push(...b[k].splice(0,Math.round(n*alvo[k]))));
+  const resto=shuffle([...b[1],...b[2],...b[3]]);while(sel.length<n&&resto.length)sel.push(resto.shift());
+  return sel.slice(0,n);
+}
+/* a IA cria questões inéditas alinhadas à BNCC, confere a resposta e guarda no banco */
+async function criarQuestoesIA(p,conteudo,n){
+  const k=NALT[p.nivel];
+  const pedido=`Você é professor(a) brasileiro(a) especialista em ${p.disciplina} e na BNCC (Base Nacional Comum Curricular).
+Crie ${n} questões INÉDITAS de múltipla escolha para o ${p.serie} do ${NIVEL_NOME[p.nivel]} (${p.bimestre}), ${conteudo?`todas sobre o conteúdo "${conteudo}"`:"variando entre conteúdos que a BNCC prevê para esta série e este bimestre"}.
+REGRAS:
+- Cada questão deve desenvolver uma habilidade da BNCC desta série. Informe o código (ex.: EF06MA07, EF05LP03, EM13MAT101).
+- Exatamente ${k} alternativas, sem letras no início, só UMA correta; as outras claramente incorretas, porém plausíveis. Nada de "todas/nenhuma das anteriores".
+- ${p.aee?"Estudantes público do AEE: frases curtas, vocabulário do dia a dia, um comando por questão, dificuldade fácil.":"Varie a dificuldade: 1 = fácil, 2 = média, 3 = difícil."}
+- Contexto do cotidiano brasileiro (escola, comunidade, trabalho). Todos os dados necessários no enunciado; sem depender de imagem.
+- Português correto. Se o comando pedir a alternativa incorreta, escreva INCORRETA em maiúsculas.
+- Varie a posição da alternativa correta.
+Responda SOMENTE com JSON: {"questoes":[{"enunciado":string,"alternativas":[${k} strings],"correta":número de 0 a ${k-1},"dificuldade":1|2|3,"conteudo":"nome curto do conteúdo","bncc":"código"}]}`;
+  const r=await S.sample.json(pedido,{modelTier:"complex"});
+  let qs=(r&&Array.isArray(r.questoes)?r.questoes:[]).filter(q=>q&&typeof q.enunciado==="string"&&q.enunciado.trim().length>8&&Array.isArray(q.alternativas)&&q.alternativas.length===k&&q.alternativas.every(a=>typeof a==="string"&&a.trim())&&Number.isInteger(+q.correta)&&+q.correta>=0&&+q.correta<k&&new Set(q.alternativas.map(a=>semAcento(a).trim())).size===k).slice(0,n);
+  if(!qs.length)return [];
+  /* conferência: outra leitura resolve sem ver o gabarito; se discordar ou houver dúvida, a questão é descartada */
+  try{
+    const conf=await S.sample.json(`Resolva cada questão de múltipla escolha abaixo como especialista, sem saber o gabarito, e diga se existe exatamente uma alternativa correta.
+${qs.map((q,i)=>`QUESTÃO ${i+1}: ${q.enunciado}\n${q.alternativas.map((a,j)=>`${LET[j]}) ${a}`).join("\n")}`).join("\n\n")}
+Responda SOMENTE com JSON: {"respostas":[{"n":1,"letra":"A","unica":true}]}`);
+    const rs=conf&&Array.isArray(conf.respostas)?conf.respostas:null;
+    if(rs)qs=qs.filter((q,i)=>{const x=rs.find(y=>+y.n===i+1);return !x||(String(x.letra||"").trim().toUpperCase().charAt(0)===LET[+q.correta]&&x.unica!==false);});
+  }catch(e){console.warn("conferência",e);}
+  const novas=[];
+  for(const q of qs){
+    const body={autorId:S.uid,nivel:p.nivel,serie:p.serie,disciplina:p.disciplina,conteudo:(conteudo||String(q.conteudo||"").trim()||"Conteúdos variados").slice(0,120),
+      dificuldade:p.aee?1:Math.min(3,Math.max(1,Math.round(+q.dificuldade)||2)),aee:!!p.aee,enunciado:q.enunciado.trim(),alternativas:q.alternativas.map(a=>String(a).replace(/^\s*[A-E]\)\s*/,"").trim()),
+      correta:+q.correta,fixarOrdem:false,autorizado:true,criadoEm:agora(),atualizadoEm:agora(),grafico:null,temFoto:false,imgApp:null,legenda:"",tituloImg:"",
+      bncc:String(q.bncc||"").trim().toUpperCase().slice(0,20),origemIA:true,bimestre:p.bimestre,revisao:{status:"ok",em:agora(),alteracoes:[],ia:true}};
+    try{const id=(await S.db.collection("questoes").add(body)).id;novas.push({id,...body});}catch(e){console.warn(e);}
+  }
+  return novas;
+}
+async function gerarNoChat(){
   const d=CHAT.d;
   novaProva();const p=S.prova;
   Object.assign(p,{escola:S.perfil.escola||"",professor:S.perfil.professor||"",disciplina:d.disciplina,nivel:d.nivel,serie:d.serie,bimestre:d.bimestre,aee:!!d.aee,bastao:!!d.aee});
   S.auto={conteudos:[],qtd:d.qtd,distr:"equilibrada",mesmaSerie:true};
-  let res=montarAuto(),obs="";
-  if(res.erro||res.falta){S.auto.mesmaSerie=false;const r2=montarAuto();
-    if(!r2.erro&&r2.sel.length>((res.sel&&res.sel.length)||0)){res=r2;obs=`Completei com questões de outras séries do ${NIVEL_NOME[d.nivel]}.`;}else S.auto.mesmaSerie=true;}
   CHAT.d={};
-  if(res.erro)return chatBot(d.aee?"Ainda não há questões adaptadas ao AEE nesta disciplina. No modo passo a passo você pode adaptar questões do banco.":"Não encontrei questões para esses filtros.",[{t:"Nova prova",a:"c-nova"},{t:"Passo a passo",a:"personalizar"}]);
+  const fonte=iaOn()?(d.fonte||"misto"):"banco";
+  const grupos=(d.dist||[]).filter(x=>x.n>0).map(x=>({c:x.c,n:x.n}));
+  {const u=grupos.reduce((t,x)=>t+x.n,0);if(d.qtd-u>0)grupos.push({c:null,n:d.qtd-u});}
+  const ids=new Set(),sel=[];let outras=false,criadas=0,erroIA="";
+  const pegar=(c,n,mesma)=>{if(n<=0)return [];const r=escolherEquilibrado(filtrarBase(p,mesma,c?[c]:[]).filter(q=>!ids.has(q.id)),n,p.aee);r.forEach(q=>ids.add(q.id));return r;};
+  for(const g of grupos){
+    const doBanco=fonte==="ia"?0:fonte==="banco"?g.n:g.n-Math.max(1,Math.round(g.n*0.3));
+    const got=pegar(g.c,doBanco,true);sel.push(...got);g.falta=g.n-got.length;
+  }
+  if(fonte!=="banco"){
+    for(const g of grupos.filter(x=>x.falta>0)){
+      CHAT.msgs.push({de:"bot",html:`Criando ${g.falta} ${g.falta===1?"questão nova":"questões novas"}${g.c?` de <b>${esc(g.c)}</b>`:""} com a IA, alinhadas à BNCC…`,chips:[],h:hora()});CHAT.digitando=true;renderChat();
+      try{const nv=await criarQuestoesIA(p,g.c,g.falta);nv.forEach(q=>ids.add(q.id));sel.push(...nv);g.falta-=nv.length;criadas+=nv.length;}
+      catch(e){console.warn(e);erroIA=e&&e.code==="rate_limited"?"A cota grátis da IA acabou por hoje; completei com o banco.":"A IA não respondeu agora; completei com o banco.";}
+      CHAT.digitando=false;
+    }
+  }
+  for(const g of grupos.filter(x=>x.falta>0)){let r=pegar(g.c,g.falta,true);if(r.length<g.falta){const r2=pegar(g.c,g.falta-r.length,false);if(r2.length)outras=true;r=r.concat(r2);}sel.push(...r);g.falta-=r.length;}
+  {const falta=grupos.reduce((t,x)=>t+Math.max(0,x.falta),0);if(falta>0){let r=pegar(null,falta,true);if(r.length<falta){const r2=pegar(null,falta-r.length,false);if(r2.length)outras=true;r=r.concat(r2);}sel.push(...r);}}
+  let obs=[criadas?`${criadas} ${criadas===1?"questão nova foi criada":"questões novas foram criadas"} pela IA e ${criadas===1?"guardada":"guardadas"} no banco.`:"",erroIA,outras?`Completei com questões de outras séries do ${NIVEL_NOME[d.nivel]}.`:""].filter(Boolean).join(" ");
+  const res={sel:sel.slice(0,d.qtd)};res.falta=Math.max(0,d.qtd-res.sel.length);
+  if(!res.sel.length)return chatBot(d.aee?"Ainda não há questões adaptadas ao AEE nesta disciplina. No modo passo a passo você pode adaptar questões do banco.":"Não encontrei questões para esses filtros."+(iaOn()?"":" Com a IA grátis ligada eu crio questões novas."),[{t:"Nova prova",a:"c-nova"},...(iaOn()?[]:[{t:"Ligar IA grátis",a:"ia-passos",v:"gemini"}]),{t:"Passo a passo",a:"personalizar"}]);
   p.itens=res.sel;p.montagem=organizar(p.itens,p.nivel);S.passo=3;
   if(res.falta)obs=(obs?obs+" ":"")+`Encontrei ${res.sel.length} de ${d.qtd} questões.`;
   CHAT.msgs.forEach(m=>{if(m.extra)m.extra=m.extra.replace('class="cprova"','class="cprova velho"');});
@@ -1499,12 +1611,56 @@ function vEscola(){
 function vIALocal(){
   let c={};try{c=JSON.parse(localStorage.getItem("senov.ia")||"null")||{};}catch(e){}
   const comp=!!window.CS_IA_GEMINI,lig=!!(c.chave||c.gemini||comp);
-  return `<div class="card stack"><div class="th"><h3>Inteligência artificial</h3><span class="pill ${lig?"d1":"mine"}">${lig?"ligada":"desligada"}</span>${ajuda("ia-local","Usada para revisar questões e criar versões inéditas das provas. Gemini (Google) tem cota grátis por dia. Claude (Anthropic) é pago por uso. Se a cota acabar, as provas continuam únicas com a troca automática de números.")}</div>
-    ${comp?`<p class="small">${I.check} A IA gratuita do ChatMil já está ligada para você.</p>`:""}
-    <label class="f" for="ia-gemini">Chave do Gemini (grátis, opcional) ${ajuda("ia-gem","Crie em aistudio.google.com › Chaves de API. Fica só neste aparelho.")}<input class="in" id="ia-gemini" type="password" autocomplete="off" value="${esc(c.gemini||"")}" placeholder="AIza..."></label>
-    <label class="f" for="ia-chave">Chave do Claude (paga, opcional)<input class="in" id="ia-chave" type="password" autocomplete="off" value="${esc(c.chave||"")}" placeholder="sk-ant-..."></label>
-    <label class="f" for="ia-modelo">Modelo do Claude<input class="in" id="ia-modelo" value="${esc(c.modelo||"claude-sonnet-5-5")}"></label>
-    <div class="row"><button class="btn primary" data-a="ia-salvar" style="flex:1">Salvar</button>${c.chave||c.gemini?`<button class="btn danger" data-a="ia-remover" style="flex:1">Remover chaves</button>`:""}</div></div>`;
+  const status=(c.chave||c.openai)&&!c.gemini?`<div class="notice">${I.info}<span>Usando ${c.chave?"o Claude":"o ChatGPT"} com <b>sua chave paga</b>. Dica: com a chave grátis do Gemini você não tem custo.</span></div>`:c.gemini?`<div class="notice okk">${I.check}<span>Usando <b>sua chave grátis do Gemini</b>. A IA é só sua, sem custo.</span></div>`
+    :comp?`<div class="notice">${I.info}<span>A IA grátis do ChatMil está ligada, mas é <b>dividida entre todos</b> e pode acabar no meio do dia. Com sua própria chave grátis do Gemini ela fica só para você.</span></div>`
+    :`<p class="small">Com a IA o assistente <b>cria questões novas alinhadas à BNCC</b>, revisa suas questões e gera versões inéditas das provas.</p>`;
+  return `<div class="card stack ia-card"><div class="th"><h3>Inteligência artificial</h3><span class="pill ${lig?"d1":"mine"}">${lig?"ligada":"desligada"}</span></div>
+    ${status}
+    <div class="ia-reco stack">
+      <div class="ia-reco-h"><b>Gemini, do Google</b><span class="pill d1">Grátis · recomendado</span></div>
+      <ul class="ia-vant"><li>${I.check}<span>Sem custo: cota grátis todos os dias</span></li><li>${I.check}<span>Não precisa de cartão</span></li><li>${I.check}<span>Leva uns 2 minutos com seu Gmail</span></li></ul>
+      <div class="f"><span class="ia-rot"><label for="ia-gemini">Chave do Gemini</label><button type="button" class="ajuda-btn" data-a="ia-passos" data-v="gemini" aria-label="Como conseguir a chave do Gemini">?</button></span><input class="in" id="ia-gemini" type="password" autocomplete="off" value="${esc(c.gemini||"")}" placeholder="Cole aqui (começa com AIza)"></div>
+      ${c.gemini?"":`<button class="btn" data-a="ia-passos" data-v="gemini">${I.info} Como conseguir minha chave grátis</button>`}
+    </div>
+    <details class="ia-outras" ${c.chave||c.openai?"open":""}><summary>Outras opções (pagas): ChatGPT ou Claude</summary>
+      <div class="stack" style="margin-top:10px">
+        <p class="small muted">Só se você já tem créditos nelas. Cada uso é cobrado no seu cartão. Para a maioria dos professores, o Gemini grátis basta.</p>
+        <div class="f"><span class="ia-rot"><label for="ia-openai">Chave do ChatGPT (OpenAI)</label><button type="button" class="ajuda-btn" data-a="ia-passos" data-v="chatgpt" aria-label="Como conseguir a chave do ChatGPT">?</button></span><input class="in" id="ia-openai" type="password" autocomplete="off" value="${esc(c.openai||"")}" placeholder="sk-..."></div>
+        <div class="f"><span class="ia-rot"><label for="ia-chave">Chave do Claude</label><button type="button" class="ajuda-btn" data-a="ia-passos" data-v="claude" aria-label="Como conseguir a chave do Claude">?</button></span><input class="in" id="ia-chave" type="password" autocomplete="off" value="${esc(c.chave||"")}" placeholder="sk-ant-..."></div>
+        <label class="f" for="ia-modelo">Modelo do Claude<input class="in" id="ia-modelo" value="${esc(c.modelo||"claude-sonnet-5-5")}"></label>
+      </div></details>
+    <div class="row"><button class="btn primary" data-a="ia-salvar" style="flex:1">Salvar</button>${c.chave||c.gemini||c.openai?`<button class="btn danger" data-a="ia-remover" style="flex:1">Remover chaves</button>`:""}</div></div>`;
+}
+/* passo a passo para conseguir as chaves de IA (abre ao tocar no "?") */
+function passosIA(qual){
+  const G=qual==="gemini",O=qual==="chatgpt";
+  const passos=O?[
+    ["Abra a plataforma da OpenAI","Entre em <b>platform.openai.com</b> e crie a conta (é diferente da assinatura do ChatGPT Plus)."],
+    ["Coloque créditos","Em <b>Billing</b> (Cobrança), adicione créditos com cartão. O uso é cobrado à parte; comece com o valor mínimo."],
+    ["Vá em “API keys”","No menu, abra <b>API keys</b> (Chaves de API)."],
+    ["Crie a chave","Toque em <b>Create new secret key</b>, dê um nome (ex.: ChatMil) e confirme."],
+    ["Copie na hora","A chave começa com <b>sk-</b> e só aparece <b>uma vez</b>. Copie e guarde."],
+    ["Cole aqui e salve","Volte ao ChatMil, abra <b>Outras opções (pagas)</b>, cole no campo <b>Chave do ChatGPT</b> e toque em <b>Salvar</b>."]
+  ]:G?[
+    ["Abra o Google AI Studio","No navegador do celular ou do computador, entre em <b>aistudio.google.com</b>."],
+    ["Entre com sua conta Google","Use o mesmo Gmail de sempre. Se aparecer, aceite os termos de uso do Google."],
+    ["Vá em “Chaves de API”","No menu, toque em <b>Get API key</b> (ou <b>Chaves de API</b>)."],
+    ["Crie a chave","Toque em <b>Criar chave de API</b> (Create API key). Se pedir um projeto, escolha o que aparecer ou crie um novo."],
+    ["Copie a chave","A chave começa com <b>AIza</b>. Toque no ícone de copiar."],
+    ["Cole aqui e salve","Volte ao ChatMil, cole no campo <b>Chave do Gemini</b> e toque em <b>Salvar</b>."]
+  ]:[
+    ["Abra o Claude Console","Entre em <b>platform.claude.com</b> (antigo console.anthropic.com) e crie sua conta com e-mail."],
+    ["Coloque créditos","Em <b>Billing</b> (Cobrança), adicione créditos com cartão. O Claude é pago pelo uso; comece com o valor mínimo."],
+    ["Vá em “API Keys”","No menu, abra <b>API Keys</b> (Chaves de API)."],
+    ["Crie a chave","Toque em <b>Create Key</b>, dê um nome (ex.: ChatMil) e confirme."],
+    ["Copie na hora","A chave começa com <b>sk-ant-</b> e só aparece <b>uma vez</b>. Copie e guarde."],
+    ["Cole aqui e salve","Volte ao ChatMil, abra <b>Outras opções (pagas)</b>, cole no campo <b>Chave do Claude</b> e toque em <b>Salvar</b>."]
+  ];
+  return `<div class="sheet-h"><h2>${G?"Chave do Gemini":O?"Chave do ChatGPT":"Chave do Claude"}</h2></div>
+    <p class="small muted">${G?"<b>Grátis e sem cartão.</b> Tem um limite de uso por dia que dá para o dia a dia do professor. Leva uns 2 minutos.":"Pago por uso, cobrado no cartão. Prefira o Gemini, que é grátis."}</p>
+    <ol class="ia-passos">${passos.map(([t,d])=>`<li><b>${t}</b><span>${d}</span></li>`).join("")}</ol>
+    <div class="notice">${I.info}<span>A chave fica <b>só neste aparelho</b>. Não compartilhe com ninguém: ela é como uma senha.</span></div>
+    <button class="btn primary" data-a="ia-ir" data-v="${G?"ia-gemini":O?"ia-openai":"ia-chave"}">${S.tab==="escola"?"Entendi":"Abrir onde colar a chave"}</button>`;
 }
 function vAdmin(){
   const q=S._banco;const semRev=q.filter(x=>!x.revisao).length;const autores=uniq(q.filter(x=>!x.exemplo).map(x=>x.autorId)).length;
@@ -1835,7 +1991,7 @@ document.addEventListener("click",async ev=>{
   if(tb){if(S.tab==="prova"){if(S.passo===1)lerPasso1();if(S.passo===2)lerPasso2();}S.tab=tb.dataset.tab;lembrar();render();window.scrollTo(0,0);return;}
   const el=ev.target.closest("[data-a]");if(!el)return;
   const a=el.dataset.a;
-  if(a==="fechar-scrim"){if(ev.target===el)fecharSheet();return;}
+  if(a==="fechar-scrim"){if(ev.target===el){fecharSheet();if(S._termoRes){S._termoRes(false);S._termoRes=null;}}return;}
   const p=S.prova;
   switch(a){
     case "zoom":aplicarZoom(el.dataset.v);render();break;
@@ -1847,6 +2003,8 @@ document.addEventListener("click",async ev=>{
       if(!S.provas.length)chatBot("Você ainda não salvou provas. Depois de montar uma, toque em “Salvar em Minhas provas”.",menuChips());
       else chatBot("Estas são as suas últimas provas:",menuChips(),`<div class="clista">${S.provas.slice(0,6).map(pv=>`<button class="btn sm" data-a="abrir-prova" data-id="${esc(pv.id)}">${esc(pv.disciplina)} · ${esc(pv.serie)} · ${esc(pv.bimestre)}</button>`).join("")}</div>`);
       break;
+    case "ia-passos":abrirSheet(passosIA(el.dataset.v));break;
+    case "ia-ir":{fecharSheet();if(S.tab!=="escola"){S.tab="escola";render();}setTimeout(()=>{const i=$("#"+(el.dataset.v||"ia-gemini"));const dt=i&&i.closest("details");if(dt)dt.open=true;if(i){i.scrollIntoView({block:"center"});i.focus({preventScroll:true});}},80);break;}
     case "dica":{const k=el.dataset.k,ab=!DICAS.has(k);ab?DICAS.add(k):DICAS.delete(k);el.setAttribute("aria-expanded",ab);document.querySelectorAll(`.dica-txt[data-k="${k}"]`).forEach(x=>x.hidden=!ab);break;}
     case "fechar":fecharSheet();break;
     case "nova-prova":novaProva();S.tab="prova";lembrar();render();window.scrollTo(0,0);break;
@@ -2009,8 +2167,10 @@ document.addEventListener("click",async ev=>{
       S.prova={id:pv.id,escola:pv.escola||"",logo:pv.logo||"",logoR:pv.logoR||1,professor:pv.professor||"",disciplina:pv.disciplina,bimestre:pv.bimestre,nivel:pv.nivel,serie:pv.serie,instrucoes:pv.instrucoes||"",aee:!!pv.aee,bastao:!!pv.bastao,incluirGab:pv.incluirGab!==false,colunas:pv.colunas===2?2:1,margem:pv.margem==="abnt"?"abnt":"estreita",loc:pv.loc||null,itens:(pv.itens||[]).slice(),montagem:pv.montagem};
       S.auto={conteudos:[],qtd:Math.max(1,S.prova.itens.length),distr:"equilibrada",mesmaSerie:true};S.passo=3;S.tab="prova";lembrar();render();window.scrollTo(0,0);break;}
     case "salvar-escola":await salvarPerfil({escola:$("#e-escola").value.trim(),professor:$("#e-prof").value.trim()});toast("Dados salvos.");break;
-    case "ia-salvar":{const k=$("#ia-chave").value.trim(),g=($("#ia-gemini")||{value:""}).value.trim(),m=$("#ia-modelo").value.trim()||"claude-sonnet-5-5";try{localStorage.setItem("senov.ia",JSON.stringify({chave:k,gemini:g,modelo:m}));}catch(e){}S.sample=window.claude?await window.claude.use("sample"):null;toast(k||g?"IA ligada.":"Chaves removidas.");render();break;}
-    case "ia-remover":try{localStorage.removeItem("senov.ia");}catch(e){}S.sample=null;toast("Chave removida.");render();break;
+    case "ia-salvar":{const k=$("#ia-chave").value.trim(),g=($("#ia-gemini")||{value:""}).value.trim(),o=($("#ia-openai")||{value:""}).value.trim(),m=$("#ia-modelo").value.trim()||"claude-sonnet-5-5";
+      if(g&&!/^AIza[\w-]{20,}$/.test(g)){toast("A chave do Gemini começa com AIza. Confira se copiou inteira.");break;}
+      try{localStorage.setItem("senov.ia",JSON.stringify({chave:k,gemini:g,openai:o,modelo:m}));}catch(e){}S.sample=window.claude?await window.claude.use("sample"):null;toast(k||g||o?"IA ligada.":"Chaves removidas.");render();break;}
+    case "ia-remover":try{localStorage.removeItem("senov.ia");}catch(e){}S.sample=window.claude?await window.claude.use("sample"):null;toast("Chaves removidas.");render();break;
     case "imp-json":$("#imp-file").click();break;
     case "exp-json":await baixar("banco-chatmil-questoes.json",JSON.stringify(S._banco,null,2));break;
     case "exp-csv":{const cols=["id","disciplina","nivel","serie","conteudo","dificuldade","aee","enunciado","A","B","C","D","E","correta","autorId","criadoEm"];
