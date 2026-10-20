@@ -277,10 +277,33 @@
     }
   };
 
-  /* ---------- IA (opcional): Gemini grátis do Google ou Claude com chave própria ---------- */
+  /* ---------- IA (opcional): Gemini grátis do Google, ou ChatGPT / Claude com chave própria ---------- */
   function cfgIA() { try { return JSON.parse(localStorage.getItem("senov.ia") || "null") || {}; } catch (e) { return {}; } }
   function chaveGemini() { var c = cfgIA(); return c.gemini || window.CS_IA_GEMINI || ""; }
-  function temIA() { var c = cfgIA(); return !!(c.chave || chaveGemini()); }
+  function temIA() { var c = cfgIA(); return !!(c.chave || c.openai || chaveGemini()); }
+  /* ChatGPT (OpenAI): pago por uso, com chave própria */
+  function perguntarOpenAI(input, json) {
+    var c = cfgIA(), texto = textoDe(input);
+    var lista = [c.modeloGpt || "gpt-5-mini", "gpt-5-mini", "gpt-4.1-mini", "gpt-4o-mini"].filter(function (m, i, a) { return a.indexOf(m) === i; });
+    function tentar(i) {
+      if (i >= lista.length) return Promise.reject({ code: "unavailable", message: "Modelo do ChatGPT indisponível" });
+      var corpo = { model: lista[i], messages: [{ role: "user", content: texto }] };
+      if (json) corpo.response_format = { type: "json_object" };
+      return fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST", headers: { "content-type": "application/json", "authorization": "Bearer " + c.openai }, body: JSON.stringify(corpo)
+      }).then(function (r) {
+        if (r.status === 404 || r.status === 400) return r.json().catch(function () { return {}; }).then(function (j) {
+          var m = (j && j.error && j.error.message) || ""; if (/model/i.test(m) || r.status === 404) return tentar(i + 1);
+          throw { code: "unavailable", message: m || "Erro 400" };
+        });
+        if (r.status === 429) throw { code: "rate_limited", message: "Limite ou créditos do ChatGPT esgotados" };
+        if (r.status === 401 || r.status === 403) throw { code: "not_granted", message: "Chave do ChatGPT recusada" };
+        if (!r.ok) throw { code: "unavailable", message: "Erro " + r.status };
+        return r.json().then(function (j) { var ch = j && j.choices && j.choices[0]; return (ch && ch.message && ch.message.content) || ""; });
+      }, function () { throw { code: "unavailable", message: "Sem conexão com a internet" }; });
+    }
+    return tentar(0).catch(function (e) { if (chaveGemini() && e && e.code !== "not_granted") return perguntarGemini(input, json); throw e; });
+  }
   function textoDe(input) {
     var msgs = typeof input === "string" ? [{ role: "user", content: input }] : input;
     return msgs.map(function (m) { return typeof m.content === "string" ? m.content : (m.content || []).map(function (b) { return b.text || ""; }).join("\n"); }).join("\n\n");
@@ -326,7 +349,7 @@
   }
   function perguntar(input, json) {
     var c = cfgIA();
-    if (!c.chave) { if (chaveGemini()) return perguntarGemini(input, json); return Promise.reject({ code: "not_granted", message: "Sem chave da API" }); }
+    if (!c.chave) { if (c.openai) return perguntarOpenAI(input, json); if (chaveGemini()) return perguntarGemini(input, json); return Promise.reject({ code: "not_granted", message: "Sem chave da API" }); }
     var msgs = typeof input === "string" ? [{ role: "user", content: input }] : input;
     return fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
