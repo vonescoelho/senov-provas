@@ -40,6 +40,7 @@ public class MainActivity extends BridgeActivity {
     /* aberto por uma chamada: aparece por cima da tela de bloqueio e avisa o app */
     private void tratarChamada(Intent i) {
         if (i == null) return;
+        if (i.getBooleanExtra("chatmil_atualizar", false)) { i.removeExtra("chatmil_atualizar"); NativoPlugin.pedirAtualizar(); }
         String cid = i.getStringExtra("chamada_cid");
         if (cid == null) return;
         String acao = i.getStringExtra("chamada_acao");

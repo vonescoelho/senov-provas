@@ -105,6 +105,8 @@ public class ChamadasService extends Service {
         } catch (Exception e) {
             stopSelf();
         }
+        /* aproveita o serviço em segundo plano para avisar quando houver versão nova do app */
+        try { Atualizacao.verificarENotificar(this); Atualizacao.agendar(this); } catch (Throwable t) { }
     }
 
     @Override

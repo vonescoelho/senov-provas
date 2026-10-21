@@ -247,6 +247,93 @@ public class NativoPlugin extends Plugin {
         }
     }
 
+    /* ---------- atualização do app ---------- */
+    private static boolean pedidoAtualizar = false;
+    static void pedirAtualizar() {
+        pedidoAtualizar = true;
+        if (atual != null) { atual.notifyListeners("atualizar", new JSObject()); }
+    }
+
+    @PluginMethod
+    public void versao(PluginCall call) {
+        JSObject o = new JSObject();
+        o.put("codigo", Atualizacao.versaoInstalada(getContext()));
+        try { o.put("nome", getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0).versionName); } catch (Exception e) { o.put("nome", ""); }
+        o.put("pedido", pedidoAtualizar);
+        pedidoAtualizar = false;
+        call.resolve(o);
+    }
+
+    @PluginMethod
+    public void podeInstalar(PluginCall call) {
+        JSObject o = new JSObject();
+        o.put("ok", Build.VERSION.SDK_INT < 26 || getContext().getPackageManager().canRequestPackageInstalls());
+        call.resolve(o);
+    }
+
+    @PluginMethod
+    public void permitirInstalar(PluginCall call) {
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                Intent i = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getContext().getPackageName()));
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+            }
+            call.resolve();
+        } catch (Exception e) { call.reject(String.valueOf(e.getMessage())); }
+    }
+
+    @PluginMethod
+    public void baixarAtualizacao(final PluginCall call) {
+        final String url = call.getString("url", "");
+        if (!url.startsWith(Atualizacao.PREFIXO_URL) || !url.endsWith(".apk")) { call.reject("endereço inválido"); return; }
+        new Thread(() -> {
+            java.net.HttpURLConnection c = null;
+            try {
+                File dir = new File(getContext().getCacheDir(), "atualizacao");
+                dir.mkdirs();
+                File f = new File(dir, "ChatMil.apk");
+                if (f.exists()) f.delete();
+                String atualUrl = url;
+                for (int r = 0; r < 6; r++) {
+                    c = (java.net.HttpURLConnection) new java.net.URL(atualUrl).openConnection();
+                    c.setInstanceFollowRedirects(false);
+                    c.setConnectTimeout(20000); c.setReadTimeout(30000);
+                    c.setRequestProperty("User-Agent", "ChatMil-Android");
+                    int st = c.getResponseCode();
+                    if (st >= 300 && st < 400) { atualUrl = new java.net.URL(new java.net.URL(atualUrl), c.getHeaderField("Location")).toString(); c.disconnect(); c = null; continue; }
+                    if (st != 200) throw new IOException("Erro " + st);
+                    break;
+                }
+                if (c == null) throw new IOException("muitos redirecionamentos");
+                long total = c.getContentLengthLong(), lido = 0, ult = 0;
+                byte[] buf = new byte[65536];
+                try (InputStream in = c.getInputStream(); OutputStream out = new FileOutputStream(f)) {
+                    int n;
+                    while ((n = in.read(buf)) > 0) {
+                        out.write(buf, 0, n); lido += n;
+                        long agora = System.currentTimeMillis();
+                        if (agora - ult > 300) { ult = agora; JSObject p = new JSObject(); p.put("lido", lido); p.put("total", total); notifyListeners("atualizacaoProgresso", p); }
+                    }
+                }
+                /* confere se é mesmo o ChatMil antes de instalar */
+                android.content.pm.PackageInfo pi = getContext().getPackageManager().getPackageArchiveInfo(f.getPath(), 0);
+                if (pi == null || !getContext().getPackageName().equals(pi.packageName)) { f.delete(); throw new IOException("arquivo inválido"); }
+                Uri u = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f);
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setDataAndType(u, "application/vnd.android.package-archive");
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(i);
+                JSObject r = new JSObject();
+                r.put("ok", true);
+                r.put("versao", pi.versionName);
+                call.resolve(r);
+            } catch (Exception e) {
+                call.reject(String.valueOf(e.getMessage()));
+            } finally { if (c != null) c.disconnect(); }
+        }).start();
+    }
+
     @PluginMethod
     public void abrir(PluginCall call) {
         try {
