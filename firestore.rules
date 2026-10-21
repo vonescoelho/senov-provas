@@ -9,6 +9,13 @@ service cloud.firestore {
     function imgsOk() {
       return !('imgs' in request.resource.data) || (request.resource.data.imgs is list && request.resource.data.imgs.size() <= 6);
     }
+    // música da foto (Openverse): só link https e textos curtos
+    function musicaOk() {
+      return !('musica' in request.resource.data) || (request.resource.data.musica is map
+        && request.resource.data.musica.url is string && request.resource.data.musica.url.matches('^https://.*') && request.resource.data.musica.url.size() <= 500
+        && request.resource.data.musica.titulo is string && request.resource.data.musica.titulo.size() <= 120
+        && request.resource.data.musica.artista is string && request.resource.data.musica.artista.size() <= 100);
+    }
     function textoOk(campo, max) {
       return !(campo in request.resource.data) || request.resource.data[campo] == null
         || (request.resource.data[campo] is string && request.resource.data[campo].size() <= max);
@@ -54,6 +61,13 @@ service cloud.firestore {
         allow create, delete: if logado() && outro == eu();
       }
       // cópia da chave secreta trancada pelo PIN (só a própria pessoa lê)
+      // Anotações (só o dono)
+      match /notas/{nid} {
+        allow read, delete: if logado() && uid == eu();
+        allow create, update: if logado() && uid == eu() && textoOk('texto', 5000) && textoOk('thumb', 60000)
+          && request.resource.data.get('cat', 'pessoal') in ['trabalho', 'casa', 'pessoal', 'amigos']
+          && request.resource.data.get('prioridade', 2) in [1, 2, 3];
+      }
       match /privado/{doc} {
         allow read, write: if logado() && uid == eu();
       }
@@ -147,7 +161,9 @@ service cloud.firestore {
       allow create: if logado()
         && request.resource.data.autor == eu()
         && textoOk('texto', 3000) && textoOk('fig', 30) && textoOk('aoVivo', 80) && imgsOk() && !('para' in request.resource.data)
-        && request.resource.data.curtidas == [] && request.resource.data.nComent == 0;
+        && request.resource.data.curtidas == [] && request.resource.data.nComent == 0
+        && !('nRepost' in request.resource.data) && musicaOk()
+        && (!('repost' in request.resource.data) || (request.resource.data.repost is map && request.resource.data.repost.id is string && request.resource.data.repost.id.size() <= 40));
       allow update: if logado() && (
         (resource.data.autor == eu() && mudou().hasOnly(['texto', 'editadoEm']) && textoOk('texto', 3000))
         || (mudou().hasOnly(['curtidas'])
@@ -155,6 +171,9 @@ service cloud.firestore {
             && resource.data.curtidas.toSet().difference(request.resource.data.curtidas.toSet()).hasOnly([eu()]))
         || (mudou().hasOnly(['nComent'])
             && (request.resource.data.nComent == resource.data.nComent + 1 || request.resource.data.nComent == resource.data.nComent - 1))
+        // recompartilhar: +1 ao recompartilhar, -1 ao apagar o recompartilhamento
+        || (mudou().hasOnly(['nRepost'])
+            && (request.resource.data.nRepost == resource.data.get('nRepost', 0) + 1 || request.resource.data.nRepost == resource.data.get('nRepost', 0) - 1))
       );
       allow delete: if logado() && resource.data.autor == eu();
 
@@ -192,6 +211,18 @@ service cloud.firestore {
       }
     }
     // Arquivos do mural (PDF, vídeo, slides…), em partes de até 700 KB. Com "para", só essas pessoas baixam.
+    // Arquivos e fotos das Anotações: só o dono
+    match /notaArqs/{aid} {
+      allow read, delete: if logado() && resource.data.dono == eu();
+      allow create: if logado() && request.resource.data.dono == eu()
+        && request.resource.data.tamanho is int && request.resource.data.tamanho <= 20971520
+        && request.resource.data.partes is int && request.resource.data.partes <= 40 && textoOk('nome', 120);
+      match /partes/{pid} {
+        allow read, delete: if logado() && get(/databases/$(database)/documents/notaArqs/$(aid)).data.dono == eu();
+        allow create: if logado() && get(/databases/$(database)/documents/notaArqs/$(aid)).data.dono == eu()
+          && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000;
+      }
+    }
     match /postArqs/{aid} {
       function pa() { return get(/databases/$(database)/documents/postArqs/$(aid)).data; }
       function vePA() { return pa().get('para', null) == null || pa().dono == eu() || eu() in pa().para; }
@@ -352,12 +383,12 @@ service cloud.firestore {
     match /idade/{uid} {
       allow read: if logado() && (uid == eu() || adminVit());
       allow create: if logado() && ((uid == eu() && selfieOk()) || adminVit());
-      allow update: if logado() && ((uid == eu() && resource.data.metodo == 'selfie' && selfieOk()) || adminVit());
+      allow update: if logado() && ((uid == eu() && resource.data.metodo in ['selfie', 'documento'] && selfieOk()) || adminVit());
       allow delete: if logado() && adminVit();
     }
     function selfieOk() {
       return request.resource.data.keys().hasOnly(['ok', 'metodo', 'em', 'v'])
-        && request.resource.data.ok == true && request.resource.data.metodo == 'selfie';
+        && request.resource.data.ok == true && request.resource.data.metodo in ['selfie', 'documento'];
     }
     match /pedidosIdade/{uid} {
       allow read: if logado() && (uid == eu() || adminVit());
