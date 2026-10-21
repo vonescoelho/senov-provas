@@ -42,7 +42,7 @@ subprocess.run([os.path.join(os.path.abspath(NM), ".bin", "esbuild"), os.path.jo
                 "--format=iife", "--global-name=FB", "--target=es2019", "--legal-comments=none",
                 "--outfile=" + os.path.join(WWW, "vendor", "firebase.js")], check=True, cwd=RAIZ)
 # módulos da rede social (só na versão aplicativo; no claude.ai o app segue sem eles)
-MODULOS = ("firebase-config.js", "social-extras.js", "social.js", "social-cripto.js", "social-midia.js", "social-chamada.js", "social-flash.js", "social-mais.js", "social-perto.js", "social-idade.js", "social-banco.js")
+MODULOS = ("firebase-config.js", "social-extras.js", "social.js", "social-cripto.js", "social-midia.js", "social-chamada.js", "social-flash.js", "social-mais.js", "social-perto.js", "social-idade.js", "social-banco.js", "social-musica.js", "social-app.js", "social-notas.js")
 for arq in MODULOS:
     shutil.copy(os.path.join(RAIZ, "app", arq), os.path.join(WWW, arq))
 # imagens das questões de exemplo (encarte do mercadinho, leitura do AEE)
@@ -106,28 +106,78 @@ html = f"""<!doctype html>
 open(os.path.join(WWW, "index.html"), "w", encoding="utf-8").write(html)
 
 # ---------- ícones ----------
+# Logo do ChatMil: balão de conversa com ✓ num degradê roxo → rosa → laranja (mais jovem e chamativo)
+from PIL import ImageFilter
+import math
+
+C1, C2, C3 = (124, 58, 237), (219, 39, 119), (249, 115, 22)
+
+def gradiente(S):
+    """degradê diagonal roxo → rosa → laranja"""
+    g = Image.new("RGB", (S, S))
+    px = g.load()
+    for y in range(S):
+        for x in range(S):
+            t = (x + y) / (2 * (S - 1))
+            if t < 0.55:
+                k = t / 0.55; a, b = C1, C2
+            else:
+                k = (t - 0.55) / 0.45; a, b = C2, C3
+            px[x, y] = tuple(int(a[i] + (b[i] - a[i]) * k) for i in range(3))
+    return g
+
+def gradiente_rapido(S):
+    base = gradiente(256)
+    return base.resize((S, S), Image.BICUBIC)
+
+def estrela(d, cx, cy, r, cor):
+    pts = []
+    for i in range(8):
+        ang = math.pi / 4 * i - math.pi / 2
+        rr = r if i % 2 == 0 else r * 0.32
+        pts.append((cx + rr * math.cos(ang), cy + rr * math.sin(ang)))
+    d.polygon(pts, fill=cor)
+
+def simbolo(S, escala=1.0):
+    """balão de conversa branco com um ✓ no degradê e um brilho amarelo"""
+    im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
+    c = S / 2
+    w, h = S * 0.60 * escala, S * 0.47 * escala
+    x0, y0 = c - w / 2, c - h / 2 - S * 0.03 * escala
+    # sombra suave
+    sh = Image.new("RGBA", (S, S), (0, 0, 0, 0)); ds = ImageDraw.Draw(sh)
+    ds.rounded_rectangle([x0, y0 + S * 0.02 * escala, x0 + w, y0 + h + S * 0.02 * escala], radius=int(h * 0.42), fill=(40, 0, 60, 90))
+    sh = sh.filter(ImageFilter.GaussianBlur(S * 0.025))
+    im.alpha_composite(sh)
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle([x0, y0, x0 + w, y0 + h], radius=int(h * 0.42), fill=(255, 255, 255, 255))
+    # rabinho do balão
+    d.polygon([(x0 + w * 0.22, y0 + h * 0.80), (x0 + w * 0.13, y0 + h * 1.22), (x0 + w * 0.46, y0 + h * 0.92)], fill=(255, 255, 255, 255))
+    # ✓ com degradê
+    mask = Image.new("L", (S, S), 0); dm = ImageDraw.Draw(mask)
+    lw = int(S * 0.07 * escala)
+    pts = [(x0 + w * 0.29, y0 + h * 0.52), (x0 + w * 0.44, y0 + h * 0.70), (x0 + w * 0.72, y0 + h * 0.32)]
+    dm.line(pts, fill=255, width=lw, joint="curve")
+    for p_ in pts:
+        dm.ellipse([p_[0] - lw / 2, p_[1] - lw / 2, p_[0] + lw / 2, p_[1] + lw / 2], fill=255)
+    gr = gradiente_rapido(S).convert("RGBA")
+    im.paste(gr, (0, 0), mask)
+    # brilho
+    estrela(d, x0 + w * 0.98, y0 - h * 0.02, S * 0.085 * escala, (255, 214, 10, 255))
+    estrela(d, x0 + w * 1.10, y0 + h * 0.30, S * 0.035 * escala, (255, 255, 255, 235))
+    return im
+
 def desenhar(tam, fundo=True, escala=1.0, raio=0.22):
     S = tam * 4
     im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
-    d = ImageDraw.Draw(im)
     if fundo:
-        if raio:
-            d.rounded_rectangle([0, 0, S - 1, S - 1], radius=int(S * raio), fill=AZUL + (255,))
-        else:
-            d.rectangle([0, 0, S, S], fill=AZUL + (255,))
-    c = S / 2
-    w, h = S * 0.44 * escala, S * 0.54 * escala
-    x0, y0 = c - w / 2, c - h / 2
-    d.rounded_rectangle([x0, y0, x0 + w, y0 + h], radius=int(S * 0.045 * escala), fill=(255, 255, 255, 255))
-    d.rectangle([x0 + w * 0.17, y0 + h * 0.07, x0 + w * 0.17 + S * 0.012 * escala, y0 + h * 0.93], fill=(210, 63, 88, 255))
-    for k in (0.24, 0.36):
-        d.rounded_rectangle([x0 + w * 0.3, y0 + h * k, x0 + w * 0.82, y0 + h * k + S * 0.02 * escala], radius=int(S * 0.01), fill=(200, 208, 230, 255))
-    lw = int(S * 0.05 * escala)
-    pts = [(x0 + w * 0.32, y0 + h * 0.66), (x0 + w * 0.48, y0 + h * 0.8), (x0 + w * 0.8, y0 + h * 0.5)]
-    d.line(pts, fill=AZUL + (255,), width=lw, joint="curve")
-    for p_ in (pts[0], pts[2]):
-        d.ellipse([p_[0] - lw / 2, p_[1] - lw / 2, p_[0] + lw / 2, p_[1] + lw / 2], fill=AZUL + (255,))
+        g = gradiente_rapido(S).convert("RGBA")
+        m = Image.new("L", (S, S), 0)
+        ImageDraw.Draw(m).rounded_rectangle([0, 0, S - 1, S - 1], radius=int(S * raio), fill=255) if raio else ImageDraw.Draw(m).rectangle([0, 0, S, S], fill=255)
+        im.paste(g, (0, 0), m)
+    im.alpha_composite(simbolo(S, escala))
     return im.resize((tam, tam), Image.LANCZOS)
+
 
 ic = os.path.join(WWW, "icons")
 os.makedirs(ic, exist_ok=True)
@@ -141,7 +191,7 @@ ass = os.path.join(RAIZ, "assets")
 os.makedirs(ass, exist_ok=True)
 desenhar(1024, raio=0).save(os.path.join(ass, "icon-only.png"))
 desenhar(1024, fundo=False, escala=0.62).save(os.path.join(ass, "icon-foreground.png"))
-Image.new("RGBA", (1024, 1024), AZUL + (255,)).save(os.path.join(ass, "icon-background.png"))
+gradiente_rapido(1024).convert("RGBA").save(os.path.join(ass, "icon-background.png"))
 for nome, cor in (("splash.png", (242, 244, 249)), ("splash-dark.png", (12, 17, 32))):
     sp = Image.new("RGBA", (2732, 2732), cor + (255,))
     sp.alpha_composite(desenhar(560), (1086, 1086))
@@ -159,7 +209,7 @@ manifest = {
     "orientation": "any",
     "lang": "pt-BR",
     "background_color": "#F2F4F9",
-    "theme_color": "#2447C6",
+    "theme_color": "#7C3AED",
     "categories": ["education", "social", "productivity"],
     "icons": [
         {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
