@@ -50,7 +50,7 @@ jobs:
           s = open(p).read()
           perms = ["POST_NOTIFICATIONS", "FOREGROUND_SERVICE", "FOREGROUND_SERVICE_SPECIAL_USE", "USE_FULL_SCREEN_INTENT",
                    "SYSTEM_ALERT_WINDOW", "REQUEST_IGNORE_BATTERY_OPTIMIZATIONS", "RECEIVE_BOOT_COMPLETED", "WAKE_LOCK", "VIBRATE", "ACCESS_NETWORK_STATE",
-                   "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+                   "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "REQUEST_INSTALL_PACKAGES"]
           extra = "".join(f'    <uses-permission android:name="android.permission.{x}" />\n' for x in perms if f"android.permission.{x}\"" not in s)
           s = s.replace("<application", extra + "\n    <application", 1)
           comp = """
@@ -80,6 +80,7 @@ jobs:
               implementation 'androidx.camera:camera-camera2:1.4.2'
               implementation 'androidx.camera:camera-lifecycle:1.4.2'
               implementation 'androidx.camera:camera-video:1.4.2'
+              implementation 'androidx.camera:camera-extensions:1.4.2'
               implementation 'androidx.camera:camera-view:1.4.2'
               implementation 'androidx.media3:media3-transformer:1.8.0'
               implementation 'androidx.media3:media3-effect:1.8.0'
@@ -125,7 +126,7 @@ jobs:
 
       - name: Ícone e tela de abertura
         continue-on-error: true
-        run: npx @capacitor/assets generate --android --iconBackgroundColor '#2447C6' --iconBackgroundColorDark '#2447C6' --splashBackgroundColor '#F2F4F9' --splashBackgroundColorDark '#0C1120'
+        run: npx @capacitor/assets generate --android --iconBackgroundColor '#C0268F' --iconBackgroundColorDark '#C0268F' --splashBackgroundColor '#F2F4F9' --splashBackgroundColorDark '#0C1120'
 
       - name: Número da versão
         run: |
