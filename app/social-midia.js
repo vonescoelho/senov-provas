@@ -491,6 +491,7 @@
     } finally { barra(null); if (sub && sub.remove) sub.remove(); }
   }
   X.midia_nativa = midiaNativa;
+  X.temCameraNativa = !!MDP;
   /* vídeo que este aparelho não consegue tocar (ex.: H.265 em computador antigo): avisa e oferece abrir em outro app */
   document.addEventListener("error", e => {
     const v = e.target; if (!v || v.tagName !== "VIDEO" || v.dataset.avisou || !v.getAttribute("src")) return;
@@ -1135,7 +1136,9 @@
   }
   X.acoes["un-foto"] = async el => {
     window.fecharSheet(); const id = el.dataset.id;
-    const [f] = await escolher("image/*", false); if (!f) return;
+    const nat = await midiaNativa("camera", { modo: "foto" });
+    const f = nat ? nat[0] : (await escolher("image/*", false))[0]; if (!f) return;
+    if (!/^image\//.test(f.type || "")) return toast("Para visualização única, escolha uma foto.");
     const barra = barraEnvio("foto de visualização única");
     try {
       const b = await comprimirImg(f, 1600);
@@ -1389,7 +1392,7 @@ body.cs-apres-on{overflow:hidden}
 .cs-grav-un{width:100%;display:flex;align-items:center;gap:6px;justify-content:center;color:#7C3AED;font-weight:700;font-size:.85rem}
 .cs-grav-un svg{width:18px;height:18px}
 @keyframes csPulso{50%{opacity:.25}}
-.cs-unica-b{min-width:210px}
+.cs-unica-b{min-width:0;flex-direction:row;flex-wrap:wrap;align-items:flex-end;column-gap:8px}.cs-unica-b>.cs-autor{flex-basis:100%}.cs-unica-b>.cs-h{margin-bottom:3px}
 .cs-vid-erro{display:flex;flex-direction:column;gap:4px;margin:8px auto;max-width:420px;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.72);color:#fff;font-size:.88rem;text-align:center}
 .cs-un-ed{position:fixed;left:0;right:0;top:0;height:calc(100% - var(--kb,0px));height:calc(100dvh - var(--kb,0px));z-index:90;background:var(--surface);display:flex;flex-direction:column;padding:calc(6px + env(safe-area-inset-top,0px)) 12px 10px;gap:8px;animation:fade .15s}
 .cs-un-ed-h{display:flex;align-items:center;gap:8px;min-height:50px}

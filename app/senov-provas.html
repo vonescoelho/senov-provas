@@ -294,6 +294,15 @@ ins{background:var(--ok-soft);color:var(--ok);text-decoration:none;border-radius
 .ajuda-btn::before{content:"";position:absolute;inset:-11px}
 div.f{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:.9rem}
 .ia-rot{display:flex;align-items:center;gap:6px}
+.chips .chip.on{background:var(--primary);color:var(--primary-ink,#fff);border-color:var(--primary)}
+.chips .chip.pri{background:var(--ok,#16A34A);color:#fff;border-color:transparent;font-weight:800}
+.mq-lista{display:flex;flex-direction:column;gap:6px;max-height:52vh;overflow:auto;margin:6px 0}
+.mq-g{font-size:.95rem;margin:10px 0 2px}.mq-g small{color:var(--muted);font-weight:400}
+.mq-q{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.mq-q input{width:22px;height:22px;flex:none;margin-top:2px;accent-color:var(--primary)}
+.mq-q:has(input:checked){border-color:var(--primary);background:var(--primary-soft)}
+.mq-q>span{display:flex;flex-direction:column;gap:6px;min-width:0}.mq-tx{font-size:.92rem;line-height:1.4}.mq-m{display:flex;gap:6px;flex-wrap:wrap}
+.mq-fim{position:sticky;bottom:0;background:var(--surface);padding-top:8px}.mq-fim .btn{width:100%}
 .ia-reco{border:1.5px solid var(--primary);border-radius:16px;padding:14px;background:var(--primary-soft)}
 .ia-reco-h{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .ia-vant{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:.9rem}
@@ -1226,7 +1235,7 @@ function iniciarChat(){
 function vConversa(){
   iniciarChat();
   const ult=CHAT.msgs.length-1;
-  return `${avisoModo()}<div class="chat" id="chat">${CHAT.msgs.map((m,i)=>`<div class="msg ${m.de}"><div class="bolha">${m.html}${m.extra||""}<span class="hora">${m.h}</span></div>${m.de==="bot"&&i===ult&&!CHAT.digitando&&m.chips.length?`<div class="chips resp">${m.chips.map(c=>`<button class="chip" data-a="${c.a}" data-v="${esc(c.v||"")}">${esc(c.t)}</button>`).join("")}</div>`:""}</div>`).join("")}${CHAT.digitando?`<div class="msg bot"><div class="bolha digitando" aria-label="Digitando"><i></i><i></i><i></i></div></div>`:""}</div>
+  return `${avisoModo()}<div class="chat" id="chat">${CHAT.msgs.map((m,i)=>`<div class="msg ${m.de}"><div class="bolha">${m.html}${m.extra||""}<span class="hora">${m.h}</span></div>${m.de==="bot"&&i===ult&&!CHAT.digitando&&m.chips.length?`<div class="chips resp">${m.chips.map(c=>`<button class="chip ${c.on?"on":""} ${c.pri?"pri":""}" data-a="${c.a}" data-v="${esc(c.v||"")}" ${c.on!=null?`aria-pressed="${!!c.on}"`:""}>${esc(c.t)}</button>`).join("")}</div>`:""}</div>`).join("")}${CHAT.digitando?`<div class="msg bot"><div class="bolha digitando" aria-label="Digitando"><i></i><i></i><i></i></div></div>`:""}</div>
   <form class="composer" id="composer"><input id="chat-txt" class="in" autocomplete="off" enterkeyhint="send" aria-label="Mensagem" placeholder="${CHAT.espera?esc(CHAT.espera.ph):"Ex.: Matemática, 6º ano, 10 questões"}"><button class="btn primary" aria-label="Enviar">${I.send}</button></form>`;
 }
 function perguntar(){
@@ -1249,6 +1258,7 @@ function perguntar(){
     if(resta<=0){d.escolhendo=false;return perguntar();}
     if(d.contAtual){CHAT.perg="distn";const ns=[...new Set([1,2,3,5,resta].filter(n=>n<=resta))].sort((a,b)=>a-b);
       return chatBot(`Quantas questões sobre <b>${esc(d.contAtual)}</b>? Faltam ${resta}.`,ns.map(n=>({t:n===resta&&n>1?`${n} (todas)`:String(n),a:"c-resp",v:"distn|"+n})));}
+    if(!d.dist.length&&!d.dividir){CHAT.perg="distc";return chatBot(`Marque os conteúdos que você quer (pode marcar vários) e toque em <b>Pronto</b>. Eu divido as ${d.qtd} questões entre eles.<br><small>Ou escreva, por exemplo: <i>7 de ${esc(conteudosDe(d.disciplina,d.nivel,d.serie)[0]||"frações")} e 3 de ${esc(conteudosDe(d.disciplina,d.nivel,d.serie)[1]||"geometria")}</i>.</small>`,chipsMarca(d));}
     CHAT.perg="distc";const lista=conteudosDe(d.disciplina,d.nivel,d.serie).filter(c=>!d.dist.some(x=>x.c===c)).slice(0,16);
     const chips=lista.map(c=>({t:c,a:"c-resp",v:"distc|"+c}));if(d.dist.length)chips.push({t:`As outras ${resta} variadas`,a:"c-resp",v:"distfim|"});
     return chatBot(d.dist.length?`Anotado: ${d.dist.map(x=>`${x.n} de ${esc(x.c)}`).join(", ")}. Faltam ${resta}. Qual outro conteúdo?`:`Escolha o conteúdo ou escreva, por exemplo: <i>7 de ${esc(lista[0]||"frações")} e 3 de ${esc(lista[1]||"geometria")}</i>.`,chips);}
@@ -1257,6 +1267,41 @@ function perguntar(){
   CHAT.perg=null;gerarNoChat().catch(e=>{console.warn(e);CHAT.digitando=false;chatBot("Algo deu errado ao montar a prova. Tente de novo.",menuChips());});
 }
 const iaOn=()=>!!S.sample;
+/* conteúdos com marcação: cada toque marca/desmarca; "Pronto" divide as questões entre os marcados */
+function chipsMarca(d){
+  const marc=d.marc||[],lista=uniq([...marc,...conteudosDe(d.disciplina,d.nivel,d.serie)]).slice(0,24);
+  const chips=lista.map(c=>({t:(marc.includes(c)?"✓ ":"")+c,a:"c-marca",v:c,on:marc.includes(c)}));
+  if(marc.length)chips.push({t:`Pronto (${marc.length} marcado${marc.length===1?"":"s"})`,a:"c-resp",v:"distok|",pri:true});
+  chips.push({t:"Marcar as questões uma a uma",a:"c-marcarq"});
+  if(marc.length)chips.push({t:"Dividir eu mesmo",a:"c-resp",v:"distdiv|"});
+  return chips;
+}
+function marcarConteudo(c){
+  const d=CHAT.d;d.marc=d.marc||[];const i=d.marc.indexOf(c);if(i>=0)d.marc.splice(i,1);else d.marc.push(c);
+  const ult=CHAT.msgs[CHAT.msgs.length-1];if(ult&&ult.de==="bot")ult.chips=chipsMarca(d);renderChat();
+}
+/* lista das questões do banco (dos conteúdos marcados) para o professor escolher uma a uma */
+function sheetMarcarQuestoes(outras){
+  const d=CHAT.d,marc=d.marc||[];
+  const qs=S.questoes.filter(q=>q.disciplina===d.disciplina&&q.nivel===d.nivel&&(outras||q.serie===d.serie)&&(!marc.length||marc.includes(q.conteudo))&&Array.isArray(q.alternativas)&&q.alternativas.length===NALT[d.nivel]&&(!d.aee||q.aee||q.dificuldade===1));
+  S._marcQ=S._marcQ||new Set();
+  const grupos={};qs.forEach(q=>{(grupos[q.conteudo||"Outros"]=grupos[q.conteudo||"Outros"]||[]).push(q);});
+  abrirSheet(`<div class="sheet-h"><h2>Marque as questões</h2></div>
+    <p class="small muted">${esc(d.disciplina)} · ${esc(d.serie)}${marc.length?` · ${marc.length} conteúdo${marc.length===1?"":"s"}`:""}</p>
+    <label class="switch" for="mq-outras"><input type="checkbox" id="mq-outras" ${outras?"checked":""}><span class="t"><b>Mostrar outras séries</b></span></label>
+    <div class="mq-lista">${qs.length?Object.entries(grupos).map(([g,l])=>`<h3 class="mq-g">${esc(g)} <small>${l.length}</small></h3>${l.map(q=>`<label class="mq-q"><input type="checkbox" class="mq-ck" value="${esc(q.id)}" ${S._marcQ.has(q.id)?"checked":""}><span><span class="mq-tx">${esc(String(q.enunciado||"").slice(0,170))}${String(q.enunciado||"").length>170?"…":""}</span><span class="mq-m">${difPill(q.dificuldade||2)}${q.serie!==d.serie?`<span class="pill">${esc(q.serie)}</span>`:""}${q.origemIA?'<span class="pill">IA</span>':""}</span></span></label>`).join("")}`).join(""):`<p class="small muted">Não há questões desses conteúdos no banco${iaOn()?". Volte e peça para a IA criar":""}.</p>`}</div>
+    <div class="mq-fim"><button class="btn primary" data-a="c-marcarq-ok" id="mq-ok" ${S._marcQ.size?"":"disabled"}>Montar prova com ${S._marcQ.size} questão${S._marcQ.size===1?"":"es"}</button></div>`);
+}
+function montarComMarcadas(){
+  const d=CHAT.d,itens=[...(S._marcQ||[])].map(id=>S.questoes.find(q=>q.id===id)).filter(Boolean);
+  if(!itens.length)return toast("Marque pelo menos uma questão.");
+  fecharSheet();chatEu(`${itens.length} ${itens.length===1?"questão marcada":"questões marcadas"}`);
+  novaProva();const p=S.prova;
+  Object.assign(p,{escola:S.perfil.escola||"",professor:S.perfil.professor||"",disciplina:d.disciplina,nivel:d.nivel,serie:d.serie,bimestre:d.bimestre||BIM[0],aee:!!d.aee,bastao:!!d.aee});
+  CHAT.d={};CHAT.perg=null;S._marcQ=new Set();
+  p.itens=itens;p.montagem=organizar(p.itens,p.nivel);S.passo=3;
+  cartaoPronto(p,"Você escolheu cada questão.");
+}
 function responder(v){
   const [k,a,b]=String(v).split("|"),d=CHAT.d;
   if(k==="disciplina"){d.disciplina=a||"";d.serie=null;}
@@ -1268,6 +1313,8 @@ function responder(v){
   else if(k==="distc")d.contAtual=a;
   else if(k==="distn"&&d.contAtual){d.dist.push({c:d.contAtual,n:+a});d.contAtual=null;}
   else if(k==="distfim"){d.escolhendo=false;d.contAtual=null;}
+  else if(k==="distok"){const m=d.marc||[];if(m.length){const base=Math.floor(d.qtd/m.length),ext=d.qtd%m.length;d.dist=m.map((c,i)=>({c,n:base+(i<ext?1:0)})).filter(x=>x.n>0);d.escolhendo=false;}}
+  else if(k==="distdiv"){d.dividir=true;}
   else if(k==="fonte")d.fonte=a;
   perguntar();
 }
@@ -1279,7 +1326,7 @@ function chatTexto(t){
   let achou=false;
   if(CHAT.perg==="distn"&&/^\d{1,2}$/.test(n)&&d.contAtual){const resta=d.qtd-d.dist.reduce((t,x)=>t+x.n,0);d.dist.push({c:d.contAtual,n:Math.max(1,Math.min(resta,+n))});d.contAtual=null;return perguntar();}
   if(["dist","distc","distn"].includes(CHAT.perg)){const pl=lerDivisao(t,d);if(pl.length){d.dist=pl;d.contAtual=null;d.escolhendo=pl.reduce((s,x)=>s+x.n,0)<d.qtd;return perguntar();}
-    if(CHAT.perg==="distc"&&t.length>2&&!/^\d/.test(n)){d.contAtual=t.replace(/^./,c=>c.toUpperCase());return perguntar();}}
+    if(CHAT.perg==="distc"&&t.length>2&&!/^\d/.test(n)){const nome=t.replace(/^./,c=>c.toUpperCase());if(!d.dist.length&&!d.dividir){d.marc=d.marc||[];if(!d.marc.includes(nome))d.marc.push(nome);}else d.contAtual=nome;return perguntar();}}
   if(CHAT.perg==="qtd"&&/^\d{1,2}$/.test(n)){d.qtd=Math.min(40,Math.max(1,+n));achou=true;}
   if(CHAT.perg==="bimestre"&&/^[1-4]$/.test(n)){d.bimestre=BIM[+n-1];achou=true;}
   if(CHAT.perg==="aee"&&/^(sim|s|nao|n)\b/.test(n)){d.aee=n[0]==="s";achou=true;}
@@ -1378,6 +1425,9 @@ async function gerarNoChat(){
   if(!res.sel.length)return chatBot(d.aee?"Ainda não há questões adaptadas ao AEE nesta disciplina. No modo passo a passo você pode adaptar questões do banco.":"Não encontrei questões para esses filtros."+(iaOn()?"":" Com a IA grátis ligada eu crio questões novas."),[{t:"Nova prova",a:"c-nova"},...(iaOn()?[]:[{t:"Ligar IA grátis",a:"ia-passos",v:"gemini"}]),{t:"Passo a passo",a:"personalizar"}]);
   p.itens=res.sel;p.montagem=organizar(p.itens,p.nivel);S.passo=3;
   if(res.falta)obs=(obs?obs+" ":"")+`Encontrei ${res.sel.length} de ${d.qtd} questões.`;
+  cartaoPronto(p,obs);
+}
+function cartaoPronto(p,obs){
   CHAT.msgs.forEach(m=>{if(m.extra)m.extra=m.extra.replace('class="cprova"','class="cprova velho"');});
   const dist=distribuicao(p.montagem,p.nivel).map((v,i)=>`${LET[i]} ${v}`).join(" · ");
   const card=`<div class="cprova"><b>${esc(p.disciplina)} · ${esc(p.serie)}</b><span>${esc(p.bimestre)} · ${p.montagem.length} questões${p.aee?" · adaptada":""}</span><span class="gab">Gabarito: ${dist}</span><div class="row"><button class="btn primary sm" data-a="pdf">${I.down} Baixar PDF</button><button class="btn sm" data-a="c-ver">${I.pen} Ver e ajustar</button></div></div>`;
@@ -1996,6 +2046,9 @@ document.addEventListener("click",async ev=>{
   switch(a){
     case "zoom":aplicarZoom(el.dataset.v);render();break;
     case "c-nova":chatEu("Nova prova");CHAT.d={};perguntar();break;
+    case "c-marca":marcarConteudo(el.dataset.v);break;
+    case "c-marcarq":S._marcQ=new Set();sheetMarcarQuestoes(false);break;
+    case "c-marcarq-ok":montarComMarcadas();break;
     case "c-resp":chatEu(el.textContent.replace(/\s*\(\d+\)$/,""));responder(el.dataset.v);break;
     case "c-pular":chatEu("Pular");CHAT.d.pulouEscola=true;perguntar();break;
     case "c-ver":S.tab="prova";S.passo=3;lembrar();render();window.scrollTo(0,0);break;
@@ -2219,6 +2272,11 @@ document.addEventListener("change",async ev=>{
 });
 document.addEventListener("input",ev=>{if(ev.target.id&&ev.target.id.startsWith("gr-")&&S._gr){lerGrafico();clearTimeout(S._gt);S._gt=setTimeout(atualizarPrevGrafico,200);}});
 document.addEventListener("change",ev=>{if((ev.target.id==="gr-pb"||ev.target.id==="gr-val")&&S._gr){lerGrafico();atualizarPrevGrafico();}});
+document.addEventListener("change",ev=>{
+  const t=ev.target;
+  if(t.classList&&t.classList.contains("mq-ck")){S._marcQ=S._marcQ||new Set();t.checked?S._marcQ.add(t.value):S._marcQ.delete(t.value);const b=$("#mq-ok");if(b){const n=S._marcQ.size;b.disabled=!n;b.textContent=`Montar prova com ${n} questão${n===1?"":"es"}`;}}
+  if(t.id==="mq-outras"){const lista=$(".mq-lista"),y=lista?lista.scrollTop:0;sheetMarcarQuestoes(t.checked);const l2=$(".mq-lista");if(l2)l2.scrollTop=y;}
+});
 document.addEventListener("paste",async ev=>{
   if(!S._ed||!$("#ed-en"))return;const it=[...(ev.clipboardData&&ev.clipboardData.items||[])].find(i=>i.type.startsWith("image/"));if(!it)return;
   ev.preventDefault();lerEditor();try{const r=await arquivoParaImagem(it.getAsFile());S._ed.foto=r;S._ed.d.grafico=null;S._ed.d.temFoto=true;desenharEditor();toast("Imagem colada na questão.");}catch(e){toast("Não foi possível usar a imagem colada.");}

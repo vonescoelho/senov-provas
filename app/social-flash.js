@@ -94,9 +94,13 @@
     carregarFlashes(false);
     const pessoas = [...FL.porUid.entries()].sort((a, b) => (todosVistos(a[1]) - todosVistos(b[1])) || (b[1][b[1].length - 1].criado - a[1][a[1].length - 1].criado));
     const meu = SO.eu || {};
-    return `<div class="cs-fl-faixa" role="list" aria-label="Flashes">
-      <button class="cs-fl-it" data-s="fl-meu" role="listitem">${FL.meus.length ? `<span class="cs-fl-anel ${todosVistos(FL.meus) ? "visto" : ""}" style="--t:58px">${av(meu, 58, eu())}</span>` : `<span class="cs-fl-novo">${av(meu, 58, eu())}<i>${I.mais}</i></span>`}<span>Seu Flash</span></button>
-      ${pessoas.map(([uid, l]) => { const p = P(uid); return `<button class="cs-fl-it" data-s="fl-ver" data-id="${esc(uid)}" role="listitem"><span class="cs-fl-anel ${todosVistos(l) ? "visto" : ""}" style="--t:58px">${av(p, 58, uid)}</span><span>${esc((p.nome || "").split(" ")[0])}</span></button>`; }).join("")}
+    /* cartões retangulares como os status do WhatsApp: miniatura meio transparente e a foto do perfil no meio */
+    const fundo = l => { const f = l.find(x => !FL.vistos.has(x.id)) || l[l.length - 1]; return f && f.thumb && /^data:image\//.test(f.thumb) ? ` style="background-image:url('${esc(f.thumb)}')"` : ""; };
+    const cartao = (s, uid, l, nome, p, extra) => `<button class="cs-fl-card ${l.length && !todosVistos(l) ? "novo" : ""} ${l.length ? "" : "vazio"}" data-s="${s}" ${uid ? `data-id="${esc(uid)}"` : ""} role="listitem" aria-label="${esc(nome)}">
+        <span class="cs-fl-bg"${l.length ? fundo(l) : ""}></span><span class="cs-fl-av">${av(p, 44, uid || eu())}${extra || ""}</span><span class="cs-fl-nm">${esc(nome)}</span></button>`;
+    return `<div class="cs-fl-faixa cs-fl-cards" role="list" aria-label="Flashes">
+      ${cartao("fl-meu", null, FL.meus, FL.meus.length ? "Seu Flash" : "Criar Flash", meu, FL.meus.length ? "" : `<i class="cs-fl-mais">${I.mais}</i>`)}
+      ${pessoas.map(([uid, l]) => { const p = P(uid); return cartao("fl-ver", uid, l, (p.nome || "").split(" ")[0], p); }).join("")}
     </div>`;
   };
   X.acoes["fl-meu"] = () => {
@@ -369,7 +373,9 @@
     Object.assign(CR, { destino, modo: "foto", fonte: null, fonteTipo: null, blob: null, musica: null, legenda: "", somOriginal: true, publico: destino === "flash" ? ((SO.eu && SO.eu.privFlash) || "todos") : null, para: [] });
     const el = document.createElement("div"); el.className = "cs-flc"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", destino === "flash" ? "Novo Flash" : "Novo destaque");
     document.body.appendChild(el); CR.el = el; document.body.classList.add("cs-vis-on");
-    telaCamera();
+    /* no Android: abre direto a câmera do aparelho (CameraX, com modos, zoom, HDR…); a do navegador fica de reserva */
+    if (X.temCameraNativa) { el.innerHTML = `<div class="cs-flc-sem"><div class="spin"></div></div>`; cameraDoCelular(true); }
+    else telaCamera();
   }
   function fecharCriador() {
     pararCamera(); cancelAnimationFrame(CR.raf); clearInterval(CR.timer);
@@ -378,6 +384,17 @@
     if (CR.el) CR.el.remove(); CR.el = null;
     if (!document.querySelector(".cs-vis,.cs-flv")) document.body.classList.remove("cs-vis-on");
   }
+  async function cameraDoCelular(primeira) {
+    pararCamera(); cancelAnimationFrame(CR.raf);
+    const n = await X.midia_nativa("camera", { modo: CR.modo === "video" ? "video" : "foto", frente: false, maxSeg: MAXDUR });
+    if (!CR.el) return;
+    if (n === null) return telaCamera();                       /* sem câmera do aparelho: usa a do navegador */
+    if (!n.length) { if (primeira) return fecharCriador(); return telaCamera(); }   /* cancelou */
+    const f = n[0];
+    if ((f.type || "").startsWith("video/")) { const info = await M.miniVideo(f).catch(() => null); usarVideo(f, info ? info.dur : 0, false); }
+    else usarFoto(f, false);
+  }
+  X.acoes["flc-celular"] = () => { if (!CR.gravando) cameraDoCelular(false); };
   function pararCamera() { if (CR.stream) CR.stream.getTracks().forEach(t => t.stop()); CR.stream = null; if (CR.gravando) { try { CR.gravando.stop(); } catch (e) { } CR.gravando = null; } }
   function painelEfeitos() {
     return `<div class="cs-flc-ef">
@@ -388,7 +405,7 @@
   async function telaCamera() {
     const el = CR.el; if (!el) return;
     el.innerHTML = `<div class="cs-flc-top"><button class="cs-vbt" data-s="flc-fechar" aria-label="Fechar">${I.fechar}</button><b>${CR.destino === "flash" ? "Novo Flash" : "Novo destaque"}</b>
-        <button class="cs-vbt" data-s="flc-virar" aria-label="Trocar câmera">${I.virar}</button></div>
+        ${X.temCameraNativa ? `<button class="cs-vbt" data-s="flc-celular" aria-label="Câmera do celular (HD)"><b style="font-size:.78rem">HD</b></button>` : ""}<button class="cs-vbt" data-s="flc-virar" aria-label="Trocar câmera">${I.virar}</button></div>
       <div class="cs-flc-palco"><canvas id="flc-cv"></canvas><div class="cs-flc-sem" id="flc-sem" hidden><b>Câmera indisponível</b><span>Escolha uma foto ou vídeo da galeria.</span></div><span class="cs-flc-rec" id="flc-rec" hidden></span></div>
       ${painelEfeitos()}
       <div class="cs-flc-baixo">
@@ -661,6 +678,18 @@
 .cs-fl-it>span:last-child{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cs-fl-anel{--t:58px;display:grid;place-items:center;padding:3px;border-radius:50%;border:0;cursor:pointer;background:conic-gradient(from 200deg,#FFC83D,#FF5C8A,#7C5CFF,#2447C6,#FFC83D);width:calc(var(--t) + 8px);height:calc(var(--t) + 8px)}
 .cs-fl-anel.visto{background:var(--line)}
+.cs-fl-cards{gap:8px;padding:4px 14px 10px}
+.cs-fl-card{position:relative;flex:none;width:94px;height:146px;border-radius:16px;overflow:hidden;border:0;padding:0;cursor:pointer;background:linear-gradient(160deg,#7C3AED,#DB2777 60%,#F97316);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.cs-fl-card.vazio{background:var(--surface-2)}
+.cs-fl-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.55}
+.cs-fl-card::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 40%,rgba(0,0,0,.62));z-index:1}
+.cs-fl-card.vazio::before{background:none}
+.cs-fl-card.novo::after{content:"";position:absolute;inset:0;border-radius:16px;padding:3px;background:conic-gradient(from 200deg,#FFC83D,#FF5C8A,#7C5CFF,#2447C6,#FFC83D);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;z-index:3}
+.cs-fl-av{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:2;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.95);display:grid}
+.cs-fl-card:not(.novo):not(.vazio) .cs-fl-av{box-shadow:0 0 0 3px rgba(255,255,255,.55)}
+.cs-fl-mais{position:absolute;right:-4px;bottom:-4px;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;box-shadow:0 0 0 2px var(--surface-2)}.cs-fl-mais svg{width:14px;height:14px}
+.cs-fl-nm{position:absolute;left:6px;right:6px;bottom:8px;z-index:2;color:#fff;font-size:.78rem;font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.cs-fl-card.vazio .cs-fl-nm{color:var(--ink);text-shadow:none}
 .cs-fl-anel>.cs-av{box-shadow:0 0 0 2.5px var(--bg)}
 .cs-perfil-av .cs-fl-anel{margin:0 auto}
 .cs-fl-novo{position:relative;display:grid;place-items:center;width:66px;height:66px}

@@ -67,6 +67,7 @@
     enviar: ic('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>'),
     mais2: ic('<path d="M12 5v14M5 12h14"/>'),
     lixo: ic('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>'),
+    repost: ic('<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>'),
     proibido: ic('<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>'),
     info: ic('<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>'),
     varinha: ic('<path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M12.2 6.2 11 5M3 21l9-9"/>'),
@@ -78,7 +79,7 @@
 
   /* Extensões (social-mais.js): telas, abas, ações e tipos de mensagem extras */
   const EXT = { views: {}, tabViews: {}, acoes: {}, tabs: [], provasSub: [], msg: null, chatBotoes: null, composerBotoes: null, composerFim: null,
-    conversasTopo: null, depois: [], avisos: [], muralTopo: [], muralSeg: [], muralFiltro: [], muralCab: [], compositorBotoes: [], compositorPainel: [], compositorAbrir: [], postDados: [], postMeta: [], perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [], portao: null };
+    conversasTopo: null, depois: [], avisos: [], muralTopo: [], muralSeg: [], muralFiltro: [], muralCab: [], compositorBotoes: [], compositorPainel: [], compositorAbrir: [], postDados: [], postMeta: [], perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [], portao: null, postCorpo: [], fotosExtra: [], conversasFixos: [] };
 
   /* ================= Estado ================= */
   const SO = {
@@ -607,6 +608,7 @@
       <div class="cs-lista" role="list">
         ${assist ? `<button class="cs-item" data-s="assistente" role="listitem"><span class="cs-av bot" style="width:52px;height:52px">${K.varinha}</span>
           <span class="cs-item-t"><b>Assistente de provas <span class="pill">Fixo</span></b><span>Monte uma prova em poucos toques</span></span></button>` : ""}
+        ${EXT.conversasFixos.map(fn => { try { return fn(f) || ""; } catch (e) { return ""; } }).join("")}
         ${lista.map(c => { const t = tituloChat(c), nl = naoLidas(c);
           return `<button class="cs-item ${nl ? "nl" : ""}" data-s="abrir-chat" data-id="${esc(c.id)}" role="listitem">${t.av(52)}
             <span class="cs-item-t"><b>${esc(t.nome)}${t.selo || ""}</b><span>${esc(prevUltima(c))}</span></span>
@@ -683,11 +685,11 @@
       const meu = m.autor === eu(), seq = ant && ant.autor === m.autor && ms(m.em) - ms(ant.em) < 5 * 60e3;
       const nome = c.tipo === "grupo" && !meu && !seq ? `<b class="cs-autor" style="color:${corDe(m.autor)}">${esc(P(m.autor).nome)}</b>` : "";
       const hr = (m.em ? new Date(ms(m.em)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "") + tique(c, m);
-      if (m.apagada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-apagada">${nome}<span class="cs-tx">${K.proibido}${m.por && m.por !== m.autor ? "Mensagem apagada pelo administrador" : meu ? "Você apagou esta mensagem" : "Mensagem apagada"}</span><span class="cs-h">${hr.replace(/<svg[\s\S]*$/, "")}</span></div></div>`; ant = m; return; }
-      if (m.cifrada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-id="${esc(m.id)}"><div class="cs-b cs-trancada">${nome}<span class="cs-tx">${m.cifrada === "pin" ? "🔒 Digite seu PIN para abrir" : m.cifrada === "abrindo" ? "🔒 Abrindo…" : "🔒 Mensagem protegida que este celular não consegue abrir"}</span><span class="cs-h">${hr}</span></div></div>`; ant = m; return; }
+      if (m.apagada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb cs-apagada">${nome}<span class="cs-tx">${K.proibido}${m.por && m.por !== m.autor ? "Mensagem apagada pelo administrador" : meu ? "Você apagou esta mensagem" : "Mensagem apagada"}</span><span class="cs-h">${hr.replace(/<svg[\s\S]*$/, "")}</span></div></div>`; ant = m; return; }
+      if (m.cifrada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-id="${esc(m.id)}"><div class="cs-b cs-tb cs-trancada">${nome}<span class="cs-tx">${m.cifrada === "pin" ? "🔒 Digite seu PIN para abrir" : m.cifrada === "abrindo" ? "🔒 Abrindo…" : "🔒 Mensagem protegida que este celular não consegue abrir"}</span><span class="cs-h">${hr}</span></div></div>`; ant = m; return; }
       if (EXT.msg && (m.arquivo || m.chamada || m.audio || m.unica)) { h += EXT.msg(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
       if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
-      else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b">${nome}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
+      else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb">${nome}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
       ant = m;
     });
     return h + (dia ? "</div>" : "");
@@ -869,21 +871,70 @@
     try { if (localStorage.getItem("cs.avisoMail") === "nao") return ""; } catch (e) { }
     return `<div class="aviso cs-aviso-mail">${K.mail}<span>Confirme o e-mail institucional para ganhar o selo de professor(a). É opcional.</span><button class="btn sm" data-s="email">Ver</button><button class="btn sm ghost" data-s="aviso-mail-nao" aria-label="Não mostrar de novo">Fechar</button></div>`;
   }
-  function htmlPost(p, completo) {
+  /* ---------- Recompartilhar: a publicação original aparece dentro da nova ---------- */
+  SO.origCache = SO.origCache || {};
+  function postOrig(id) {
+    const ach = SO.posts.find(x => x.id === id && !x.repost); if (ach) return ach;
+    if (id in SO.origCache) return SO.origCache[id];
+    SO.origCache[id] = undefined;
+    fb.getDoc(D("posts", id)).then(d => { SO.origCache[id] = d.exists() ? { id, col: "posts", ...dadosDe(d) } : null; pintar(); }).catch(() => { SO.origCache[id] = null; pintar(); });
+    return undefined;
+  }
+  const podeRecomp = p => (!p.col || p.col === "posts") && !p.para && !p.aoVivo;
+  function htmlRepost(p, completo) {
     const a = P(p.autor), meu = p.autor === eu(), curti = (p.curtidas || []).includes(eu()), n = (p.curtidas || []).length;
-    const texto = esc(p.texto || "");
-    const longo = !completo && (p.texto || "").length > 420;
-    return `<article class="card cs-post">
-      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(meu ? ((SO.eu && SO.eu.usuario) || a.nome) : a.nome)}${seloHtml(a)}</b><small>${tempoPost(p.em)}${EXT.postMeta.map(f => { try { return f(p) || ""; } catch (e) { return ""; } }).join("")}${p.para ? ` · ${K.lock} ${meu ? `para ${p.para.length} pessoa${p.para.length === 1 ? "" : "s"}` : "só para algumas pessoas"}` : ""}</small></span></button>
+    const o = postOrig(p.repost.id);
+    return `<article class="card cs-post cs-repost">
+      <div class="cs-repost-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 32, p.autor)}<span><b>${esc(meu ? "Você" : a.nome)}${seloHtml(a)}</b> recompartilhou<small>${tempoPost(p.em)}${EXT.postMeta.map(f => { try { return f(p) || ""; } catch (e) { return ""; } }).join("")}</small></span></button>
         <button class="cs-ico-bt" data-s="menu-post" data-id="${esc(p.id)}" aria-label="Opções da publicação">${K.mais}</button></div>
-      ${p.texto ? `<div class="cs-post-tx ${longo ? "corte" : ""}">${texto}</div>${longo ? `<button class="cs-link" data-s="abrir-post" data-id="${esc(p.id)}">Ler tudo</button>` : ""}` : ""}
-      ${p.fig ? `<div class="cs-post-fig">${figurinha(p.fig, 140)}</div>` : ""}
-      ${htmlFotosPost(p)}${htmlArqPost(p)}
+      ${p.texto ? `<div class="cs-post-tx">${esc(p.texto)}</div>` : ""}
+      ${o === undefined ? `<div class="cs-post-emb cs-carr"><div class="spin"></div></div>` : o === null ? `<div class="cs-post-emb cs-repost-x">${K.proibido}<span>Esta publicação não está mais disponível.</span></div>` : `<div class="cs-post-emb">${htmlPost(o, completo, true)}</div>`}
       <div class="cs-post-a">
         <button class="cs-acao ${curti ? "on" : ""}" data-s="curtir" data-id="${esc(p.id)}" aria-pressed="${curti}" aria-label="Curtir">${K.heart}<span>${n || ""}</span></button>
         <button class="cs-acao" data-s="abrir-post" data-id="${esc(p.id)}" aria-label="Comentários">${K.coment}<span>${p.nComent || ""}</span></button>
-        ${meu ? "" : `<button class="cs-acao" data-s="abrir-direto" data-id="${esc(p.autor)}" aria-label="Mandar mensagem">${K.chat}</button>`}
+        ${o ? `<button class="cs-acao" data-s="recompartilhar" data-id="${esc(o.id)}" aria-label="Recompartilhar">${K.repost}<span>${o.nRepost || ""}</span></button>` : ""}
       </div></article>`;
+  }
+  function sheetRecomp(id) {
+    const o = postOrig(id); if (!o) return toast("Publicação indisponível.");
+    if (SO.posts.some(x => x.repost && x.repost.id === id && x.autor === eu())) return toast("Você já recompartilhou esta publicação.");
+    window.abrirSheet(`<div class="sheet-h"><h2>${K.repost} Recompartilhar</h2></div>
+      <p class="small muted">Ela vai aparecer no seu mural e para quem segue você.</p>
+      <form class="stack" id="cs-f-recomp" data-id="${esc(id)}"><textarea class="in" id="cs-recomp-tx" maxlength="1000" rows="2" placeholder="Diga algo sobre isso (opcional)"></textarea>
+      <button type="submit" class="btn primary cs-grande" id="cs-recomp-ok">Recompartilhar agora</button></form>
+      <div class="cs-post-emb cs-recomp-prev">${htmlPost(o, false, true)}</div>`);
+  }
+  async function recompartilhar(id, texto) {
+    const o = postOrig(id); if (!o) throw { msg: "Publicação indisponível." };
+    if (ofensivo(texto)) throw { msg: "Não enviado: tem palavras ofensivas ou preconceituosas." };
+    const extraP = Object.assign({}, ...EXT.postDados.map(f => { try { return f(null) || {}; } catch (e) { return {}; } }));
+    const ref = fb.doc(C("posts"));
+    await fb.setDoc(ref, { ...extraP, autor: eu(), texto: String(texto || "").slice(0, 1000), fig: null, em: TS(), curtidas: [], nComent: 0, repost: { id: o.id, autor: o.autor } });
+    fb.updateDoc(D("posts", o.id), { nRepost: fb.increment(1) }).catch(e => console.warn(e));
+  }
+  document.addEventListener("submit", async e => {
+    const f = e.target; if (f.id !== "cs-f-recomp") return; e.preventDefault();
+    const bt = $("#cs-recomp-ok"); if (!bt || bt.disabled) return; bt.disabled = true;
+    try { await recompartilhar(f.dataset.id, ($("#cs-recomp-tx") || {}).value || ""); window.fecharSheet(); toast("Recompartilhado!"); pintar(); }
+    catch (er) { bt.disabled = false; toast(er && er.msg ? er.msg : msgErro(er)); }
+  });
+  function htmlPost(p, completo, embutido) {
+    if (p.repost && !embutido) return htmlRepost(p, completo);
+    const a = P(p.autor), meu = p.autor === eu(), curti = (p.curtidas || []).includes(eu()), n = (p.curtidas || []).length;
+    const texto = esc(p.texto || "");
+    const longo = !completo && (p.texto || "").length > 420;
+    return `<${embutido ? "div" : "article"} class="${embutido ? "cs-post cs-post-in" : "card cs-post"}">
+      <div class="cs-post-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 44, p.autor)}<span><b>${esc(meu ? ((SO.eu && SO.eu.usuario) || a.nome) : a.nome)}${seloHtml(a)}</b><small>${tempoPost(p.em)}${EXT.postMeta.map(f => { try { return f(p) || ""; } catch (e) { return ""; } }).join("")}${p.para ? ` · ${K.lock} ${meu ? `para ${p.para.length} pessoa${p.para.length === 1 ? "" : "s"}` : "só para algumas pessoas"}` : ""}</small></span></button>
+        ${embutido ? "" : `<button class="cs-ico-bt" data-s="menu-post" data-id="${esc(p.id)}" aria-label="Opções da publicação">${K.mais}</button>`}</div>
+      ${p.texto ? `<div class="cs-post-tx ${longo ? "corte" : ""}">${texto}</div>${longo ? `<button class="cs-link" data-s="abrir-post" data-id="${esc(p.id)}">Ler tudo</button>` : ""}` : ""}
+      ${p.fig ? `<div class="cs-post-fig">${figurinha(p.fig, 140)}</div>` : ""}
+      ${htmlFotosPost(p)}${htmlArqPost(p)}${EXT.postCorpo.map(f => { try { return f(p) || ""; } catch (e) { return ""; } }).join("")}
+      ${embutido ? `</div>` : `<div class="cs-post-a">
+        <button class="cs-acao ${curti ? "on" : ""}" data-s="curtir" data-id="${esc(p.id)}" aria-pressed="${curti}" aria-label="Curtir">${K.heart}<span>${n || ""}</span></button>
+        <button class="cs-acao" data-s="abrir-post" data-id="${esc(p.id)}" aria-label="Comentários">${K.coment}<span>${p.nComent || ""}</span></button>
+        ${podeRecomp(p) ? `<button class="cs-acao" data-s="recompartilhar" data-id="${esc(p.id)}" aria-label="Recompartilhar">${K.repost}<span>${p.nRepost || ""}</span></button>` : ""}
+        ${meu ? "" : `<button class="cs-acao" data-s="abrir-direto" data-id="${esc(p.autor)}" aria-label="Mandar mensagem">${K.chat}</button>`}
+      </div></article>`}`;
   }
   function postsVisiveis() {
     return SO.posts.filter(p => !SO.bloqueados.has(p.autor) && (SO.feed !== "seguindo" || p.autor === eu() || SO.seguindo.has(p.autor))
@@ -908,20 +959,24 @@
     EXT.compositorAbrir.forEach(f => { try { f(); } catch (e) { } });
     window.abrirSheet(`<div class="sheet-h"><h2>Nova publicação</h2></div>
       <form class="stack" id="cs-f-post"><textarea class="in" id="cs-post-tx" maxlength="3000" rows="4" placeholder="Escreva para os colegas…"></textarea>
-      <div id="cs-post-figsel"></div>
       <div class="cs-pc-fotos" id="cs-pc-fotos"></div>
       <div id="cs-pc-arq"></div>
       <div class="cs-pc-bar">
-        <button type="button" class="btn sm" data-s="mp-fotos">${K.foto}<span>Fotos</span></button>
-        <button type="button" class="btn sm" data-s="mp-arq">${K.clip}<span>Arquivo</span></button>
-        <button type="button" class="btn sm" data-s="mp-gravar">${K.video}<span>Gravar</span></button>
-        <button type="button" class="btn sm" data-s="mp-live">${K.live}<span>Ao vivo</span></button>
-        <button type="button" class="btn sm" data-s="mp-fig">${K.smile}<span>Figurinha</span></button>
+        <button type="button" class="btn sm" data-s="mp-fotos">${K.foto}<span>Foto</span></button>
+        <button type="button" class="btn sm" data-s="mp-vid">${K.video}<span>Vídeo</span></button>
         <button type="button" class="btn sm" data-s="mp-pub" id="cs-mp-pub">${K.grupo}<span>Todos</span></button>
         ${EXT.compositorBotoes.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       </div>
       ${EXT.compositorPainel.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
-      <div id="cs-mp-figs" hidden>${painelFig("fig-post")}</div>
+      <div class="cs-mp-vid" id="cs-mp-foto" hidden>
+        <button type="button" class="btn sm" data-s="mp-fotos" data-v="galeria">${K.foto}<span>Da galeria</span></button>
+        <button type="button" class="btn sm" data-s="mp-fotos" data-v="camera">${K.camera || K.foto}<span>Câmera</span></button>
+      </div>
+      <div class="cs-mp-vid" id="cs-mp-vid" hidden>
+        <button type="button" class="btn sm" data-s="mp-video">${K.foto}<span>Da galeria</span></button>
+        <button type="button" class="btn sm" data-s="mp-gravar">${K.video}<span>Gravar agora</span></button>
+        <button type="button" class="btn sm" data-s="mp-live">${K.live}<span>Ao vivo</span></button>
+      </div>
       <div class="cs-mp-pessoas" id="cs-mp-pessoas" hidden>
         <div class="seg"><button type="button" data-s="mp-pubv" data-v="todos" aria-pressed="true">Todos</button><button type="button" data-s="mp-pubv" data-v="escolher" aria-pressed="false">Só pessoas marcadas</button></div>
         <div id="cs-mp-lista" hidden>
@@ -935,13 +990,14 @@
   }
   function pintarFotosCompositor() {
     const el = $("#cs-pc-fotos"); if (!el) return;
-    el.innerHTML = (SO.postFotos || []).map((f, i) => `<span class="cs-pc-f"><img src="${f.url}" alt=""><button type="button" data-s="mp-tirar" data-v="${i}" aria-label="Tirar foto">${K.x}</button></span>`).join("");
+    el.innerHTML = (SO.postFotos || []).map((f, i) => `<span class="cs-pc-f"><img src="${f.url}" alt=""><button type="button" data-s="mp-tirar" data-v="${i}" aria-label="Tirar foto">${K.x}</button></span>`).join("")
+      + EXT.fotosExtra.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("");
   }
   function marcadosPost() { return [...document.querySelectorAll(".cs-mp-pp:checked")].map(x => x.value).slice(0, 400); }
   async function publicar() {
     const t = $("#cs-post-tx").value.trim(), fotos = SO.postFotos || [];
     const arqP = SO.postArq, live = SO.postLive;
-    if (!t && !SO.postFig && !fotos.length && !arqP && !live) return toast("Escreva algo ou anexe.");
+    if (!t && !fotos.length && !arqP && !live) return toast("Escreva algo ou escolha uma foto ou vídeo.");
     if (ofensivo(t)) return toast("Publicação não enviada: tem palavras ofensivas ou preconceituosas.");
     const para = SO.postPub === "escolher" ? marcadosPost() : null;
     if (para && !para.length) return toast("Marque quem vai ver a publicação.");
@@ -971,7 +1027,7 @@
       }
       const aoVivo = live ? "ChatMil-AoVivo-" + eu().slice(0, 6) + "-" + Math.random().toString(36).slice(2, 8) : null;
       const extraP = Object.assign({}, ...EXT.postDados.map(f => { try { return f(para) || {}; } catch (e) { return {}; } }));
-      await fb.setDoc(ref, { ...extraP, autor: eu(), texto: t.slice(0, 3000), fig: SO.postFig || null, em: TS(), curtidas: [], nComent: 0, ...(imgs.length ? { imgs } : {}), ...(para ? { para } : {}), ...(arq ? { arq } : {}), ...(aoVivo ? { aoVivo } : {}) });
+      await fb.setDoc(ref, { ...extraP, autor: eu(), texto: t.slice(0, 3000), fig: null, em: TS(), curtidas: [], nComent: 0, ...(imgs.length ? { imgs } : {}), ...(para ? { para } : {}), ...(arq ? { arq } : {}), ...(aoVivo ? { aoVivo } : {}) });
       if (aoVivo) abrirAoVivo(aoVivo);
       fotos.forEach(f => URL.revokeObjectURL(f.url)); SO.postFotos = []; SO.postArq = null; SO.postLive = false;
       window.fecharSheet(); toast(para ? `Publicado só para ${para.length} pessoa${para.length === 1 ? "" : "s"}.` : "Publicado!"); SO.feed = "todos"; if (SO.tab !== "mural") { SO.tab = "mural"; lembrarTab(); } pintar();
@@ -1492,14 +1548,17 @@
     b.classList.add("cs-on");
     b.classList.toggle("cs-sem-nav", semNav || full);
     b.classList.toggle("cs-chatbg", !!(full && t && t.v === "chat"));
-    b.classList.toggle("cs-com-compor", !!(full && t && (t.v === "chat" || t.v === "post")));
+    b.classList.toggle("cs-com-compor", !!(full && t && (t.v === "chat" || t.v === "post" || t.v === "notas")));
     const nl = SO.chats.filter(naoLidas).length;
     const tabs = [["conversas", "Conversas", K.chat, nl], ["mural", "Mural", K.mural, 0], ["provas", "Provas", K.prova, 0], ["perfil", "Perfil", K.user, 0]];
     EXT.tabs.forEach(x => tabs.splice(x.pos, 0, [x.k, x.n, x.i, 0]));
     b.classList.toggle("cs-5abas", tabs.length > 4);
     $("#nav").innerHTML = semNav || full ? "" : tabs.map(([k, n, i, c]) => `<button data-st="${k}" ${SO.tab === k ? 'aria-current="page"' : ""}><span class="ico">${i}${c ? `<i class="cs-badge">${c > 99 ? "99+" : c}</i>` : ""}</span>${n}</button>`).join("");
     $("#who").innerHTML = "";
+    /* telas de entrar/criar conta: o que já foi digitado não se perde se a tela for redesenhada */
+    const digitado = !SO.user ? [...$("#main").querySelectorAll("input[id],textarea[id]")].filter(i => i.type !== "file").map(i => [i.id, i.type, i.type === "checkbox" ? i.checked : i.value]) : null;
     $("#main").innerHTML = html;
+    if (digitado) digitado.forEach(([id, tp, v]) => { const n = document.getElementById(id); if (!n || n.type !== tp) return; if (tp === "checkbox") n.checked = v; else if (!n.value && v) n.value = v; });
     if (fid) { const el = document.getElementById(fid); if (el && el !== document.body) { try { el.focus({ preventScroll: true }); if (sel) el.setSelectionRange(sel[0], sel[1]); } catch (e) { } } }
     document.querySelectorAll("#cs-txt,#cs-com-tx").forEach(autosize);
     if ($("#cs-usu-ok")) atualizarChecagem();
@@ -1627,29 +1686,34 @@
       case "feed": SO.feed = v; pintar(); break;
       case "novo-post": sheetNovoPost(); break;
       case "mp-fotos": {
-        const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
-        inp.onchange = () => {
-          const fs = [...(inp.files || [])].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic|gif)$/i.test(f.name));
+        /* no Android: escolher entre a galeria e a câmera do celular */
+        if (EXT.temCameraNativa && !el.dataset.v) { const d = $("#cs-mp-foto"); if (d) { d.hidden = !d.hidden; break; } }
+        const juntar = lista => {
+          const fs = [...(lista || [])].filter(f => /^image\//.test(f.type) || /\.(jpe?g|png|webp|heic|gif)$/i.test(f.name));
           const vagas = 6 - (SO.postFotos || []).length; if (fs.length > vagas) toast("Até 6 fotos por publicação.");
           fs.slice(0, Math.max(0, vagas)).forEach(f => { const prep = prepararFotoPost(f); prep.catch(() => { }); SO.postFotos.push({ url: URL.createObjectURL(f), prep }); });
-          pintarFotosCompositor();
+          pintarFotosCompositor(); const d = $("#cs-mp-foto"); if (d) d.hidden = true;
         };
+        if (el.dataset.v === "camera") { const n = await EXT.midia_nativa("camera", { modo: "foto" }); if (n) { juntar(n); break; } }
+        const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
+        inp.onchange = () => juntar(inp.files);
         inp.click(); break;
       }
-      case "mp-arq": case "mp-gravar": {
+      case "mp-vid": { const d = $("#cs-mp-vid"); if (d) d.hidden = !d.hidden; break; }
+      case "mp-arq": case "mp-gravar": case "mp-video": {
         if (!EXT.midia) break;
         const usar = f => {
           if (!f) return;
           if (f.size > 20 * 1048576) return toast("Máximo 20 MB.");
           const prep = EXT.midia.prepararArquivo(f); prep.catch(() => { });
-          SO.postArq = { nome: f.name || "video.webm", prep }; pintarArqCompositor();
+          SO.postArq = { nome: f.name || "video.webm", prep }; pintarArqCompositor(); pintarFotosCompositor();
         };
         /* no app Android: câmera própria (CameraX) e vídeo já comprimido no aparelho */
         if (s === "mp-gravar" && EXT.midia_nativa) { const n = await EXT.midia_nativa("camera", { modo: "video", frente: true }); if (n) { usar(n[0]); break; } }
         const inp = document.createElement("input"); inp.type = "file";
-        inp.accept = s === "mp-gravar" ? "video/*" : "application/pdf,video/*,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods";
+        inp.accept = s === "mp-arq" ? "application/pdf,video/*,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.odt,.odp,.ods" : "video/*";
         if (s === "mp-gravar") inp.setAttribute("capture", "user");
-        inp.onchange = () => usar((inp.files || [])[0]);
+        inp.onchange = () => { const f = (inp.files || [])[0]; if (f && s === "mp-video" && !/^video\//.test(f.type) && !/\.(mp4|webm|mov|3gp|mkv)$/i.test(f.name)) return toast("Escolha um vídeo."); usar(f); const d = $("#cs-mp-vid"); if (d) d.hidden = true; };
         inp.click(); break;
       }
       case "mp-arq-tirar": SO.postArq = null; pintarArqCompositor(); break;
@@ -1676,6 +1740,7 @@
         break;
       }
       case "abrir-post": ouvirComents(id); abrirTela({ v: "post", id }); break;
+      case "recompartilhar": sheetRecomp(id); break;
       case "menu-post": {
         const p = SO.posts.find(x => x.id === id); if (!p) break;
         window.abrirSheet(`<div class="sheet-h"><h2>Publicação</h2></div><div class="cs-menu">
@@ -1688,7 +1753,8 @@
       }
       case "apagar-post": {
         if (!ok) return pedirConfirmacao("Apagar publicação?", "A publicação e as curtidas serão apagadas.", "Apagar", el);
-        try { const pp = SO.posts.find(x => x.id === id); await fb.deleteDoc(D(colP(id), id)); apagarFotosPost(pp); window.fecharSheet(); delete SO.contagens[eu()]; const t = topo(); if (t && t.v === "post") voltar(); toast("Publicação apagada."); } catch (e) { toast(msgErro(e)); }
+        try { const pp = SO.posts.find(x => x.id === id); await fb.deleteDoc(D(colP(id), id)); apagarFotosPost(pp);
+          if (pp && pp.repost) fb.updateDoc(D("posts", pp.repost.id), { nRepost: fb.increment(-1) }).catch(() => { }); window.fecharSheet(); delete SO.contagens[eu()]; const t = topo(); if (t && t.v === "post") voltar(); toast("Publicação apagada."); } catch (e) { toast(msgErro(e)); }
         break;
       }
       case "apagar-com": {
@@ -1890,6 +1956,9 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-m.eu{align-self:flex-end;align-items:flex-end}
 .cs-b{background:var(--surface);border-radius:4px 18px 18px 18px;padding:7px 12px 6px;box-shadow:0 1px 1.5px rgba(0,0,0,.1);display:flex;flex-direction:column;min-width:84px}
 .cs-m.seq .cs-b{border-radius:18px}
+.cs-b.cs-tb{display:block;min-width:0}.cs-b.cs-tb>.cs-autor{display:block}.cs-b.cs-tb .cs-tx{display:inline}
+.cs-b.cs-tb>.cs-h{float:right;margin:7px -3px -5px 10px;line-height:1.3;white-space:nowrap}
+.cs-b.cs-tb::after{content:"";display:block;clear:both}
 .cs-m.eu .cs-b{background:var(--primary);color:var(--primary-ink);border-radius:18px 4px 18px 18px}
 .cs-m.eu.seq .cs-b{border-radius:18px}
 .cs-tx{white-space:pre-wrap;overflow-wrap:anywhere;font-size:1.03rem;line-height:1.42}
@@ -2038,7 +2107,7 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-auth label.f,.cs-pag label.f{font-size:.98rem}
 .cs-grande{min-height:58px;font-size:1.1rem;border-radius:16px;width:100%}
 .cs-bv{align-items:center;text-align:center;justify-content:center;min-height:calc(100vh - 80px);gap:16px}
-.cs-logo{width:88px;height:88px;border-radius:28px;background:linear-gradient(135deg,var(--primary),#7C5CFF);color:#fff;display:grid;place-items:center;box-shadow:0 18px 40px color-mix(in srgb,var(--primary) 35%,transparent);flex:none}
+.cs-logo{width:88px;height:88px;border-radius:28px;background:linear-gradient(135deg,#7C3AED,#DB2777 55%,#F97316);color:#fff;display:grid;place-items:center;box-shadow:0 18px 40px color-mix(in srgb,var(--primary) 35%,transparent);flex:none}
 .cs-logo svg{width:46px;height:46px}
 .cs-logo.sm{width:60px;height:60px;border-radius:19px}
 .cs-logo.sm svg{width:30px;height:30px}
@@ -2083,6 +2152,14 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-just{text-align:justify;hyphens:auto}
 .cs-aviso-mail .btn{min-height:34px}
 .cs-splash{min-height:70vh;display:grid;place-items:center}
+.cs-repost-h{display:flex;align-items:center;gap:8px}.cs-repost-h .cs-quem{flex:1;min-width:0}
+.cs-repost-h .cs-quem span{font-size:.92rem}.cs-repost-h small{display:block}
+.cs-post-emb{border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:8px}
+.cs-post-emb .cs-post-in{display:flex;flex-direction:column;gap:8px}
+.cs-repost-x{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem}.cs-repost-x svg{width:18px;height:18px}
+.cs-recomp-prev{max-height:40vh;overflow:auto}
+.sheet-h h2 svg{width:22px;height:22px;vertical-align:-3px}
+.cs-mp-vid{display:flex;gap:8px;flex-wrap:wrap}
 .cs-m{-webkit-touch-callout:none}
 .cs-b.cs-apagada .cs-tx{font-style:italic;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
 .cs-b.cs-apagada .cs-tx svg{width:15px;height:15px;flex:none}
