@@ -204,5 +204,58 @@
     return FRASES.some(f => frase.includes(" " + f + " "));
   }
 
-  window.SOC_EXTRAS = { F, PACOTES, ORDEM, figurinha, ofensivo };
+  /* ---------- Segurança antes de enviar ----------
+     - CPF / cartão / RG viram XXX (quem recebe nunca vê o número);
+     - links de pornografia, apostas/cassino/"tigrinho", sites falsos e promoções que pedem pagamento são bloqueados. */
+  function cpfValido(d) {
+    if (!/^\d{11}$/.test(d) || /^(\d)\1{10}$/.test(d)) return false;
+    let s = 0; for (let i = 0; i < 9; i++) s += +d[i] * (10 - i);
+    let r = (s * 10) % 11; if (r === 10) r = 0; if (r !== +d[9]) return false;
+    s = 0; for (let i = 0; i < 10; i++) s += +d[i] * (11 - i);
+    r = (s * 10) % 11; if (r === 10) r = 0; return r === +d[10];
+  }
+  function luhn(d) { let s = 0, dbl = false; for (let i = d.length - 1; i >= 0; i--) { let n = +d[i]; if (dbl) { n *= 2; if (n > 9) n -= 9; } s += n; dbl = !dbl; } return s % 10 === 0; }
+  const xis = m => m.replace(/\d/g, "X");
+  function mascararDocs(t) {
+    let n = 0;
+    t = t.replace(/(?<![\d])\d{3}[.\s]?\d{3}[.\s]?\d{3}[-.\s]?\d{2}(?![\d])/g, m => { if (cpfValido(m.replace(/\D/g, ""))) { n++; return xis(m); } return m; });
+    t = t.replace(/(?<![\d])(?:\d[ -]?){13,19}(?![\d])/g, m => { const d = m.replace(/\D/g, ""); if (d.length >= 13 && luhn(d)) { n++; return xis(m); } return m; });
+    t = t.replace(/\b(RG|R\.G\.|CIN|identidade|registro geral|CNH|passaporte)\b([\s:nNºo°#.-]{0,6})([0-9Xx][0-9Xx.\-\/ ]{4,16}[0-9Xx])/gi, (m, a, b, c) => { n++; return a + b + xis(c); });
+    return { texto: t, n };
+  }
+  const OFICIAIS = ["gov.br", "caixa.gov.br", "bb.com.br", "bradesco.com.br", "itau.com.br", "santander.com.br", "nubank.com.br", "inter.co", "bancointer.com.br", "mercadopago.com.br", "mercadolivre.com.br",
+    "picpay.com", "whatsapp.com", "wa.me", "instagram.com", "facebook.com", "fb.com", "google.com", "share.google", "youtube.com", "youtu.be", "apple.com", "serasa.com.br", "correios.com.br", "magazineluiza.com.br",
+    "amazon.com.br", "shopee.com.br", "hotmart.com", "tiktok.com", "kwai.com", "c6bank.com.br", "netflix.com", "microsoft.com", "outlook.com", "live.com"];
+  const MARCAS = /(caixa|bradesco|itau|santander|nubank|banco-?inter|mercado-?pago|picpay|serasa|correios|detran|receita|gov-?br|pix|whatsapp|instagram|facebook|netflix|apple|icloud|microsoft|outlook|magalu|shopee|amazon|c6bank|bancodobrasil|bbrasil)/;
+  const PORNO = /(porn|xxx|xvideo|xnxx|xhamster|redtube|youporn|brazzers|onlyfans|chaturbate|stripchat|bongacam|camsoda|livejasmin|erome|hentai|rule34|nudes?|sexo|sexy|putaria|safad|camgirl|privacy\.com\.br|fansly)/;
+  const APOSTA_RE = /(aposta|cassino|casino|tigrinho|fortune-?tiger|fortune-?ox|fortune-?rabbit|fortune-?mouse|pg-?soft|roleta|pixbet|betano|sportingbet|esportesdasorte|estrelabet|superbet|vaidebet|mcgames|jogodotigre|jogo-do-tigre|aviator|loteria-?online|1win)/;
+  const APOSTA_LBL = new Set(["stake", "blaze", "bet", "bets", "slots", "slot", "bingo", "cassino", "casino"]);
+  function aposta(h) {
+    if (APOSTA_RE.test(h)) return true;
+    return h.split(/[.-]/).some(l => APOSTA_LBL.has(l) || (/^bet|bet$|bet\d/.test(l) && !/^(alphabet|tibet|better|between|betty|betel|betume|beterraba)/.test(l)));
+  }
+  const TLD_RUIM = /\.(top|xyz|click|zip|mov|icu|buzz|rest|lol|monster|cfd|sbs|cyou|quest|bond|win|bet|casino|porn|sex|xxx|adult)$/;
+  function dominioReg(h) { const p = h.split("."); return p.length > 2 && /^(com|gov|org|net|edu|co|art|blog|app)$/.test(p[p.length - 2]) && p[p.length - 1].length === 2 ? p.slice(-3).join(".") : p.slice(-2).join("."); }
+  function linkPerigoso(u) {
+    let url; try { url = new URL(u); } catch (e) { return "Link inválido bloqueado."; }
+    const h = url.hostname.toLowerCase().replace(/^www\./, ""), tudo = (h + url.pathname + url.search).toLowerCase();
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(h) || h.includes("xn--") || h.includes("@")) return "Link suspeito bloqueado.";
+    if (PORNO.test(tudo)) return "Link de conteúdo adulto bloqueado.";
+    if (aposta(h) || /tigrinho|fortune-?tiger|cassino|casino|aposta/.test(tudo)) return "Link de apostas bloqueado.";
+    const reg = dominioReg(h);
+    if (MARCAS.test(h.replace(/\./g, "-")) && !OFICIAIS.some(o => reg === o || h === o || h.endsWith("." + o))) return "Link falso bloqueado (imita um site oficial).";
+    if (TLD_RUIM.test(h)) return "Link suspeito bloqueado.";
+    return "";
+  }
+  const PROMO = /(promo[cç][aã]o|promo\b|desconto|cupom|sorteio|ganhe|ganhar|gr[aá]tis|oferta|compre|comprar|pague|pagamento|pagar|pix|r\$\s?\d|frete|lucro|renda extra|investimento|dinheiro f[aá]cil|clique aqui|link na bio|[uú]ltimas unidades)/i;
+  /* devolve { texto (com CPF/RG mascarados), bloqueio (mensagem) } */
+  function seguranca(t, op) {
+    t = String(t || "");
+    const m = mascararDocs(t), links = m.texto.match(/https?:\/\/[^\s<>"']+/gi) || [], soltos = m.texto.match(/\b(?:[a-z0-9-]+\.)+(?:com|net|org|bet|xyz|top|club|online|site|app|io|me|br)(?:\/[^\s]*)?/gi) || [];
+    for (const l of [...links, ...soltos.map(x => "https://" + x)]) { const r = linkPerigoso(l); if (r) return { texto: m.texto, bloqueio: r, docs: m.n }; }
+    if (links.length && PROMO.test(m.texto) && !(op && op.loja)) return { texto: m.texto, bloqueio: "Promoções com link de compra ou pagamento não são permitidas.", docs: m.n };
+    return { texto: m.texto, bloqueio: "", docs: m.n };
+  }
+
+  window.SOC_EXTRAS = { F, PACOTES, ORDEM, figurinha, ofensivo, seguranca, linkPerigoso };
 })();

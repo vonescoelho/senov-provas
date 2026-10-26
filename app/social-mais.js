@@ -329,7 +329,7 @@
             <span class="cs-vg-th">${f ? `<button class="cs-pf" data-img="${esc(f.id)}" data-col="vitrineImgs" ${A.tinyOk(f.t) ? `style="background-image:url(${f.t})"` : ""} tabindex="-1" aria-hidden="true"></button>` : it.imagem ? `<img src="${esc(it.imagem)}" alt="">` : KI.loja}</span>
             <span class="cs-vg-t"><b>${it.destaque ? "★ " : ""}${esc(it.titulo)}</b><small><i class="cs-loja-pt" style="--c:${lj[1]}"></i>${esc(lj[0])}${it.preco ? " · " + esc(it.preco) : ""} · ${it.cliques || 0} clique${(it.cliques || 0) === 1 ? "" : "s"}${it.ativo === false ? " · pausado" : !visivel(it) ? " · vencido" : ""}</small></span>
             <button class="cs-ico-bt sm" data-s="vit-gmenu" data-id="${esc(it.id)}" aria-label="Opções do produto">${KI.mais}</button></div>`; }).join("")}</div>`
-        : `<p class="muted small">Nenhum produto ainda. Cadastre links da Hotmart, Shopee e outras lojas: quem tocar em Comprar vai direto para a página de compra.</p>`}
+        : ""}
       </div>`;
   };
   X.acoes["vit-gmenu"] = el => {
@@ -378,7 +378,6 @@
       <label class="f" for="vn-tags">Assuntos (separe por vírgula)<input class="in" id="vn-tags" value="${esc((it.tags || []).join(", "))}" placeholder="Ex.: Língua Portuguesa, alfabetização, AEE"></label>
       <label class="cs-aceite" for="vn-dest"><input type="checkbox" id="vn-dest" ${it.destaque ? "checked" : ""}><span>Destacar no topo da vitrine</span></label>
       <label class="cs-aceite" for="vn-ativo"><input type="checkbox" id="vn-ativo" ${it.ativo === false ? "" : "checked"}><span>Mostrar na vitrine</span></label>
-      <p class="small muted">Só entram produtos ligados à educação.</p>
       <div class="cs-pc-prog" id="vn-prog" hidden><i></i></div>
       <button class="btn primary cs-grande" id="vn-ok">${NV.id ? "Salvar alterações" : "Publicar na vitrine"}</button></form>`;
   };

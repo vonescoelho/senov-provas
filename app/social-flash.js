@@ -591,13 +591,25 @@
     if (CR.fonte && CR.fonteTipo === "video") CR.fonte.volume = 0.35;
   }
   X.acoes["flc-publico"] = () => {
-    const seg = [...(SO.seguindo || [])];
-    window.abrirSheet(`<div class="sheet-h"><h2>Quem vê este Flash</h2></div><div class="cs-menu">
-      <button data-s="flc-pub" data-v="todos" aria-pressed="${CR.publico === "todos"}">${I.pessoas}<span><b>Todos</b><small>Quem segue você e quem abrir o seu perfil</small></span>${CR.publico === "todos" ? I.check : ""}</button>
-      <button data-s="flc-pub" data-v="seguindo" aria-pressed="${CR.publico === "seguindo"}">${I.olho}<span><b>Só quem eu sigo</b><small>${seg.length} pessoa${seg.length === 1 ? "" : "s"}</small></span>${CR.publico === "seguindo" ? I.check : ""}</button></div>
-      <h3 class="cs-clip-h">Ou escolha as pessoas</h3>
-      <div class="cs-flc-pessoas">${pessoasParaEscolher().map(u => { const p = P(u); return `<label class="cs-aceite"><input type="checkbox" class="flc-pp" value="${esc(u)}" ${CR.para.includes(u) ? "checked" : ""}>${av(p, 32, u)}<span>${esc(p.nome)}</span></label>`; }).join("") || `<p class="small muted">Siga colegas ou converse com eles para escolher aqui.</p>`}</div>
-      <button class="btn primary" data-s="flc-pub-escolher">Usar as pessoas marcadas</button>`);
+    const modo = CR.publico === "escolher" ? "escolher" : CR.publico === "seguindo" ? "seguindo" : "todos";
+    const pessoas = pessoasParaEscolher();
+    window.abrirSheet(`<div class="sheet-h"><h2>Quem vê</h2></div>
+      <div class="seg cs-flc-seg" role="radiogroup">${[["todos", "Todos"], ["seguindo", "Quem eu sigo"], ["escolher", "Escolher"]].map(([k, n]) => `<button type="button" data-s="flc-pub-modo" data-v="${k}" aria-pressed="${modo === k}">${n}</button>`).join("")}</div>
+      <div class="cs-flc-pessoas" id="flc-pessoas" ${modo === "escolher" ? "" : "hidden"}>${pessoas.map(u => { const p = P(u); return `<label class="cs-flc-p"><input type="checkbox" class="flc-pp" value="${esc(u)}" ${CR.para.includes(u) ? "checked" : ""}>${av(p, 40, u)}<span>${esc(p.nome)}</span><i>${I.check}</i></label>`; }).join("") || `<p class="small muted cs-centro">Ninguém ainda.</p>`}</div>
+      <button class="btn primary cs-grande" data-s="flc-pub-ok">Pronto</button>`);
+  };
+  X.acoes["flc-pub-modo"] = el => {
+    el.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === el)));
+    const l = document.getElementById("flc-pessoas"); if (l) l.hidden = el.dataset.v !== "escolher";
+  };
+  X.acoes["flc-pub-ok"] = () => {
+    const b = document.querySelector(".cs-flc-seg [aria-pressed=true]"), modo = b ? b.dataset.v : "todos";
+    if (modo === "escolher") {
+      const l = [...document.querySelectorAll(".flc-pp:checked")].map(i => i.value);
+      if (!l.length) return toast("Marque pelo menos uma pessoa.");
+      CR.publico = "escolher"; CR.para = l;
+    } else { CR.publico = modo; CR.para = []; }
+    window.fecharSheet(); telaEditar();
   };
   function pessoasParaEscolher() {
     const s = new Set(SO.seguindo || []);
@@ -644,6 +656,7 @@
   X.acoes["flc-publicar"] = async () => {
     if (!CR.fonte || CR.publicando) return;
     const leg = ($("#flc-leg") || {}).value || ""; if (leg && ofensivo(leg)) return toast("A legenda tem palavras não permitidas.");
+    { const sg = window.SOC_EXTRAS.seguranca ? window.SOC_EXTRAS.seguranca(leg) : { texto: leg }; if (sg.bloqueio) return toast(sg.bloqueio); CR.legenda = sg.texto; }
     CR.publicando = true;
     if (CR.prevAud) { CR.prevAud.pause(); }
     const video = CR.fonteTipo === "video";
@@ -670,13 +683,13 @@
       if (CR.musica) { fase("Preparando a música…"); const r = await cortarMusica(CR.musica.arq, CR.musica.inicio, dur, f => barra(0.5 + f * 0.2)); som = r.blob; somMime = r.mime; }
       fase(CR.destino === "flash" ? "Publicando o Flash…" : "Salvando o destaque…");
       if (CR.destino === "destaque") {
-        await gravar("destaques", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: leg.trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal }, f => barra(0.7 + f * 0.3));
+        await gravar("destaques", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal }, f => barra(0.7 + f * 0.3));
         FL.dest.delete(eu()); toast("Salvo nos Destaques do seu perfil.");
       } else {
         const priv = CR.publico !== "todos";
         const para = CR.publico === "seguindo" ? [...(SO.seguindo || [])].slice(0, 400) : CR.publico === "escolher" ? CR.para : null;
         if (priv && (!para || !para.length)) throw { msg: CR.publico === "seguindo" ? "Você ainda não segue ninguém. Escolha “Todos” ou marque pessoas." : "Escolha quem vai ver." };
-        const f = await gravar(priv ? "flashesPriv" : "flashes", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: leg.trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, para }, f => barra(0.7 + f * 0.3));
+        const f = await gravar(priv ? "flashesPriv" : "flashes", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, para }, f => barra(0.7 + f * 0.3));
         FL.meus.push(f); toast("Flash publicado! Fica 24 horas.");
       }
       barra(null); CR.publicando = false; fecharCriador(); pintar();
@@ -789,8 +802,16 @@
 label.cs-flc-linha{flex-wrap:wrap}label.cs-flc-linha input{width:100%;accent-color:#FFC83D}
 #flc-mus-ini{accent-color:#FFC83D}
 .cs-flc-ed .in{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.25)}
-.cs-flc-pessoas{display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto;margin-bottom:10px}
-.cs-flc-pessoas .cs-aceite{align-items:center}
+.cs-flc-seg{display:flex;margin:4px 0 14px}.cs-flc-seg button{flex:1}
+.cs-flc-pessoas{display:flex;flex-direction:column;gap:2px;max-height:44vh;overflow:auto;margin-bottom:12px}
+.cs-flc-pessoas[hidden]{display:none}
+.cs-flc-p{display:flex;align-items:center;gap:12px;padding:8px 6px;border-radius:14px;cursor:pointer}
+.cs-flc-p span{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-flc-p input{position:absolute;opacity:0;pointer-events:none}
+.cs-flc-p i{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;color:transparent;flex:none}
+.cs-flc-p i svg{width:16px;height:16px}
+.cs-flc-p:has(input:checked) i{background:var(--primary);border-color:var(--primary);color:#fff}
+.cs-flc-p:has(input:checked){background:var(--surface-2)}
 `;
   document.head.appendChild(css);
 })();

@@ -31,11 +31,11 @@
     const c = SO.chats.find(x => x.id === el.dataset.id); if (!c) return;
     const muitos = (c.membros || []).length > MAX;
     window.abrirSheet(`<div class="sheet-h"><h2>Chamada</h2></div><div class="cs-menu">
-      ${muitos ? "" : `<button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="video">${I.video}<span><b>Chamada de vídeo</b><small>Toca no celular de ${c.tipo === "grupo" ? "quem está no grupo" : "quem você chamou"}</small></span></button>
-      <button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="voz">${I.fone}<span><b>Chamada de voz</b><small>Gasta menos internet e bateria</small></span></button>
-      ${c.tipo === "grupo" ? "" : `<button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="voz" data-u="1">${I.alerta}<span><b>Chamada urgente (voz)</b><small>Se a pessoa permitir, atende sozinha no alto-falante</small></span></button>`}`}
-      ${c.tipo === "grupo" ? `<button data-s="ch-jitsi" data-id="${esc(c.id)}">${I.grupo}<span><b>Reunião grande (Jitsi Meet)</b><small>Para mais de ${MAX} pessoas. Abre no navegador; quem cria a sala pode precisar entrar com uma conta Google.</small></span></button>` : ""}
-    </div><p class="small muted">No app Android, o celular toca mesmo com o ChatMil fechado (quando a pessoa ativou isso em Configurações).</p>`);
+      ${muitos ? "" : `<button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="video">${I.video}<span><b>Chamada de vídeo</b></span></button>
+      <button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="voz">${I.fone}<span><b>Chamada de voz</b></span></button>
+      ${c.tipo === "grupo" ? "" : `<button data-s="ch-iniciar" data-id="${esc(c.id)}" data-v="voz" data-u="1">${I.alerta}<span><b>Ligação Urgente</b></span></button>`}`}
+      ${c.tipo === "grupo" ? `<button data-s="ch-jitsi" data-id="${esc(c.id)}">${I.grupo}<span><b>Reunião grande</b></span></button>` : ""}
+    </div>`);
   };
   X.acoes["ch-iniciar"] = el => { window.fecharSheet(); iniciar(el.dataset.id, el.dataset.v, el.dataset.u === "1"); };
   X.acoes["ch-jitsi"] = async el => {
@@ -400,8 +400,8 @@
     const c = cfgAuto(); c.modo = el.dataset.v;
     if (c.modo === "escolhidos") {
       const pessoas = A.contatosOrdenados ? A.contatosOrdenados() : [];
-      window.abrirSheet(`<div class="sheet-h"><h2>Atender sozinho (urgente)</h2></div><p class="small muted">Marque quem pode fazer sua chamada urgente abrir o áudio sozinha.</p>
-        <div class="cs-mp-ll">${pessoas.map(u => { const p = P(u); return `<label class="cs-aceite"><input type="checkbox" class="chn-pp" value="${esc(u)}" ${(c.uids || []).includes(u) ? "checked" : ""}>${av(p, 32, u)}<span>${esc(p.nome)}</span></label>`; }).join("") || `<p class="small muted">Converse com colegas para escolher aqui.</p>`}</div>
+      window.abrirSheet(`<div class="sheet-h"><h2>Ligação Urgente</h2></div>
+        <div class="cs-mp-ll">${pessoas.map(u => { const p = P(u); return `<label class="cs-aceite"><input type="checkbox" class="chn-pp" value="${esc(u)}" ${(c.uids || []).includes(u) ? "checked" : ""}>${av(p, 32, u)}<span>${esc(p.nome)}</span></label>`; }).join("") || `<p class="small muted">Nenhum contato ainda.</p>`}</div>
         <button class="btn primary" data-s="chn-auto-ok">Salvar</button>`);
       return;
     }
@@ -410,17 +410,17 @@
   X.acoes["chn-auto-ok"] = () => { const c = cfgAuto(); c.modo = "escolhidos"; c.uids = [...document.querySelectorAll(".chn-pp:checked")].map(x => x.value).slice(0, 300); salvarAuto(c); window.fecharSheet(); A.pintar(); toast(c.uids.length ? `${c.uids.length} pessoa${c.uids.length === 1 ? "" : "s"} podem.` : "Ninguém marcado."); };
   X.configExtra.push(() => {
     const c = cfgAuto(), st = NE.estado, ok = ativoNativo();
-    const perm = (v, nome, sub, feito) => `<button data-s="chn-perm" data-v="${v}"><span class="cs-lic ${feito ? "cs-ok" : "cs-pend"}">${feito ? I.ok : I.alerta}</span><span><b>${nome}</b><small>${feito ? "Liberado" : sub}</small></span></button>`;
+    const perm = (v, nome, sub, feito) => `<button data-s="chn-perm" data-v="${v}"><span class="cs-lic ${feito ? "cs-ok" : "cs-pend"}">${feito ? I.ok : I.alerta}</span><span><b>${nome}</b>${feito ? "" : `<small>${sub}</small>`}</span></button>`;
     return `<h2 class="cs-sec" id="cs-ch-cfg">Chamadas</h2><div class="cs-menu card flat">
-      ${NV ? (ok ? `<div class="cs-linha"><span class="cs-lic">${I.ok}</span><span><b>Tocar com app fechado</b><small>Ativo neste celular</small></span></div>
-          ${perm("notificacoes", "Notificações", "Toque para permitir: sem isso, não toca", st.notificacoes)}
-          ${perm("telaCheia", "Tela cheia", "Toque para permitir aparecer na tela bloqueada", st.telaCheia)}
-          ${perm("bateria", "Bateria livre", "Toque e escolha “Permitir”: o Android não desliga o ChatMil", st.bateria)}
-          ${perm("sobrepor", "Sobre outros apps", "Necessário para atender sozinho com a tela ligada", st.sobrepor)}
-          <button data-s="chn-desligar"><span class="cs-lic">${I.desligar}</span><span><b>Desativar</b><small>O celular só toca com o app aberto</small></span></button>`
-        : `<button data-s="chn-ativar"><span class="cs-lic">${I.sino}</span><span><b>Tocar com app fechado</b><small>Toque para ativar (pede a senha uma vez)</small></span></button>`)
-        : `<div class="cs-linha"><span class="cs-lic">${I.sino}</span><span><b>Tocar com o app fechado</b><small>Disponível no aplicativo Android</small></span></div>`}
-      <div class="cs-linha"><span class="cs-lic">${I.alerta}</span><span><b>Urgente: atender sozinho</b><small>Abre o áudio no alto-falante, sem tocar no celular</small></span></div>
+      ${NV ? (ok ? `<div class="cs-linha"><span class="cs-lic">${I.ok}</span><span><b>Tocar com app fechado</b></span></div>
+          ${perm("notificacoes", "Notificações", "Toque para permitir", st.notificacoes)}
+          ${perm("telaCheia", "Tela cheia", "Toque para permitir", st.telaCheia)}
+          ${perm("bateria", "Bateria livre", "Toque para permitir", st.bateria)}
+          ${perm("sobrepor", "Sobre outros apps", "Toque para permitir", st.sobrepor)}
+          <button data-s="chn-desligar"><span class="cs-lic">${I.desligar}</span><span><b>Desativar</b></span></button>`
+        : `<button data-s="chn-ativar"><span class="cs-lic">${I.sino}</span><span><b>Tocar com app fechado</b><small>Toque para ativar</small></span></button>`)
+        : `<div class="cs-linha"><span class="cs-lic">${I.sino}</span><span><b>Tocar com o app fechado</b><small>No app Android</small></span></div>`}
+      <div class="cs-linha"><span class="cs-lic">${I.alerta}</span><span><b>Ligação Urgente</b></span></div>
       <div class="seg cs-ch-seg">${[["ninguem", "Ninguém"], ["seguindo", "Quem eu sigo"], ["escolhidos", "Escolher"]].map(([k, n]) => `<button data-s="chn-auto" data-v="${k}" aria-pressed="${c.modo === k}">${n}${k === "escolhidos" && c.modo === k ? ` (${(c.uids || []).length})` : ""}</button>`).join("")}</div>
     </div>`;
   });

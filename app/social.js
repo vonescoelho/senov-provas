@@ -7,6 +7,9 @@
   if (!CFG || !CFG.apiKey || !window.FB || !window.SOC_EXTRAS) { window.SOCIAL = null; return; }
   const fb = window.FB;
   const { F: FIGS, PACOTES, figurinha, ofensivo } = window.SOC_EXTRAS;
+  /* CPF/RG escondidos e links perigosos bloqueados antes de enviar */
+  const seguranca = window.SOC_EXTRAS.seguranca || (t => ({ texto: t, bloqueio: "", docs: 0 }));
+  function seguro(t) { const r = seguranca(t); if (r.bloqueio) { toast(r.bloqueio); return null; } if (r.docs) toast("Por segurança, números de documentos foram escondidos."); return r.texto; }
 
   /* ================= Firebase ================= */
   const app = fb.initializeApp(CFG);
@@ -518,7 +521,6 @@
         <button class="btn primary cs-grande" data-s="ir" data-v="criar">Criar minha conta</button>
         <button class="btn cs-grande" data-s="ir" data-v="entrar">Já tenho conta</button>
       </div>
-      <p class="small muted cs-centro">Cadastro só com e-mail. Não precisa de número de telefone.</p>
     </section>`;
   }
   function vCriar() {
@@ -576,7 +578,6 @@
         <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(c.usuario)}" placeholder="seu.nome"></span></label><small class="muted">É o nome que os outros veem em tudo no ChatMil.</small>
         <span id="cs-usu-ok" class="cs-ok" aria-live="polite"></span>
         ${sug.length ? `<div class="chips cs-sug">${sug.map(s => `<button type="button" class="chip" data-s="sug" data-v="${s}">@${s}</button>`).join("")}</div>` : ""}
-        <p class="small muted">É assim que os colegas encontram você, sem precisar do número do celular.</p>
         <label class="f" for="cs-escola"><span>Escola <small class="muted">(opcional)</small></span><input class="in" id="cs-escola" value="${esc(c.escola)}" placeholder="Onde você ensina"></label>
         <div class="f"><span>Disciplinas <small class="muted">(opcional)</small></span>${chipsDisciplinas(c.disciplinas, "cad")}</div>
         ${erroHtml()}
@@ -602,7 +603,7 @@
     const f = semAc(SO.filtroChats);
     const lista = SO.chats.filter(c => (c.tipo === "grupo" || c.ultima || (topo() && topo().id === c.id)) && (!f || semAc(tituloChat(c).nome).includes(f)));
     const assist = !f || "assistente de provas".includes(f);
-    return `<div class="cs-cab"><div class="cs-marca"><span class="cs-logo sm" style="width:42px;height:42px;border-radius:14px;box-shadow:none">${K.chat}</span><h1>ChatMil</h1></div><div class="row" style="gap:6px">
+    return `<div class="cs-cab"><div class="cs-marca"><h1>ChatMil</h1></div><div class="row" style="gap:6px">
         <button class="cs-ico-bt" data-s="novo" aria-label="Contatos e grupos">${K.maisV}</button></div></div>
       ${avisoEmail()}${EXT.avisos.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       <label class="cs-busca">${K.busca}<input id="cs-filtro" placeholder="Buscar conversa ou pessoa" value="${esc(SO.filtroChats)}" aria-label="Buscar conversa ou pessoa"></label>
@@ -734,7 +735,8 @@
     if (conteudo.texto != null) {
       const t = conteudo.texto.trim(); if (!t) return;
       if (ofensivo(t)) { toast("Mensagem não enviada: tem palavras ofensivas ou preconceituosas."); return false; }
-      conteudo = { texto: t.slice(0, 2000), ...(conteudo.link && conteudo.link.u ? { link: conteudo.link } : {}) };
+      const ts = seguro(t); if (ts == null) return false;
+      conteudo = { texto: ts.slice(0, 2000), ...(conteudo.link && conteudo.link.u ? { link: conteudo.link } : {}) };
     }
     const prev = conteudo.prev || ""; delete conteudo.prev;
     const ult = { texto: conteudo.texto ? conteudo.texto.slice(0, 120) : prev.slice(0, 120), fig: conteudo.fig || null };
@@ -906,7 +908,6 @@
     const o = postOrig(id); if (!o) return toast("Publicação indisponível.");
     if (SO.posts.some(x => x.repost && x.repost.id === id && x.autor === eu())) return toast("Você já recompartilhou esta publicação.");
     window.abrirSheet(`<div class="sheet-h"><h2>${K.repost} Recompartilhar</h2></div>
-      <p class="small muted">Ela vai aparecer no seu mural e para quem segue você.</p>
       <form class="stack" id="cs-f-recomp" data-id="${esc(id)}"><textarea class="in" id="cs-recomp-tx" maxlength="1000" rows="2" placeholder="Diga algo sobre isso (opcional)"></textarea>
       <button type="submit" class="btn primary cs-grande" id="cs-recomp-ok">Recompartilhar agora</button></form>
       <div class="cs-post-emb cs-recomp-prev">${htmlPost(o, false, true)}</div>`);
@@ -914,6 +915,7 @@
   async function recompartilhar(id, texto) {
     const o = postOrig(id); if (!o) throw { msg: "Publicação indisponível." };
     if (ofensivo(texto)) throw { msg: "Não enviado: tem palavras ofensivas ou preconceituosas." };
+    { const r = seguranca(texto || ""); if (r.bloqueio) throw { msg: r.bloqueio }; texto = r.texto; }
     const extraP = Object.assign({}, ...EXT.postDados.map(f => { try { return f(null) || {}; } catch (e) { return {}; } }));
     const ref = fb.doc(C("posts"));
     await fb.setDoc(ref, { ...extraP, autor: eu(), texto: String(texto || "").slice(0, 1000), fig: null, em: TS(), curtidas: [], nComent: 0, repost: { id: o.id, autor: o.autor } });
@@ -954,7 +956,7 @@
     return `<div class="cs-cab"><h1>Mural</h1>${h(EXT.muralCab)}<button class="cs-ico-bt" data-s="buscar-pessoas" aria-label="Encontrar colegas">${K.busca}</button></div>
       ${avisoEmail()}
       ${h(EXT.muralTopo)}
-      <button class="card cs-novo-post" data-s="novo-post">${av(eup, 40, eu())}<span>Nova publicação</span>${K.foto}</button>
+      <button class="card cs-novo-post" data-s="novo-post">${av(eup, 40, eu())}<span>Nova publicação</span><i class="cs-np-foto" data-s="novo-post-foto" role="button" aria-label="Foto: câmera ou galeria">${K.foto}</i></button>
       <div class="seg cs-seg">${segs.map(([k, n]) => `<button data-s="feed" data-v="${k}" aria-pressed="${SO.feed === k}">${n}</button>`).join("")}</div>
       ${lista.length ? `<div class="stack">${lista.map(p => htmlPost(p)).join("")}</div>` :
         `<div class="empty">${figurinha("eureca", 96)}<b>Nada por aqui</b>
@@ -989,7 +991,7 @@
         <div id="cs-mp-lista" hidden>
           <input class="in" id="cs-mp-filtro" placeholder="Buscar pelo nome" aria-label="Buscar pessoa">
           <button type="button" class="cs-link" data-s="mp-seguidos">Marcar todos que eu sigo</button>
-          <div class="cs-mp-ll">${contatosOrdenados().map(u => { const p = P(u); return `<label class="cs-aceite" data-n="${esc(semAc(p.nome || ""))}"><input type="checkbox" class="cs-mp-pp" value="${esc(u)}">${av(p, 32, u)}<span>${esc(p.nome)}</span></label>`; }).join("") || `<p class="small muted">Converse com colegas ou siga alguém para marcar aqui.</p>`}</div>
+          <div class="cs-mp-ll">${contatosOrdenados().map(u => { const p = P(u); return `<label class="cs-aceite" data-n="${esc(semAc(p.nome || ""))}"><input type="checkbox" class="cs-mp-pp" value="${esc(u)}">${av(p, 32, u)}<span>${esc(p.nome)}</span></label>`; }).join("") || `<p class="small muted">Ninguém ainda.</p>`}</div>
         </div>
       </div>
       <div class="cs-pc-prog" id="cs-pc-prog" hidden><i></i></div>
@@ -1002,7 +1004,8 @@
   }
   function marcadosPost() { return [...document.querySelectorAll(".cs-mp-pp:checked")].map(x => x.value).slice(0, 400); }
   async function publicar() {
-    const t = $("#cs-post-tx").value.trim(), fotos = SO.postFotos || [];
+    const t0 = $("#cs-post-tx").value.trim(), fotos = SO.postFotos || [];
+    const t = seguro(t0); if (t == null) return;
     const arqP = SO.postArq, live = SO.postLive;
     if (!t && !fotos.length && !arqP && !live) return toast("Escreva algo ou escolha uma foto ou vídeo.");
     if (ofensivo(t)) return toast("Publicação não enviada: tem palavras ofensivas ou preconceituosas.");
@@ -1206,8 +1209,9 @@
   async function comentar(id) {
     const el = $("#cs-com-tx"), t = el.value.trim(); if (!t) return;
     if (ofensivo(t)) return toast("Comentário não enviado: tem palavras ofensivas ou preconceituosas.");
+    const ts = seguro(t); if (ts == null) return;
     const b = fb.writeBatch(db);
-    b.set(fb.doc(C(colP(id), id, "comentarios")), { autor: eu(), texto: t.slice(0, 1000), em: TS() });
+    b.set(fb.doc(C(colP(id), id, "comentarios")), { autor: eu(), texto: ts.slice(0, 1000), em: TS() });
     b.update(D(colP(id), id), { nComent: fb.increment(1) });
     try { await b.commit(); SO.rascunho["c:" + id] = ""; el.value = ""; } catch (e) { toast(msgErro(e)); }
   }
@@ -1234,7 +1238,7 @@
       const meus = [...SO.seguindo].filter(u => !SO.bloqueados.has(u)).map(u => ({ uid: u, ...P(u) }));
       const novos = (SO.novos || []).filter(p => p.uid !== eu() && !SO.seguindo.has(p.uid) && !SO.bloqueados.has(p.uid));
       return (meus.length ? `<h2 class="cs-sec">Seus contatos</h2><div class="cs-lista">${meus.map(p => itemPessoa(p, acao)).join("")}</div>`
-        : `<p class="small muted">Você ainda não tem contatos. Busque um colega pelo nome ou @usuário e toque em Seguir.</p>`)
+        : `<p class="small muted">Nenhum contato ainda.</p>`)
         + (novos.length ? `<h2 class="cs-sec">Novos no ChatMil</h2><div class="cs-lista">${novos.map(p => itemPessoa(p, acao)).join("")}</div>` : "");
     }
     if (!SO.resultados.length) return `<p class="small muted" style="padding:8px 2px">Ninguém encontrado. Confira a grafia do nome ou do @usuário.</p>`;
@@ -1405,17 +1409,17 @@
         <button class="card cs-conta" data-s="editar-perfil">${av(p, 56, eu())}<span><b>${esc(p.nome)}</b><small>@${esc(p.usuario)}</small></span>${K.dir}</button>
         <h2 class="cs-sec">Conta</h2>
         <div class="cs-menu card flat">
-          ${lin("editar-perfil", K.user, "Editar perfil", "Foto, nome, @usuário, escola e disciplinas")}
+          ${lin("editar-perfil", K.user, "Editar perfil", "")}
           ${lin("email", K.mail, "E-mail", esc(u.email), `<span class="pill ${u.emailVerified ? "d1" : ""}">${u.emailVerified ? "Confirmado" : "Opcional"}</span>`)}
           ${lin("senha", K.chave, "Alterar senha", "")}
         </div>
         <h2 class="cs-sec">Privacidade e segurança</h2>
         <div class="cs-menu card flat">
-          <div class="cs-linha"><span class="cs-lic">${K.lock}</span><span><b>Quem pode me mandar mensagem</b><small>Grupos não mudam</small>
+          <div class="cs-linha"><span class="cs-lic">${K.lock}</span><span><b>Quem pode me mandar mensagem</b>
             <span class="seg cs-seg-mini"><button data-s="priv" data-v="todos" aria-pressed="${(p.privMsg || "todos") === "todos"}">Todos</button><button data-s="priv" data-v="seguindo" aria-pressed="${p.privMsg === "seguindo"}">Só quem eu sigo</button></span></span></div>
-          <div class="cs-linha"><span class="cs-lic">${K.olho}</span><span><b>Mostrar quando estou online</b><small>Se desligar, você também não vê o dos outros</small>
+          <div class="cs-linha"><span class="cs-lic">${K.olho}</span><span><b>Mostrar quando estou online</b>
             <span class="seg cs-seg-mini"><button data-s="priv-on" data-v="sim" aria-pressed="${p.privOnline !== false}">Sim</button><button data-s="priv-on" data-v="nao" aria-pressed="${p.privOnline === false}">Não</button></span></span></div>
-          <div class="cs-linha"><span class="cs-lic">${K.check}</span><span><b>Confirmação de leitura</b><small>Os ✓✓ azuis. Se desligar, você também não vê a dos outros</small>
+          <div class="cs-linha"><span class="cs-lic">${K.check}</span><span><b>Confirmação de leitura</b>
             <span class="seg cs-seg-mini"><button data-s="priv-lido" data-v="sim" aria-pressed="${p.privLeitura !== false}">Sim</button><button data-s="priv-lido" data-v="nao" aria-pressed="${p.privLeitura === false}">Não</button></span></span></div>
           <div class="cs-linha"><span class="cs-lic">${K.user}</span><span><b>Quem vê minha foto de perfil</b>
             <span class="seg cs-seg-mini">${[["todos", "Todos"], ["seguidores", "Seguidores"], ["ninguem", "Ninguém"]].map(([v, t]) => `<button data-s="priv-foto" data-v="${v}" aria-pressed="${((p.privFoto === "seguindo" ? "seguidores" : p.privFoto) || "todos") === v}">${t}</button>`).join("")}</span></span></div>
@@ -1423,7 +1427,7 @@
             <span class="seg cs-seg-mini"><button data-s="priv-rede" data-v="sim" aria-pressed="${!p.privRede}">Sim</button><button data-s="priv-rede" data-v="nao" aria-pressed="${!!p.privRede}">Esconder</button></span></span></div>
           ${EXT.configPriv.map(f => f(p)).join("")}
           ${lin("bloqueados", K.ban, "Pessoas bloqueadas", SO.bloqueados.size ? SO.bloqueados.size + (SO.bloqueados.size === 1 ? " pessoa" : " pessoas") : "Nenhuma")}
-          ${lin("dicas", K.shield, "Dicas de segurança", "Como se proteger no ChatMil")}
+          ${lin("dicas", K.shield, "Dicas de segurança", "")}
         </div>
         <h2 class="cs-sec">Aparência</h2>
         <div class="cs-menu card flat">
@@ -1433,13 +1437,12 @@
             <span class="seg cs-seg-mini">${[["auto", "Automático"], ["claro", "Claro"], ["escuro", "Escuro"]].map(([v, t]) => `<button data-s="tema" data-v="${v}" aria-pressed="${tm === v}">${t}</button>`).join("")}</span></span></div>
         </div>
         <h2 class="cs-sec">Provas</h2>
-        <div class="cs-menu card flat">${lin("dados-escola", K.escola, "Dados da escola", "Nome, logo e professor no cabeçalho das provas")}</div>
+        <div class="cs-menu card flat">${lin("dados-escola", K.escola, "Dados da escola", "")}</div>
         ${EXT.configExtra.map(f => f()).join("")}
         <h2 class="cs-sec">Sobre</h2>
         <div class="cs-menu card flat">${lin("termos", K.info, "Termos de uso e privacidade", "")}</div>
         <button class="btn cs-grande" data-s="sair">${K.sair} Sair da conta</button>
         <button class="btn ghost cs-perigo" data-s="excluir">${K.lixo} Excluir minha conta</button>
-        <p class="small muted cs-centro">ChatMil · sem anúncios</p>
       </div>`;
   }
   function sheetEmail(titulo) {
@@ -1694,6 +1697,11 @@
       }
       case "feed": SO.feed = v; pintar(); break;
       case "novo-post": sheetNovoPost(); break;
+      /* atalho do ícone de imagem: câmera ou galeria, já dentro da nova publicação */
+      case "novo-post-foto":
+        if (EXT.temCameraNativa) { window.abrirSheet(`<div class="sheet-h"><h2>Foto</h2></div><div class="cs-menu cs-np-op"><button data-s="np-foto" data-v="camera">${K.camera || K.foto}<span><b>Câmera</b></span></button><button data-s="np-foto" data-v="galeria">${K.foto}<span><b>Galeria</b></span></button></div>`); break; }
+        sheetNovoPost(); { const b = $("#layer [data-s=mp-fotos]"); if (b) b.click(); } break;
+      case "np-foto": { sheetNovoPost(); const b = $(`#layer [data-s=mp-fotos][data-v=${v === "camera" ? "camera" : "galeria"}]`); if (b) b.click(); break; }
       case "mp-fotos": {
         /* no Android: escolher entre a galeria e a câmera do celular */
         if (EXT.temCameraNativa && !el.dataset.v) { const d = $("#cs-mp-foto"); if (d) { d.hidden = !d.hidden; break; } }
@@ -2027,7 +2035,8 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-cfg .cs-menu>button,.cs-cfg .cs-menu>label,.cs-cfg .cs-menu>.cs-linha{min-height:52px;padding:8px 10px}
 .cs-cfg .cs-menu b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cs-novo-post>span:not(.cs-av){flex:1}.cs-novo-post>svg{width:24px;height:24px;color:var(--primary);flex:none}
+.cs-novo-post>span:not(.cs-av){flex:1}.cs-novo-post>svg,.cs-np-foto svg{width:24px;height:24px;color:var(--primary);flex:none}
+.cs-np-foto{display:grid;place-items:center;width:44px;height:44px;margin:-8px -6px -8px 0;border-radius:50%;flex:none}.cs-np-foto:active{background:var(--surface-2)}
 .cs-pc-bar{display:flex;gap:6px;flex-wrap:wrap}.cs-pc-bar .btn{gap:6px}.cs-pc-bar .btn svg{width:18px;height:18px}
 .cs-pc-fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px}.cs-pc-fotos:empty{display:none}
 .cs-pc-f{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--surface-2)}
@@ -2097,8 +2106,10 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-centro-chips{justify-content:center}
 .cs-conta{display:flex;align-items:center;gap:14px;text-align:left;cursor:pointer;width:100%}
 .cs-conta>span:not(.cs-av){flex:1;display:flex;flex-direction:column;min-width:0}
-.cs-conta b{font-size:1.1rem}
-.cs-conta small{color:var(--muted)}
+.cs-conta b{font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-conta small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-menu>button>span>b,.cs-menu>.cs-linha>span>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.cs-menu>button>span{min-width:0}
 .cs-conta>svg{width:20px;height:20px;color:var(--muted)}
 .cs-ghead{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
 .cs-ghead p{max-width:52ch}

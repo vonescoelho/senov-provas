@@ -195,7 +195,7 @@
     const cab = `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Conhecer colegas</b>
       <button class="pt-alc-bt" data-s="pt-ajustes">${I.filtro}<span>${alcance() ? alcance() + " km" : "Brasil"}</span></button></header>`;
     let corpo;
-    if (!loc && !ST.lista) corpo = `<div class="empty">${I.gente}<b>Ative a localização</b><p class="small muted">Para ver quem está perto e a distância.</p>
+    if (!loc && !ST.lista) corpo = `<div class="empty">${I.gente}<b>Ative a localização</b>
       <button class="btn primary" data-s="pt-gps">Usar localização</button><button class="btn" data-s="pt-cidade">Digitar cidade</button></div>`;
     else if (!ST.lista || (ST.carregando && !b.length)) corpo = `<div class="empty"><div class="spin"></div><b>Procurando colegas…</b></div>`;
     else if (!x) corpo = `<div class="empty">${I.coracao}<b>Você viu todos ${alcance() ? "até " + alcance() + " km" : ""}</b>

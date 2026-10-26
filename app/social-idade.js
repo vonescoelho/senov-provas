@@ -397,11 +397,9 @@
       <button class="btn sm primary" data-s="idade-aprovar" data-id="${esc(p.uid)}">Aprovar</button><button class="btn sm perigo" data-s="idade-recusar" data-id="${esc(p.uid)}">Recusar</button></div></div>`; };
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${A.K.back}</button><b>Verificações de idade</b></header>
       <div class="stack" style="padding:12px 16px 90px">
-      <p class="small muted">Abra a conversa, faça uma chamada de vídeo e peça para a pessoa mostrar um documento com foto e data de nascimento. Não grave nem guarde o documento.</p>
       ${ID.pend.length ? ID.pend.map(linha).join("") : `<p class="muted cs-centro">Nenhum pedido agora.</p>`}
-      <form class="card flat stack" id="idade-f-lim"><label class="small" for="idade-sim"><b>Rigor da comparação rosto × documento</b></label>
-      <div style="display:flex;gap:8px"><input class="in" id="idade-sim" type="number" min="20" max="70" value="${Math.round(ID.simDoc * 100)}" style="flex:1"><button class="btn primary">Salvar</button></div>
-      <span class="small muted">Semelhança mínima em % (padrão ${Math.round(SIM_PADRAO * 100)}). Mais alto = mais seguro, porém mais pessoas vão precisar da chamada.</span></form></div>`;
+      <form class="card flat stack" id="idade-f-lim"><label class="small" for="idade-sim"><b>Segurança Facial</b></label>
+      <div style="display:flex;gap:8px"><input class="in" id="idade-sim" type="number" min="20" max="70" value="${Math.round(ID.simDoc * 100)}" style="flex:1"><button class="btn primary">Salvar</button></div></form></div>`;
   };
   async function decidirAdm(uid, ok) {
     const b = fb.writeBatch(A.db);

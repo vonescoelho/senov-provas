@@ -1223,7 +1223,10 @@ function vRapida(){
 const CHAT={msgs:[],d:{},perg:null,espera:null,digitando:false};
 const hora=()=>new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
 const semAcento=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-const menuChips=()=>[{t:"Nova prova",a:"c-nova"},{t:"Minhas provas",a:"c-minhas"},{t:"Cadastrar questão",a:"c-questao"},...(S.sample?[]:[{t:"Ligar IA grátis",a:"ia-passos",v:"gemini"}])];
+/* "Ativar IA grátis" ganha destaque quando o professor monta provas com frequência (3+ em 14 dias) */
+const usoFrequente=()=>(S.provas||[]).filter(pv=>{const t=Date.parse(pv.atualizadoEm||pv.criadoEm||"");return t&&Date.now()-t<14*864e5;}).length>=3;
+const chipIA=()=>({t:"Ativar IA grátis",a:"ia-passos",v:"gemini",...(usoFrequente()?{pri:true}:{})});
+const menuChips=()=>{const ia=S.sample?[]:[chipIA()];return ia.length&&ia[0].pri?[...ia,{t:"Nova prova",a:"c-nova"},{t:"Minhas provas",a:"c-minhas"},{t:"Cadastrar questão",a:"c-questao"}]:[{t:"Nova prova",a:"c-nova"},{t:"Minhas provas",a:"c-minhas"},{t:"Cadastrar questão",a:"c-questao"},...ia];};
 function renderChat(){if(S.tab!=="inicio")return;render();requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.scrollHeight));}
 function chatEu(t){CHAT.msgs.push({de:"eu",html:esc(t),h:hora()});}
 function chatBot(html,chips,extra){CHAT.digitando=true;renderChat();setTimeout(()=>{CHAT.digitando=false;CHAT.msgs.push({de:"bot",html,chips:chips||[],extra:extra||"",h:hora()});renderChat();},350);}
@@ -1246,7 +1249,7 @@ function perguntar(){
   const ia=iaOn();
   if(!d.disciplina){const ds=disciplinasDoBanco();CHAT.perg="disciplina";
     if(ia){const m=new Map(ds);return chatBot("Qual disciplina?",uniq([...ds.map(x=>x[0]),...DISCIPLINAS]).sort((a,b)=>(m.get(b)||0)-(m.get(a)||0)||a.localeCompare(b,"pt-BR")).map(n=>({t:m.get(n)?`${n} (${m.get(n)})`:n,a:"c-resp",v:"disciplina|"+n})));}
-    if(!ds.length)return chatBot("O banco ainda não tem questões. Cadastre a primeira ou ligue a IA grátis para criar questões novas.",[{t:"Ligar IA grátis",a:"ia-passos",v:"gemini"},{t:"Cadastrar questão",a:"c-questao"}]);
+    if(!ds.length)return chatBot("O banco ainda não tem questões. Cadastre a primeira ou ative a IA grátis para criar questões novas.",[{t:"Ativar IA grátis",a:"ia-passos",v:"gemini",pri:true},{t:"Cadastrar questão",a:"c-questao"}]);
     return chatBot("Qual disciplina?",ds.map(([n,c])=>({t:`${n} (${c})`,a:"c-resp",v:"disciplina|"+n})));}
   if(!d.serie){CHAT.perg="serie";const ops=[];["EF","EM"].forEach(nv=>SERIES[nv].forEach(se=>{const c=contar(q=>q.disciplina===d.disciplina&&q.nivel===nv&&q.serie===se);if(c||ia)ops.push({t:c?`${se} (${c})`:se,a:"c-resp",v:`serie|${nv}|${se}`});}));
     return chatBot("Para qual série ou ano?",ops.length?ops:[{t:"Outra disciplina",a:"c-resp",v:"disciplina|"}]);}
@@ -1422,10 +1425,12 @@ async function gerarNoChat(){
   {const falta=grupos.reduce((t,x)=>t+Math.max(0,x.falta),0);if(falta>0){let r=pegar(null,falta,true);if(r.length<falta){const r2=pegar(null,falta-r.length,false);if(r2.length)outras=true;r=r.concat(r2);}sel.push(...r);}}
   let obs=[criadas?`${criadas} ${criadas===1?"questão nova foi criada":"questões novas foram criadas"} pela IA e ${criadas===1?"guardada":"guardadas"} no banco.`:"",erroIA,outras?`Completei com questões de outras séries do ${NIVEL_NOME[d.nivel]}.`:""].filter(Boolean).join(" ");
   const res={sel:sel.slice(0,d.qtd)};res.falta=Math.max(0,d.qtd-res.sel.length);
-  if(!res.sel.length)return chatBot(d.aee?"Ainda não há questões adaptadas ao AEE nesta disciplina. No modo passo a passo você pode adaptar questões do banco.":"Não encontrei questões para esses filtros."+(iaOn()?"":" Com a IA grátis ligada eu crio questões novas."),[{t:"Nova prova",a:"c-nova"},...(iaOn()?[]:[{t:"Ligar IA grátis",a:"ia-passos",v:"gemini"}]),{t:"Passo a passo",a:"personalizar"}]);
+  if(!res.sel.length)return chatBot(d.aee?"Ainda não há questões adaptadas ao AEE nesta disciplina. No modo passo a passo você pode adaptar questões do banco.":"Não encontrei questões para esses filtros."+(iaOn()?"":" Com a IA grátis ativa eu crio questões novas."),[...(iaOn()?[]:[{t:"Ativar IA grátis",a:"ia-passos",v:"gemini",pri:true}]),{t:"Nova prova",a:"c-nova"},{t:"Passo a passo",a:"personalizar"}]);
   p.itens=res.sel;p.montagem=organizar(p.itens,p.nivel);S.passo=3;
   if(res.falta)obs=(obs?obs+" ":"")+`Encontrei ${res.sel.length} de ${d.qtd} questões.`;
   cartaoPronto(p,obs);
+  /* acabou o banco nesta opção: a IA grátis aparece em destaque para completar */
+  if(res.falta&&!iaOn())chatBot("Acabaram as questões do banco para essa escolha.",[{t:"Ativar IA grátis",a:"ia-passos",v:"gemini",pri:true}]);
 }
 function cartaoPronto(p,obs){
   CHAT.msgs.forEach(m=>{if(m.extra)m.extra=m.extra.replace('class="cprova"','class="cprova velho"');});

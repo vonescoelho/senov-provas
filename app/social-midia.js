@@ -351,7 +351,7 @@
       <input class="in" id="env-filtro" placeholder="Buscar pelo nome" aria-label="Buscar contato">
       <div class="cs-menu cs-env-l">${pessoas.map(u => { const p = A.P(u); return `<button data-s="env-para" data-v="u:${esc(u)}" data-n="${esc(A.semAc(p.nome || ""))}">${A.av(p, 40, u)}<span><b>${esc(p.nome)}</b><small>${esc(p.escola || "Contato")}</small></span><i class="cs-env-ok"></i></button>`; }).join("")}
         ${grupos.map(c => `<button data-s="env-para" data-v="g:${esc(c.id)}" data-n="${esc(A.semAc(c.nome || ""))}">${A.avGrupo ? A.avGrupo(c, 40) : ""}<span><b>${esc(c.nome)}</b><small>Grupo · ${(c.membros || []).length} pessoas</small></span><i class="cs-env-ok"></i></button>`).join("")}
-        ${!pessoas.length && !grupos.length ? `<p class="small muted">Converse com colegas ou siga alguém para enviar por aqui.</p>` : ""}</div>`);
+        ${!pessoas.length && !grupos.length ? `<p class="small muted">Ninguém ainda.</p>` : ""}</div>`);
     const f = document.getElementById("env-filtro");
     if (f) f.addEventListener("input", () => { const q = A.semAc(f.value); document.querySelectorAll(".cs-env-l [data-s=env-para]").forEach(b => { b.hidden = !!q && !b.dataset.n.includes(q); }); });
   };
@@ -456,8 +456,7 @@
         <button data-s="un-foto" data-id="${esc(id)}"><span style="--c:#7C3AED">${I.img}</span>Foto</button>
         <button data-s="un-texto" data-id="${esc(id)}"><span style="--c:#7C3AED">${I.texto}</span>Mensagem</button>
         <button data-s="un-audio" data-id="${esc(id)}"><span style="--c:#7C3AED">${I.mic}</span>Áudio</button>
-      </div>
-      <p class="small muted">Qualquer tipo de arquivo: PDF, Word, Excel, PowerPoint, ZIP, aplicativos (APK), músicas… até 20 MB.</p>`);
+      </div>`);
   };
   const enviarVarios = async (id, fs) => { for (const f of fs) await enviarArquivo(id, f); };
   /* ---------- câmera e galeria do próprio Android (CameraX + compressão Media3, H.265 quando dá) ----------
@@ -1170,9 +1169,11 @@
   X.acoes["un-texto-env"] = async el => {
     const t = ($("#un-tx") || {}).value || ""; if (!t.trim()) return toast("Escreva a mensagem.");
     if (ofensivo(t)) return toast("Mensagem não enviada: tem palavras ofensivas ou preconceituosas.");
+    const sg = window.SOC_EXTRAS.seguranca ? window.SOC_EXTRAS.seguranca(t) : { texto: t };
+    if (sg.bloqueio) return toast(sg.bloqueio);
     sairUnTexto(); window.fecharSheet();
     try {
-      const aid = await subir(el.dataset.id, null, { nome: "", tipo: "text/plain", extra: { unica: true, texto: t.trim().slice(0, 2000) } });
+      const aid = await subir(el.dataset.id, null, { nome: "", tipo: "text/plain", extra: { unica: true, texto: sg.texto.trim().slice(0, 2000) } });
       await enviarMsg(el.dataset.id, { unica: { id: aid, tipo: "texto" }, prev: "Mensagem de visualização única" });
     } catch (e) { console.warn(e); toast(msgErro(e)); }
   };
