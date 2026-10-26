@@ -96,6 +96,8 @@
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const eu = () => SO.user && SO.user.uid;
   const toast = m => window.toast ? window.toast(m) : alert(m);
+  const lerLS = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+  const gravarLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
   const lembrarTab = () => { try { localStorage.setItem("cs.tab", SO.tab); } catch (e) { } };
   const ms = t => !t ? Date.now() : t.toMillis ? t.toMillis() : t.seconds ? t.seconds * 1000 : +new Date(t);
   const dadosDe = s => s.data({ serverTimestamps: "estimate" });
@@ -606,13 +608,18 @@
       <label class="cs-busca">${K.busca}<input id="cs-filtro" placeholder="Buscar conversa ou pessoa" value="${esc(SO.filtroChats)}" aria-label="Buscar conversa ou pessoa"></label>
       ${!f && EXT.conversasTopo ? EXT.conversasTopo() : ""}
       <div class="cs-lista" role="list">
-        ${assist ? `<button class="cs-item" data-s="assistente" role="listitem"><span class="cs-av bot" style="width:52px;height:52px">${K.varinha}</span>
-          <span class="cs-item-t"><b>Assistente de provas <span class="pill">Fixo</span></b><span>Monte uma prova em poucos toques</span></span></button>` : ""}
-        ${EXT.conversasFixos.map(fn => { try { return fn(f) || ""; } catch (e) { return ""; } }).join("")}
-        ${lista.map(c => { const t = tituloChat(c), nl = naoLidas(c);
-          return `<button class="cs-item ${nl ? "nl" : ""}" data-s="abrir-chat" data-id="${esc(c.id)}" role="listitem">${t.av(52)}
+        ${(() => {
+          /* tudo na mesma lista, pela última atividade: conversas, Assistente de provas e Anotações (nada fixo no topo) */
+          const itens = lista.map(c => { const t = tituloChat(c), nl = naoLidas(c);
+            return { em: ms(c.atualizadoEm), html: `<button class="cs-item ${nl ? "nl" : ""}" data-s="abrir-chat" data-id="${esc(c.id)}" role="listitem">${t.av(52)}
             <span class="cs-item-t"><b>${esc(t.nome)}${t.selo || ""}</b><span>${esc(prevUltima(c))}</span></span>
-            <span class="cs-item-m"><small>${horaCurta(c.atualizadoEm)}</small>${nl ? '<i class="cs-dot" aria-label="Não lida"></i>' : ""}</span></button>`; }).join("")}
+            <span class="cs-item-m"><small>${horaCurta(c.atualizadoEm)}</small>${nl ? '<i class="cs-dot" aria-label="Não lida"></i>' : ""}</span></button>` }; });
+          if (assist) { const emA = +lerLS("cs.assist.em." + eu(), 0) || 0;
+            itens.push({ em: emA || 1, html: `<button class="cs-item" data-s="assistente" role="listitem"><span class="cs-av bot" style="width:52px;height:52px">${K.varinha}</span>
+              <span class="cs-item-t"><b>Assistente de provas</b><span>Monte uma prova em poucos toques</span></span>${emA ? `<span class="cs-item-m"><small>${horaCurta(emA)}</small></span>` : ""}</button>` }); }
+          EXT.conversasFixos.forEach(fn => { try { const r = fn(f); if (!r) return; itens.push(typeof r === "string" ? { em: 1, html: r } : { em: r.em || 1, html: r.html || "" }); } catch (e) { } });
+          return itens.sort((x, y) => y.em - x.em).map(x => x.html).join("");
+        })()}
       </div>
       ${f ? `<h2 class="cs-sec">Pessoas</h2><div id="cs-res">${htmlResultados("ver-perfil")}</div>` : ""}
       ${!lista.length && !f ? `<div class="empty"><b>Nenhuma conversa</b><button class="btn primary" data-s="buscar-pessoas">Contatos</button></div>` : ""}
@@ -621,9 +628,9 @@
   function sheetNovo() {
     window.abrirSheet(`<div class="sheet-h"><h2>Contatos e grupos</h2></div>
       <div class="cs-menu">
-        <button data-s="buscar-pessoas">${K.user}<span><b>Contatos</b><small>Busque colegas pelo nome ou @usuário</small></span></button>
-        <button data-s="novo-grupo">${K.grupo}<span><b>Novo grupo</b><small>Ex.: Área de Linguagens, Sala dos professores</small></span></button>
-        <button data-s="entrar-codigo">${K.codigo}<span><b>Entrar com código</b><small>Código de convite de um grupo</small></span></button>
+        <button data-s="buscar-pessoas">${K.user}<span><b>Contatos</b></span></button>
+        <button data-s="novo-grupo">${K.grupo}<span><b>Novo grupo</b></span></button>
+        <button data-s="entrar-codigo">${K.codigo}<span><b>Entrar com código</b></span></button>
       </div>`);
   }
   async function abrirDireto(uid) {
@@ -689,7 +696,7 @@
       if (m.cifrada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-id="${esc(m.id)}"><div class="cs-b cs-tb cs-trancada">${nome}<span class="cs-tx">${m.cifrada === "pin" ? "🔒 Digite seu PIN para abrir" : m.cifrada === "abrindo" ? "🔒 Abrindo…" : "🔒 Mensagem protegida que este celular não consegue abrir"}</span><span class="cs-h">${hr}</span></div></div>`; ant = m; return; }
       if (EXT.msg && (m.arquivo || m.chamada || m.audio || m.unica)) { h += EXT.msg(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
       if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
-      else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb">${nome}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
+      else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb ${m.link ? "cs-com-lk" : ""}">${nome}${m.link && window.CS_LINK ? CS_LINK.card(m.link) : ""}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
       ant = m;
     });
     return h + (dia ? "</div>" : "");
@@ -727,7 +734,7 @@
     if (conteudo.texto != null) {
       const t = conteudo.texto.trim(); if (!t) return;
       if (ofensivo(t)) { toast("Mensagem não enviada: tem palavras ofensivas ou preconceituosas."); return false; }
-      conteudo = { texto: t.slice(0, 2000) };
+      conteudo = { texto: t.slice(0, 2000), ...(conteudo.link && conteudo.link.u ? { link: conteudo.link } : {}) };
     }
     const prev = conteudo.prev || ""; delete conteudo.prev;
     const ult = { texto: conteudo.texto ? conteudo.texto.slice(0, 120) : prev.slice(0, 120), fig: conteudo.fig || null };
@@ -885,7 +892,7 @@
     const a = P(p.autor), meu = p.autor === eu(), curti = (p.curtidas || []).includes(eu()), n = (p.curtidas || []).length;
     const o = postOrig(p.repost.id);
     return `<article class="card cs-post cs-repost">
-      <div class="cs-repost-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 32, p.autor)}<span><b>${esc(meu ? "Você" : a.nome)}${seloHtml(a)}</b> recompartilhou<small>${tempoPost(p.em)}${EXT.postMeta.map(f => { try { return f(p) || ""; } catch (e) { return ""; } }).join("")}</small></span></button>
+      <div class="cs-repost-h"><button class="cs-quem" data-s="ver-perfil" data-id="${esc(p.autor)}">${av(a, 32, p.autor)}<span><span class="cs-rp-l"><b>${esc(meu ? "Você" : a.nome)}${seloHtml(a)}</b> recompartilhou</span><small>${tempoPost(p.em)}${EXT.postMeta.map(f => { try { return f(p) || ""; } catch (e) { return ""; } }).join("")}</small></span></button>
         <button class="cs-ico-bt" data-s="menu-post" data-id="${esc(p.id)}" aria-label="Opções da publicação">${K.mais}</button></div>
       ${p.texto ? `<div class="cs-post-tx">${esc(p.texto)}</div>` : ""}
       ${o === undefined ? `<div class="cs-post-emb cs-carr"><div class="spin"></div></div>` : o === null ? `<div class="cs-post-emb cs-repost-x">${K.proibido}<span>Esta publicação não está mais disponível.</span></div>` : `<div class="cs-post-emb">${htmlPost(o, completo, true)}</div>`}
@@ -1027,6 +1034,8 @@
       }
       const aoVivo = live ? "ChatMil-AoVivo-" + eu().slice(0, 6) + "-" + Math.random().toString(36).slice(2, 8) : null;
       const extraP = Object.assign({}, ...EXT.postDados.map(f => { try { return f(para) || {}; } catch (e) { return {}; } }));
+      /* link no texto: vai com a miniatura (só quando a publicação não tem fotos) */
+      if (!imgs.length && !arq && window.CS_LINK) { if (ok) ok.textContent = "Publicando…"; const lk = await CS_LINK.paraTexto(t, 3500).catch(() => null); if (lk) extraP.link = lk; }
       await fb.setDoc(ref, { ...extraP, autor: eu(), texto: t.slice(0, 3000), fig: null, em: TS(), curtidas: [], nComent: 0, ...(imgs.length ? { imgs } : {}), ...(para ? { para } : {}), ...(arq ? { arq } : {}), ...(aoVivo ? { aoVivo } : {}) });
       if (aoVivo) abrirAoVivo(aoVivo);
       fotos.forEach(f => URL.revokeObjectURL(f.url)); SO.postFotos = []; SO.postArq = null; SO.postLive = false;
@@ -1607,7 +1616,7 @@
       case "sug": { const i = $("#cs-usu"); if (i) i.value = v; SO.cad.usuario = v; checarUsuario(); break; }
       case "disc": { const alvo = el.dataset.alvo === "ed" ? SO.ed : SO.cad; const l = alvo.disciplinas; const k = l.indexOf(v); if (k >= 0) l.splice(k, 1); else if (l.length < 8) l.push(v); el.setAttribute("aria-pressed", String(l.includes(v))); break; }
       case "foto-tirar": ctxFoto().foto = null; pintar(); break;
-      case "assistente": SO.tab = "provas"; S.tab = "inicio"; lembrarTab(); pintar(); window.scrollTo(0, 0); break;
+      case "assistente": gravarLS("cs.assist.em." + eu(), Date.now()); SO.tab = "provas"; S.tab = "inicio"; lembrarTab(); pintar(); window.scrollTo(0, 0); break;
       case "abrir-chat": abrirChat(id); break;
       case "voltar": voltar(); break;
       case "novo": sheetNovo(); break;
@@ -1819,7 +1828,8 @@
       case "cs-f-msg": {
         const id = f.dataset.id, ta = $("#cs-txt"), t = ta.value; if (!t.trim()) return;
         ta.value = ""; SO.rascunho[id] = ""; autosize(ta); ta.focus(); if (EXT.composerFim) f.classList.add("vazio");
-        enviarMsg(id, { texto: t }).then(r => { if (r === false && !ta.value) { ta.value = t; SO.rascunho[id] = t; autosize(ta); } });
+        (window.CS_LINK ? CS_LINK.paraMensagem(t).catch(() => null) : Promise.resolve(null))
+          .then(lk => enviarMsg(id, { texto: t, ...(lk ? { link: lk } : {}) })).then(r => { if (r === false && !ta.value) { ta.value = t; SO.rascunho[id] = t; autosize(ta); } });
         break;
       }
     }
@@ -2154,6 +2164,7 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-splash{min-height:70vh;display:grid;place-items:center}
 .cs-repost-h{display:flex;align-items:center;gap:8px}.cs-repost-h .cs-quem{flex:1;min-width:0}
 .cs-repost-h .cs-quem span{font-size:.92rem}.cs-repost-h small{display:block}
+.cs-repost-h .cs-rp-l{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}.cs-repost-h .cs-rp-l b{display:inline;color:var(--text,inherit)}
 .cs-post-emb{border:1px solid var(--line);border-radius:14px;padding:10px;margin-top:8px}
 .cs-post-emb .cs-post-in{display:flex;flex-direction:column;gap:8px}
 .cs-repost-x{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:.9rem}.cs-repost-x svg{width:18px;height:18px}

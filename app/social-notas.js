@@ -41,14 +41,17 @@
   const dominio = u => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return u; } };
   const tam = n => n > 1048576 ? (n / 1048576).toFixed(1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
 
-  /* ---------- item fixo nas Conversas ---------- */
+  const lerNum = k => { try { return +localStorage.getItem(k) || 0; } catch (e) { return 0; } };
+  /* ---------- item nas Conversas ---------- */
   X.conversasFixos.push(f => {
     if (f && !"anotacoes".includes(A.semAc ? A.semAc(f) : f)) return "";
     const l = NT.lista || [], pend = l.filter(n => !n.feito), alta = pend.filter(n => n.prioridade === 1).length;
     const ult = ordenar(l)[0];
     const sub = !l.length ? "Guarde textos, fotos, links e arquivos" : alta ? `${alta} de prioridade alta · ${pend.length} pendente${pend.length === 1 ? "" : "s"}` : ult ? (ult.texto || ult.arq && ult.arq.nome || "Foto").slice(0, 60) : "";
-    return `<button class="cs-item" data-s="notas-abrir" role="listitem"><span class="cs-av cs-nt-av" style="width:52px;height:52px">${I.nota}</span>
-      <span class="cs-item-t"><b>Anotações <span class="pill">Só você</span></b><span>${esc(sub)}</span></span>${alta ? `<span class="cs-item-m"><i class="cs-nt-alta">${alta}</i></span>` : ""}</button>`;
+    /* entra na lista pela última anotação (ou última vez que abriu), como uma conversa comum */
+    const em = Math.max(l.length ? Math.max(...l.map(n => A.ms(n.em) || 0)) : 0, +(lerNum("cs.notas.em." + (eu() || "")) || 0)) || 1;
+    return { em, html: `<button class="cs-item" data-s="notas-abrir" role="listitem"><span class="cs-av cs-nt-av" style="width:52px;height:52px">${I.nota}</span>
+      <span class="cs-item-t"><b>Anotações <span class="pill">Só você</span></b><span>${esc(sub)}</span></span>${alta ? `<span class="cs-item-m"><i class="cs-nt-alta">${alta}</i></span>` : ""}</button>` };
   });
 
   /* ---------- tela ---------- */
@@ -57,11 +60,18 @@
     return ordenar((NT.lista || []).filter(n => (NT.filtro === "todas" || (NT.filtro === "alta" ? n.prioridade === 1 && !n.feito : n.cat === NT.filtro))
       && (!q || (A.semAc ? A.semAc((n.texto || "") + " " + ((n.arq && n.arq.nome) || "")) : (n.texto || "").toLowerCase()).includes(q))));
   }
+  /* anotação antiga com link e sem miniatura: gera a prévia uma vez e guarda */
+  const tentouLink = new Set();
+  function completarLink(n) {
+    if (!window.CS_LINK || !n.id || tentouLink.has(n.id) || n.arq) return; tentouLink.add(n.id);
+    CS_LINK.paraTexto(n.texto, 12000).then(lk => { if (lk) fb.updateDoc(D("users", eu(), "notas", n.id), { link: lk }).catch(() => { }); }).catch(() => { });
+  }
   function htmlNota(n) {
     const c = cat(n.cat), p = pri(n.prioridade), link = (n.texto || "").match(URL_RE);
     let corpo = "";
     if (n.texto) corpo += `<div class="cs-nt-tx">${A.textoComLinks ? A.textoComLinks(n.texto) : esc(n.texto)}</div>`;
-    if (link) corpo += `<button class="cs-nt-link" data-s="notas-link" data-v="${esc(link[0])}">${I.link}<span><b>${esc(dominio(link[0]))}</b><small>${esc(link[0].slice(0, 80))}</small></span></button>`;
+    if (n.link && window.CS_LINK) corpo += CS_LINK.card(n.link);
+    else if (link) { corpo += `<button class="cs-nt-link" data-s="notas-link" data-v="${esc(link[0])}">${I.link}<span><b>${esc(dominio(link[0]))}</b><small>${esc(link[0].slice(0, 80))}</small></span></button>`; completarLink(n); }
     if (n.thumb) corpo += `<button class="cs-nt-foto" data-s="notas-arq" data-id="${esc(n.id)}"><img src="${esc(n.thumb)}" alt="" loading="lazy"></button>`;
     else if (n.arq) corpo += `<button class="cs-nt-arq" data-s="notas-arq" data-id="${esc(n.id)}">${I.clip}<span><b>${esc(n.arq.nome)}</b><small>${tam(n.arq.tamanho || 0)}</small></span></button>`;
     return `<article class="cs-nt ${n.feito ? "feito" : ""}" style="--c:${c[2]}">
@@ -89,7 +99,7 @@
         ${a ? `<div class="cs-nt-anx">${a.url ? `<img src="${a.url}" alt="">` : I.clip}<span>${esc(a.nome)}${NT.enviando ? ` · ${Math.round(NT.prog * 100)}%` : ""}</span><button type="button" data-s="notas-anx-tirar" aria-label="Tirar anexo">${K.x}</button></div>` : ""}
         <div class="cs-nt-linha">
           <button type="button" class="cs-ico-bt" data-s="notas-anexar" aria-label="Anexar foto ou arquivo">${I.clip}</button>
-          <textarea id="nt-tx" class="in" rows="1" maxlength="5000" placeholder="Escreva uma anotação ou cole um link" aria-label="Nova anotação">${esc(NT.rascunho || "")}</textarea>
+          <textarea id="nt-tx" class="in" rows="1" maxlength="5000" placeholder="Escreva uma anotação" aria-label="Nova anotação">${esc(NT.rascunho || "")}</textarea>
           <button class="btn primary cs-env" aria-label="Guardar" ${NT.enviando ? "disabled" : ""}>${I.env}</button>
         </div></form>`;
   };
@@ -112,6 +122,7 @@
         nota.arq = { id, nome: nome.slice(0, 120), tipo, tamanho: blob.size };
         if (a.foto && a.thumb) nota.thumb = a.thumb;
       }
+      if (!a && t && window.CS_LINK) { const lk = await CS_LINK.paraTexto(t, 3500).catch(() => null); if (lk) nota.link = lk; }
       await fb.setDoc(fb.doc(C("users", eu(), "notas")), nota);
       gravarLS("cs.notas.pref." + eu(), { cat: NT.cat, pri: NT.pri });
       if (a && a.url) URL.revokeObjectURL(a.url);
@@ -153,7 +164,7 @@
   });
 
   Object.assign(X.acoes, {
-    "notas-abrir": () => abrirTela({ v: "notas" }),
+    "notas-abrir": () => { try { localStorage.setItem("cs.notas.em." + eu(), String(Date.now())); } catch (e) { } abrirTela({ v: "notas" }); },
     "notas-buscar": () => { NT.buscando = !NT.buscando; if (!NT.buscando) NT.busca = ""; pintar(); setTimeout(() => { const q = $("#nt-q"); if (q) q.focus(); }, 60); },
     "notas-filtro": el => { NT.filtro = el.dataset.v; pintar(); },
     "notas-cat": el => { NT.cat = el.dataset.v; document.querySelectorAll("#nt-f [data-s=notas-cat]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === NT.cat))); },

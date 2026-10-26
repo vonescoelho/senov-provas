@@ -141,7 +141,7 @@
   X.perfilExtra = (uid, meu) => {
     const l = carregarDest(uid);
     if (!meu && (!l || !l.length)) return "";
-    return `<section class="cs-dest"><h2 class="cs-sec">${I.estrela} Destaques ${meu ? `<small class="muted">${(l || []).length}/${MAXDEST}</small>` : ""}</h2>
+    return `<section class="cs-dest"><h2 class="cs-sec">${I.estrela} Destaques ${meu ? `<small class="muted">${(l || []).length}/${MAXDEST}</small>` : ""}${meu && l && l.length ? `<button class="cs-dest-ed" data-s="dest-gerenciar">Editar</button>` : ""}</h2>
       <div class="cs-dest-l">
         ${(l || []).map((d, i) => `<button class="cs-dest-it" data-s="dest-ver" data-id="${esc(uid)}" data-v="${i}" aria-label="Ver destaque ${i + 1}">${d.thumb ? `<img src="${d.thumb}" alt="">` : `<span>${d.tipo === "video" ? I.play : I.img}</span>`}${d.tipo === "video" ? `<i>${I.play}</i>` : ""}</button>`).join("")}
         ${meu && (l || []).length < MAXDEST ? `<button class="cs-dest-it novo" data-s="dest-novo" aria-label="Adicionar destaque">${I.mais}<small>Adicionar</small></button>` : ""}
@@ -156,6 +156,27 @@
       <button data-s="dest-criar">${I.camera}<span><b>Foto ou vídeo novo</b><small>Câmera ou galeria</small></span></button>
       <button data-s="fl-ver" data-id="${esc(eu())}">${I.flash}<span><b>Destacar um dos meus Flashes</b><small>Abra o Flash e toque em “Destacar”</small></span></button></div>`);
     abrirCriador("destaque");
+  };
+  /* apagar destaques direto pelo perfil */
+  X.acoes["dest-gerenciar"] = () => {
+    const l = FL.dest.get(eu()) || [];
+    if (!l.length) return toast("Você ainda não tem destaques.");
+    window.abrirSheet(`<div class="sheet-h"><h2>Seus destaques</h2></div><div class="cs-menu">
+      ${l.map((d, i) => `<button data-s="dest-apagar" data-id="${esc(d.id)}">${d.thumb ? `<img class="cs-flm-t" src="${d.thumb}" alt="">` : I.estrela}<span><b>Destaque ${i + 1}</b><small>${d.tipo === "video" ? "Vídeo" : "Foto"}${d.legenda ? " · " + esc(d.legenda.slice(0, 40)) : ""}</small></span><i class="cs-flm-lixo">${I.lixo}</i></button>`).join("")}</div>`);
+  };
+  X.acoes["dest-apagar"] = el => {
+    const d = (FL.dest.get(eu()) || []).find(x => x.id === el.dataset.id); if (!d) return;
+    window.abrirSheet(`<div class="sheet-h"><h2>Apagar este destaque?</h2></div>${d.thumb ? `<img class="cs-flm-big" src="${d.thumb}" alt="">` : ""}
+      <button class="btn perigo cs-grande" data-s="dest-apagar-ok" data-id="${esc(d.id)}">${I.lixo} Apagar</button><button class="btn ghost" data-s="fechar">Cancelar</button>`);
+  };
+  X.acoes["dest-apagar-ok"] = async el => {
+    const id = el.dataset.id; window.fecharSheet();
+    try {
+      await apagarTudo("destaques", id);
+      const ainda = await fb.getDoc(D("destaques", id)).then(x => x.exists()).catch(() => false);
+      if (ainda) throw new Error("não apagou");
+      FL.dest.set(eu(), (FL.dest.get(eu()) || []).filter(x => x.id !== id)); toast("Destaque apagado."); pintar();
+    } catch (e) { console.warn(e); toast("Não foi possível apagar agora. Tente de novo."); }
   };
   X.acoes["dest-criar"] = () => { window.fecharSheet(); abrirCriador("destaque"); };
 
@@ -389,10 +410,12 @@
     const n = await X.midia_nativa("camera", { modo: CR.modo === "video" ? "video" : "foto", frente: false, maxSeg: MAXDUR });
     if (!CR.el) return;
     if (n === null) return telaCamera();                       /* sem câmera do aparelho: usa a do navegador */
-    if (!n.length) { if (primeira) return fecharCriador(); return telaCamera(); }   /* cancelou */
+    /* cancelou: volta para a edição (se já tinha foto/vídeo) ou fecha — nunca troca para a câmera do navegador */
+    if (!n.length) { if (!primeira && CR.fonte && CR.fonteTipo !== "camera") return telaEditar(); return fecharCriador(); }
     const f = n[0];
-    if ((f.type || "").startsWith("video/")) { const info = await M.miniVideo(f).catch(() => null); usarVideo(f, info ? info.dur : 0, false); }
-    else usarFoto(f, false);
+    /* a câmera do aparelho já aplica os efeitos (Effects, Loop, Square): a edição não repete o painel de efeitos */
+    if ((f.type || "").startsWith("video/")) { const info = await M.miniVideo(f).catch(() => null); usarVideo(f, info ? info.dur : 0, true); }
+    else usarFoto(f, true);
   }
   X.acoes["flc-celular"] = () => { if (!CR.gravando) cameraDoCelular(false); };
   function pararCamera() { if (CR.stream) CR.stream.getTracks().forEach(t => t.stop()); CR.stream = null; if (CR.gravando) { try { CR.gravando.stop(); } catch (e) { } CR.gravando = null; } }
@@ -543,7 +566,11 @@
   document.addEventListener("input", e => {
     if (e.target.id === "flc-vini" && CR.fonteTipo === "video") { CR.inicioVideo = +e.target.value; CR.fonte.currentTime = CR.inicioVideo; const t = $("#flc-vini-t"); if (t) t.textContent = mmss(CR.inicioVideo); }
   });
-  X.acoes["flc-refazer"] = () => { if (CR.prevAud) { CR.prevAud.pause(); CR.prevAud = null; } if (CR.fonte && CR.fonte.pause) CR.fonte.pause(); CR.fonte = null; telaCamera(); };
+  X.acoes["flc-refazer"] = () => {
+    if (CR.prevAud) { CR.prevAud.pause(); CR.prevAud = null; } if (CR.fonte && CR.fonte.pause) CR.fonte.pause();
+    if (X.temCameraNativa) return cameraDoCelular(false);   /* uma câmera só: a do aparelho */
+    CR.fonte = null; telaCamera();
+  };
   X.acoes["flc-somorig"] = () => { CR.somOriginal = !CR.somOriginal; if (CR.fonte) CR.fonte.muted = !CR.somOriginal; telaEditar(); };
   X.acoes["flc-musica"] = async (el, ev) => {
     if (ev && ev.target.closest("[data-s='flc-mus-tirar']")) return X.acoes["flc-mus-tirar"]();
@@ -696,6 +723,7 @@
 .cs-fl-novo i{position:absolute;right:0;bottom:0;width:24px;height:24px;border-radius:50%;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;box-shadow:0 0 0 2.5px var(--bg)}
 .cs-fl-novo i svg{width:16px;height:16px}
 .cs-dest h2{display:flex;align-items:center;gap:6px}.cs-dest h2 svg{width:20px;height:20px;color:#E0A11B}
+.cs-dest-ed{margin-left:auto;border:0;background:var(--surface-2);color:var(--primary);font-weight:700;font-size:.85rem;padding:6px 14px;border-radius:999px;cursor:pointer}
 .cs-dest-l{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;align-items:center}
 .cs-dest-it{flex:none;width:76px;height:116px;border-radius:14px;border:0;padding:0;overflow:hidden;position:relative;background:var(--surface-2);cursor:pointer;display:grid;place-items:center;color:var(--muted)}
 .cs-dest-it img{width:100%;height:100%;object-fit:cover}
