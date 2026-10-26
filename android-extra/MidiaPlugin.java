@@ -17,6 +17,7 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.effect.Presentation;
+import androidx.media3.effect.RgbMatrix;
 import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.DefaultEncoderFactory;
 import androidx.media3.transformer.EditedMediaItem;
@@ -62,11 +63,11 @@ public class MidiaPlugin extends Plugin {
     private void cameraVoltou(PluginCall call, ActivityResult r) {
         if (call == null) return;
         if (r.getResultCode() != android.app.Activity.RESULT_OK || r.getData() == null) { call.reject("cancelado"); return; }
-        String caminho = r.getData().getStringExtra("caminho"), tipo = r.getData().getStringExtra("tipo");
+        String caminho = r.getData().getStringExtra("caminho"), tipo = r.getData().getStringExtra("tipo"), efeito = r.getData().getStringExtra("efeito");
         if (caminho == null) { call.reject("cancelado"); return; }
         File f = new File(caminho);
         if (tipo != null && tipo.startsWith("video/")) {
-            comprimir(Uri.fromFile(f), call.getString("qualidade", "media"), call.getBoolean("hevc", true), 0, 1, (saida, info, erro) -> {
+            comprimir(Uri.fromFile(f), call.getString("qualidade", "media"), call.getBoolean("hevc", true), 0, 1, efeito, (saida, info, erro) -> {
                 f.delete();
                 if (saida == null) { call.reject(erro == null ? "falhou" : erro); return; }
                 info.put("nome", "video-" + System.currentTimeMillis() + ".mp4");
@@ -109,7 +110,7 @@ public class MidiaPlugin extends Plugin {
         String tipo = getContext().getContentResolver().getType(u);
         String nome = nomeDe(u);
         if (tipo != null && tipo.startsWith("video/")) {
-            comprimir(u, call.getString("qualidade", "media"), call.getBoolean("hevc", true), k, uris.size(), (saida, info, erro) -> {
+            comprimir(u, call.getString("qualidade", "media"), call.getBoolean("hevc", true), k, uris.size(), null, (saida, info, erro) -> {
                 if (saida != null) { info.put("nome", nome.replaceAll("\\.\\w+$", "") + ".mp4"); feitos.put(info); }
                 else { JSObject x = new JSObject(); x.put("erro", erro == null ? "falhou" : erro); x.put("nome", nome); feitos.put(x); }
                 processar(call, uris, k + 1, feitos);
@@ -167,7 +168,7 @@ public class MidiaPlugin extends Plugin {
         call.resolve(o);
     }
 
-    private void comprimir(Uri entrada, String qualidade, boolean hevc, int i, int n, Pronto pronto) {
+    private void comprimir(Uri entrada, String qualidade, boolean hevc, int i, int n, String efeito, Pronto pronto) {
         int w = 0, h = 0, rot = 0; long dur = 0; int brOrig = 0;
         MediaMetadataRetriever mr = new MediaMetadataRetriever();
         try {
@@ -195,6 +196,11 @@ public class MidiaPlugin extends Plugin {
                 List<Effect> efeitos = new ArrayList<>();
                 Effect p = presentacao(alvo, fw, fh);
                 if (p != null) efeitos.add(p);
+                /* estilo de cor escolhido na câmera (Effects) */
+                final float[] cor = Efeitos.rgb4x4(efeito);
+                if (cor != null) efeitos.add(new RgbMatrix() {
+                    @Override public float[] getMatrix(long tempoUs, boolean hdr) { return cor; }
+                });
                 EditedMediaItem item = new EditedMediaItem.Builder(MediaItem.fromUri(entrada))
                     .setEffects(new Effects(Collections.<AudioProcessor>emptyList(), efeitos)).build();
                 final Transformer[] tr = new Transformer[1];

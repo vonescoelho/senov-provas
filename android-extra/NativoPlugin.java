@@ -212,6 +212,17 @@ public class NativoPlugin extends Plugin {
         }
     }
 
+    /* prévia de link (título, descrição e miniatura) lida pelo próprio celular */
+    @PluginMethod
+    public void previaLink(final PluginCall call) {
+        final String url = call.getString("url", "");
+        if (!url.startsWith("https://") && !url.startsWith("http://")) { call.reject("link inválido"); return; }
+        new Thread(() -> {
+            try { call.resolve(Previa.buscar(url)); }
+            catch (Throwable e) { call.reject("sem prévia"); }
+        }).start();
+    }
+
     private File arquivo(PluginCall call) {
         return new File(Uri.parse(call.getString("uri", "")).getPath());
     }
