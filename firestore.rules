@@ -16,6 +16,14 @@ service cloud.firestore {
         && request.resource.data.musica.titulo is string && request.resource.data.musica.titulo.size() <= 120
         && request.resource.data.musica.artista is string && request.resource.data.musica.artista.size() <= 100);
     }
+    // prévia de link (miniatura pequena em data URL, título, descrição)
+    function linkOk() {
+      return !('link' in request.resource.data) || (request.resource.data.link is map
+        && request.resource.data.link.u is string && request.resource.data.link.u.size() <= 1000
+        && request.resource.data.link.get('i', '') is string && request.resource.data.link.get('i', '').size() <= 110000
+        && request.resource.data.link.get('t', '') is string && request.resource.data.link.get('t', '').size() <= 200
+        && request.resource.data.link.get('d', '') is string && request.resource.data.link.get('d', '').size() <= 300);
+    }
     function textoOk(campo, max) {
       return !(campo in request.resource.data) || request.resource.data[campo] == null
         || (request.resource.data[campo] is string && request.resource.data[campo].size() <= max);
@@ -64,7 +72,7 @@ service cloud.firestore {
       // Anotações (só o dono)
       match /notas/{nid} {
         allow read, delete: if logado() && uid == eu();
-        allow create, update: if logado() && uid == eu() && textoOk('texto', 5000) && textoOk('thumb', 60000)
+        allow create, update: if logado() && uid == eu() && textoOk('texto', 5000) && textoOk('thumb', 60000) && linkOk()
           && request.resource.data.get('cat', 'pessoal') in ['trabalho', 'casa', 'pessoal', 'amigos']
           && request.resource.data.get('prioridade', 2) in [1, 2, 3];
       }
@@ -132,7 +140,7 @@ service cloud.firestore {
           && (chat().tipo != 'direto'
               || (!exists(/databases/$(database)/documents/users/$(chat().membros[0])/bloqueados/$(eu()))
                   && !exists(/databases/$(database)/documents/users/$(chat().membros[1])/bloqueados/$(eu()))))
-          && textoOk('texto', 2000) && textoOk('fig', 30)
+          && textoOk('texto', 2000) && textoOk('fig', 30) && linkOk()
           // criptografia de ponta a ponta: conteúdo trancado (c), chaves por participante (k), chave pública de quem enviou (spk)
           && textoOk('c', 400000) && textoOk('spk', 200)
           && (!('k' in request.resource.data) || (request.resource.data.k is map && request.resource.data.k.size() <= 520));
@@ -162,7 +170,7 @@ service cloud.firestore {
         && request.resource.data.autor == eu()
         && textoOk('texto', 3000) && textoOk('fig', 30) && textoOk('aoVivo', 80) && imgsOk() && !('para' in request.resource.data)
         && request.resource.data.curtidas == [] && request.resource.data.nComent == 0
-        && !('nRepost' in request.resource.data) && musicaOk()
+        && !('nRepost' in request.resource.data) && musicaOk() && linkOk()
         && (!('repost' in request.resource.data) || (request.resource.data.repost is map && request.resource.data.repost.id is string && request.resource.data.repost.id.size() <= 40));
       allow update: if logado() && (
         (resource.data.autor == eu() && mudou().hasOnly(['texto', 'editadoEm']) && textoOk('texto', 3000))
@@ -192,7 +200,7 @@ service cloud.firestore {
       allow read: if logado() && (resource.data.autor == eu() || eu() in resource.data.para);
       allow create: if logado()
         && request.resource.data.autor == eu()
-        && textoOk('texto', 3000) && textoOk('fig', 30) && textoOk('aoVivo', 80) && imgsOk()
+        && textoOk('texto', 3000) && textoOk('fig', 30) && textoOk('aoVivo', 80) && imgsOk() && linkOk()
         && request.resource.data.curtidas == [] && request.resource.data.nComent == 0
         && request.resource.data.para is list && request.resource.data.para.size() > 0 && request.resource.data.para.size() <= 400;
       allow update: if logado() && (resource.data.autor == eu() || eu() in resource.data.para) && (
