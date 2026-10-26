@@ -120,8 +120,7 @@ public class Atualizacao {
         PendingIntent pi = PendingIntent.getActivity(ctx, ID_NOTIF, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification n = new NotificationCompat.Builder(ctx, CANAL)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("Nova versão do ChatMil")
-            .setContentText("Toque para atualizar.")
+            .setContentTitle("✨ ChatMil novinho te esperando · toque e veja")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(pi)

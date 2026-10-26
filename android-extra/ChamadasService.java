@@ -93,8 +93,7 @@ public class ChamadasService extends Service {
         PendingIntent pi = PendingIntent.getActivity(this, 1, abrir, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification n = new NotificationCompat.Builder(this, CANAL_CONEXAO)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call)
-            .setContentTitle("ChatMil")
-            .setContentText("Pronto para receber chamadas")
+            .setContentTitle("📞 Seus amigos já podem te ligar")
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .setContentIntent(pi)
@@ -199,7 +198,7 @@ public class ChamadasService extends Service {
         PendingIntent piAbrir = PendingIntent.getActivity(this, id, abrir, f);
         PendingIntent piAtender = PendingIntent.getActivity(this, id + 1, atender, f);
         PendingIntent piRecusar = PendingIntent.getBroadcast(this, id + 2, recusar, f);
-        String tipo = (urgente ? "URGENTE · " : "") + (voz ? "Chamada de voz" : "Chamada de vídeo") + (auto ? " · atendendo sozinho" : "");
+        String tipo = urgente ? "🚨 Ligação Urgente" + (auto ? " · atendendo" : "") : voz ? "📞 Te ligando agora" : "🎥 Chamada de vídeo pra você";
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CANAL_CHAMADA)
             .setSmallIcon(android.R.drawable.sym_call_incoming)
             .setContentTitle(nome)
