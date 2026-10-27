@@ -1,11 +1,9 @@
-/* ChatMil — Verificação de idade e identidade no cadastro (ECA Digital): só maiores de 18 anos entram.
-   1) Foto do documento com foto (RG, CIN ou CNH): o app lê a DATA DE NASCIMENTO (OCR Tesseract) e
-      guarda o "jeito" do rosto do documento (assinatura numérica, não a imagem).
-   2) Selfie com prova de vida (virar o rosto, abrir a boca) e comparação com o rosto do documento.
-   Tudo roda NO CELULAR (Human + Tesseract, código aberto, baixados uma vez da CDN). Documento e selfie
-   não saem do aparelho nem são guardados: o servidor recebe só "ok". Se não der certo, a pessoa pede
-   verificação por chamada de vídeo com a administração. Depois dá para trocar por um serviço pago
-   (Didit, unico…) gravando idade/{uid} pelo servidor, sem mudar as telas. Depende de social.js. */
+/* ChatMil — Confirmação de maioridade (ECA Digital) para liberar Conexões.
+   1) Selfie com prova de vida (virar o rosto, abrir a boca) e estimativa de idade pelo rosto.
+      Se o rosto aparenta 25 anos ou mais (margem de segurança), libera na hora.
+   2) Só se a estimativa não bastar: foto do documento (RG, CIN ou CNH) — o app lê a data de
+      nascimento (OCR) e confere o rosto do documento com a selfie.
+   Tudo roda NO CELULAR (Human + Tesseract); selfie e documento não saem do aparelho. O servidor recebe só "ok". */
 (function () {
   "use strict";
   if (!window.SOCIAL || !window.SOCIAL.ext) return;
@@ -17,7 +15,7 @@
   const WASM = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-wasm@" + VERSAO_TF + "/dist/";
   const TESS = { js: "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js", worker: "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/worker.min.js",
     core: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1", lang: "https://cdn.jsdelivr.net/npm/@tesseract.js-data/por@1.0.0/4.0.0_best_int" };
-  const SIM_PADRAO = 0.52;           /* semelhança mínima rosto do documento × selfie */
+  const SIM_PADRAO = 0.52, IDADE_ROSTO = 25;           /* semelhança mínima rosto do documento × selfie */
   const MAX_TENTATIVAS = 3;          /* por dia, depois só pela chamada de vídeo */
   const I = {
     rosto: ic('<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/>'),
@@ -42,37 +40,22 @@
     fecharCam();
     Object.assign(ID, { uid: u ? u.uid : null, doc: undefined, ped: undefined, admin: undefined, pend: [] });
     if (!u) return;
-    ID.un.push(fb.onSnapshot(D("idade", u.uid), s => { ID.doc = s.exists() ? s.data() : null; pintar(); }, () => { ID.doc = null; pintar(); }));
+    ID.un.push(fb.onSnapshot(D("idade", u.uid), s => { ID.doc = s.exists() ? s.data() : null; marcarAdulto(); pintar(); }, () => { ID.doc = null; pintar(); }));
     ID.un.push(fb.onSnapshot(D("pedidosIdade", u.uid), s => { ID.ped = s.exists() ? s.data() : null; pintar(); }, () => { ID.ped = null; pintar(); }));
     fb.getDoc(D("admins", u.uid)).then(s => { ID.admin = s.exists(); if (ID.admin) ouvirPendentes(); pintar(); }).catch(() => { ID.admin = false; pintar(); });
     fb.getDoc(D("config", "idade")).then(s => { const v = s.exists() && Number(s.data().simDoc); if (v >= 0.2 && v <= 0.7) ID.simDoc = v; }).catch(() => { });
   });
+  /* selo público "adulto" (as regras só aceitam com idade/{uid}.ok): é o que filtra quem aparece em Conexões */
+  function marcarAdulto() {
+    if (!(ID.doc && ID.doc.ok === true) || !SO.eu || SO.eu.adulto === true) return;
+    SO.eu.adulto = true; fb.updateDoc(D("users", ID.uid), { adulto: true, menor: false }).catch(e => { console.warn(e); if (SO.eu) SO.eu.adulto = false; });
+  }
+  X.depois.push(() => { if (SO.eu && !SO.eu.adulto && ID.doc && ID.doc.ok) marcarAdulto(); });
   const liberado = () => !!(ID.admin || (ID.doc && ID.doc.ok === true));
-  window.CS_IDADE = { liberado, estado: () => ({ doc: ID.doc, ped: ID.ped, admin: ID.admin, simDoc: ID.simDoc }), _datas: (t, ref) => datasDoTexto(t, ref), _nascimento: (t, ref) => nascimento(t, ref), _aquecido: () => aquecido };
+  window.CS_IDADE = { verificar: () => verificar(), liberado, estado: () => ({ doc: ID.doc, ped: ID.ped, admin: ID.admin, simDoc: ID.simDoc }), _datas: (t, ref) => datasDoTexto(t, ref), _nascimento: (t, ref) => nascimento(t, ref), _aquecido: () => aquecido };
 
-  /* ---------- portão: aparece logo depois do cadastro, até a identidade ser confirmada ---------- */
-  X.portao = () => {
-    if (!SO.user || !SO.eu) return "";
-    if (ID.admin === undefined || ID.doc === undefined || ID.ped === undefined) return `<div class="cs-splash"><div class="spin"></div></div>`;
-    if (liberado()) return "";
-    const sair = `<button class="cs-link" data-s="sair">Sair da conta</button>`;
-    if (ID.doc && ID.doc.ok === false && ID.doc.metodo === "admin")
-      return `<section class="cs-auth cs-idade"><div class="cs-idade-ic perigo">${I.escudo}</div><h1>Acesso não liberado</h1>
-        <p class="cs-centro">O ChatMil é só para maiores de 18 anos. A verificação da sua conta não foi aprovada.</p>${sair}</section>`;
-    if (ID.ped && ID.ped.estado === "pendente")
-      return `<section class="cs-auth cs-idade"><div class="cs-idade-ic">${I.relogio}</div><h1>Verificação pedida</h1>
-        <p class="cs-centro">A administração vai fazer uma <b>chamada de vídeo rápida</b> com você aqui no ChatMil e pedir para ver seu documento. Deixe o app aberto ou com as notificações ligadas.</p>
-        <div class="cs-auth-bt">${tentativas() < MAX_TENTATIVAS ? `<button class="btn primary cs-grande" data-s="idade-comecar">${I.doc} Tentar com o documento de novo</button>` : ""}
-        <button class="btn cs-grande" data-s="idade-cancelar-ped">Cancelar pedido</button></div>${sair}</section>`;
-    const acabou = tentativas() >= MAX_TENTATIVAS;
-    if (!acabou) preaquecer();
-    return `<section class="cs-auth cs-idade"><div class="cs-idade-ic">${I.escudo}</div><h1>Confirme sua identidade</h1>
-      <p class="cs-centro">O ChatMil é só para professores maiores de 18 anos. São 2 passos rápidos:</p>
-      <ol class="cs-idade-passos"><li>${I.doc}<span><b>Foto do documento</b><small>RG, CIN ou CNH, do lado da foto</small></span></li><li>${I.rosto}<span><b>Selfie</b><small>Olhe para a câmera, vire o rosto e abra a boca</small></span></li></ol>
-      <p class="small muted cs-centro">O documento e a selfie são conferidos <b>no seu celular</b> e não são enviados nem guardados.</p>
-      <div class="cs-auth-bt">${acabou ? `<p class="small muted cs-centro">Você já tentou ${MAX_TENTATIVAS} vezes hoje.</p>` : `<button class="btn primary cs-grande" data-s="idade-comecar">${I.doc} Começar</button>`}
-      <button class="btn cs-grande" data-s="idade-pedir" data-v="camera">${I.video} Verificar por chamada de vídeo</button></div>${sair}</section>`;
-  };
+  /* o app não tem mais portão: a confirmação só libera Conexões (perfil → +18) */
+  X.portao = () => "";
 
   /* ---------- motor (Human) ---------- */
   let human = null, carregando = null;
@@ -232,7 +215,7 @@
       const bts = el.querySelector(".cs-idc-doc");
       bts.innerHTML = `${temCamera ? `<button class="cs-idc-disparo" data-s="idade-foto" aria-label="Tirar foto do documento"><i></i></button>` : ""}
         <button class="btn" data-s="idade-galeria">${I.galeria} Escolher foto da galeria</button>`;
-      dizer(temCamera ? "Fotografe a frente do documento" : "Escolha a foto do documento", "RG, CIN ou CNH, do lado da foto e da data de nascimento. Sem reflexo, documento inteiro na tela.");
+      dizer(temCamera ? "Documento com foto" : "Foto do documento", "RG, CIN ou CNH");
       CAM.capturar = canvas => { CAM.capturar = null; bts.innerHTML = ""; res(canvas); };
     });
   }
@@ -251,40 +234,48 @@
 
   async function verificar() {
     if (CAM.rodando) return;
-    const el = montarCam(); CAM.rodando = true;
+    if (tentativas() >= MAX_TENTATIVAS) return toast("Tente de novo amanhã.");
+    const el = montarCam(); CAM.rodando = true; el.classList.remove("doc"); el.classList.add("selfie");
     const video = el.querySelector("video");
     try {
-      const temCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && await abrirCamera(video, false);
+      if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) || !(await abrirCamera(video, true))) throw { tipo: "camera" };
       if (!CAM.rodando) return;
-      passo(0);
+      const h = await motor(t => dizer(t, ""));
+      if (!CAM.rodando) return;
+      somarTentativa(); CAM.erroDoc = null;
+      const r = await desafio(h, video);
+      if (!CAM.rodando) return;
+      if (!(r.mesma >= 0.42)) throw { tipo: "trocou" };
+      if (r.real < 0.3 && r.vivo < 0.3) throw { tipo: "foto" };
+      if (r.n >= 3 && r.idade >= IDADE_ROSTO) return liberar("selfie");
+      /* rosto não bastou: documento */
+      pararStream(); el.classList.remove("selfie"); el.classList.add("doc");
+      const temCamera = await abrirCamera(video, false);
+      if (!CAM.rodando) return;
+      passo(2);
       const cv = await capturarDocumento(el, video, temCamera);
       if (!CAM.rodando || !cv) return;
       pararStream(); el.classList.add("lendo");
-      const h = await motor(t => dizer(t, "Pode levar alguns segundos."));
-      if (!CAM.rodando) return;
-      somarTentativa();
       const emb = await rostoDoDocumento(h, cv, dizer);
       if (!CAM.rodando) return;
-      CAM.erroDoc = null;
-      const idadeP = idadeDoDocumento(cv);
-      idadeP.catch(e => { CAM.erroDoc = e && e.tipo ? e : { tipo: "doc_data" }; });
-      passo(1, "ok");
-      /* passo 2: selfie com prova de vida */
-      el.classList.remove("doc", "lendo"); el.classList.add("selfie");
-      dizer("Documento ok ✓", "Agora a selfie: olhe para a câmera.");
-      if (!(await abrirCamera(video, true))) throw { tipo: "camera" };
+      dizer("Conferindo…", "");
+      await idadeDoDocumento(cv);
       if (!CAM.rodando) return;
-      const r = await desafio(h, video);
-      if (!CAM.rodando) return;
-      if (!CAM.erroDoc) dizer("Conferindo o documento…", "Só mais um instante.");
-      const idade = await idadeP;
-      if (!CAM.rodando) return;
-      await decidir(h, r, { emb, idade });
+      const sim = Math.max(r.emb0 ? h.match.similarity(emb, r.emb0) : 0, r.embFim ? h.match.similarity(emb, r.embFim) : 0);
+      if (!(sim >= ID.simDoc)) throw { tipo: "naoconfere" };
+      await liberar("documento");
     } catch (e) {
       if (!CAM.rodando && !(e && e.tipo)) return;
       console.warn("idade", e);
       falhou(e && e.tipo ? e : { tipo: "motor" });
     }
+  }
+  async function liberar(metodo) {
+    dizer("Pronto ✓", ""); passo(4, "ok");
+    await fb.setDoc(D("idade", ID.uid), { ok: true, metodo, em: TS(), v: 3 });
+    ID.doc = { ok: true, metodo };
+    if (ID.ped) fb.deleteDoc(D("pedidosIdade", ID.uid)).catch(() => { });
+    setTimeout(() => { fecharCam(); SO.tab = "conexoes"; if (A.lembrarTab) A.lembrarTab(); pintar(); window.scrollTo(0, 0); }, 800);
   }
 
   /* sequência: centralizar → (virar o rosto / abrir a boca, em ordem sorteada) → olhar de novo */
@@ -298,10 +289,10 @@
     const LEVE = { face: { description: { enabled: false }, antispoof: { enabled: false }, liveness: { enabled: false } } };
     const proxima = () => { k++; ini = performance.now(); quadros = 0; centrados = 0; };
     const textos = {
-      centro: ["Coloque o rosto no círculo", "Olhe direto para a câmera."],
-      virar: ["Vire o rosto devagar para os lados", "Um lado e depois o outro."],
-      boca: ["Agora abra bem a boca", "Como quem diz “Ahh”."],
-      final: ["Olhe para a câmera de novo", "Quase pronto…"]
+      centro: ["Rosto no círculo", ""],
+      virar: ["Vire o rosto para os lados", ""],
+      boca: ["Abra a boca", ""],
+      final: ["Olhe para a câmera", ""]
     };
     dizer(...textos.centro); passo(0);
     while (CAM.rodando) {
@@ -339,36 +330,25 @@
     return { idade: mediana(idades), real: mediana(reais), vivo: mediana(vivos), mesma, n: idades.length, emb0, embFim };
   }
 
-  async function decidir(h, r, doc) {
-    if (!(r.mesma >= 0.42)) throw { tipo: "trocou" };
-    if (r.real < 0.3 && r.vivo < 0.3) throw { tipo: "foto" };
-    const sim = Math.max(r.emb0 ? h.match.similarity(doc.emb, r.emb0) : 0, r.embFim ? h.match.similarity(doc.emb, r.embFim) : 0);
-    if (!(sim >= ID.simDoc)) throw { tipo: "naoconfere" };
-    dizer("Pronto! Identidade confirmada", ""); passo(4, "ok");
-    await fb.setDoc(D("idade", ID.uid), { ok: true, metodo: "documento", em: TS(), v: 2 });
-    if (ID.ped) fb.deleteDoc(D("pedidosIdade", ID.uid)).catch(() => { });
-    setTimeout(() => { fecharCam(); toast("Identidade confirmada. Bem-vindo(a) ao ChatMil!"); pintar(); }, 900);
-  }
-
   function falhou(e) {
     const el = $("#cs-idade-cam"); if (!el) return;
     CAM.rodando = false; CAM.capturar = null; pararStream();
     const M = {
-      camera: ["Não consegui abrir a câmera", "Permita o uso da câmera para o ChatMil nas configurações do celular, ou peça a verificação por chamada de vídeo."],
-      motor: ["Não consegui preparar a verificação", "Confira a internet e tente de novo. Se continuar, peça a verificação por chamada de vídeo."],
-      doc_rosto: ["Não achei a sua foto no documento", "Fotografe a frente do documento, onde está a sua foto, com o documento inteiro na tela e sem reflexo."],
-      doc_data: ["Não consegui ler a data de nascimento", "Use um lugar claro, sem reflexo, e deixe o documento ocupar a tela. Os números precisam aparecer nítidos."],
-      menor: ["O ChatMil é só para maiores de 18 anos", "Pela data de nascimento do documento, você ainda não tem 18 anos."],
-      tempo: ["O tempo acabou", "Procure um lugar claro, segure o celular na altura do rosto e siga as instruções."],
-      trocou: ["O rosto mudou durante a verificação", "Faça tudo do começo ao fim, sem trocar de pessoa."],
-      foto: ["Não parece uma pessoa ao vivo", "Use a câmera da frente, sem foto ou tela na frente."],
-      naoconfere: ["O rosto não confere com o documento", "Use o seu próprio documento e faça a selfie num lugar claro, sem óculos escuros nem boné."]
+      camera: ["Câmera bloqueada", "Permita a câmera para o ChatMil."],
+      motor: ["Sem conexão", "Confira a internet."],
+      doc_rosto: ["Foto do documento não encontrada", "Documento inteiro, sem reflexo."],
+      doc_data: ["Data de nascimento ilegível", "Lugar claro, sem reflexo."],
+      menor: ["Disponível a partir dos 18 anos", ""],
+      tempo: ["Tempo esgotado", "Lugar claro, celular na altura do rosto."],
+      trocou: ["O rosto mudou", "Faça do começo ao fim."],
+      foto: ["Use a câmera ao vivo", ""],
+      naoconfere: ["O rosto não confere com o documento", ""]
     }[e.tipo] || ["Algo deu errado", ""];
     const pode = tentativas() < MAX_TENTATIVAS && e.tipo !== "camera" && e.tipo !== "menor";
     el.classList.add("fim");
     el.querySelector(".cs-idc-txt").innerHTML = `<b>${esc(M[0])}</b><span>${esc(M[1])}</span>
       <div class="cs-idc-bts">${pode ? `<button class="btn primary cs-grande" data-s="idade-comecar">Tentar de novo</button>` : ""}
-      ${e.tipo === "menor" ? `<button class="btn cs-grande" data-s="idade-fechar">Fechar</button>` : `<button class="btn cs-grande" data-s="idade-pedir" data-v="${esc(e.tipo)}">Verificar por chamada de vídeo</button>`}</div>`;
+      <button class="btn cs-grande" data-s="idade-fechar">Fechar</button></div>`;
     passo(0, "alerta");
   }
 

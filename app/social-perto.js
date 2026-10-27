@@ -1,7 +1,8 @@
-/* ChatMil — Conhecer colegas: professores perto de você (alcance em km), cartões no estilo
-   "app de encontros" (pular / seguir / dizer oi), conexões quando os dois se seguem,
-   mural "Perto" e publicações com alcance. Depende de social.js.
-   Privacidade: a posição é arredondada (~2 km) e só aparece como distância aproximada. */
+/* ChatMil — Conexões (só para maiores de 18 com idade confirmada): pessoas da região em cartões
+   (pular / seguir / dizer oi), quem frequenta a mesma região nos mesmos dias da semana, alcance das
+   publicações e distância aproximada na lista de Amigos. Depende de social.js.
+   Privacidade: a posição é arredondada (~2 km); os lugares frequentes são células de ~5 km
+   guardadas só como código embaralhado (hash) por dia da semana — ninguém vê o lugar. */
 (function () {
   "use strict";
   if (!window.SOCIAL || !window.SOCIAL.ext) return;
@@ -20,9 +21,9 @@
     estrela: ic('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>')
   };
   const ALCANCES = [5, 10, 20, 50, 100, 300, 600, 0];
-  const INTERESSES = ["Inclusão e AEE", "Libras", "Braille", "Leitura", "Escrita", "Matemática na prática", "Ciência e experimentos", "Tecnologia",
-    "Robótica", "Jogos na aula", "Projetos", "Educação do campo", "Educação indígena", "EJA", "Arte", "Música", "Dança", "Teatro",
-    "Esportes", "Natureza", "Culinária", "Viagens", "Cinema", "Fotografia", "Fé", "Voluntariado", "Concursos", "Pós-graduação"];
+  const INTERESSES = ["Música", "Dança", "Humor e memes", "Animes", "Games", "Filmes e séries", "Fotografia", "Vídeos", "Moda", "Beleza", "Esportes", "Academia",
+    "Viagens", "Culinária", "Natureza", "Pets", "Tecnologia", "Leitura", "Arte", "Teatro", "Fé", "Voluntariado", "Educação", "Concursos", "Libras", "Inclusão"];
+  const adulto = () => !!(A.ehAdulto && A.ehAdulto());
   const lerLS = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
   const gravarLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
   const ST = { lista: null, chave: "", em: 0, carregando: false, erro: "", idx: 0, so: false, cidades: null, ouvPerto: null, chPerto: "", buscaCid: "" };
@@ -54,7 +55,8 @@
     const h = Math.sin(dLa / 2) ** 2 + Math.cos(r(a.la)) * Math.cos(r(b.la)) * Math.sin(dLo / 2) ** 2;
     return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
   }
-  const fmtKm = d => d == null ? "" : d < 3 ? "bem perto" : d < 100 ? "a " + Math.round(d) + " km" : "a " + (Math.round(d / 10) * 10) + " km";
+  /* distância aproximada, nunca exata */
+  const fmtKm = d => d == null ? "" : d < 3 ? "bem perto" : d < 100 ? "a uns " + Math.max(5, Math.round(d / 5) * 5) + " km" : "a uns " + (Math.round(d / 50) * 50) + " km";
   const meuLoc = () => (SO.eu && SO.eu.loc && SO.eu.loc.la != null) ? SO.eu.loc : null;
   const alcance = () => { const v = lerLS("cs.alc." + eu(), 50); return ALCANCES.includes(v) ? v : 50; };
   const nomeAlc = v => v ? "até " + v + " km" : "sem limite";
@@ -114,6 +116,33 @@
     buscarCidade(q);
   });
 
+  /* ---------- lugares frequentes (mesma região, mesmos dias da semana) ---------- */
+  async function hashCel(g5, dia) {
+    const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("chatmil|" + g5 + "|" + dia));
+    return [...new Uint8Array(b)].slice(0, 6).map(x => x.toString(16).padStart(2, "0")).join("");
+  }
+  let freqFeito = 0;
+  async function registrarFreq() {
+    if (!adulto() || !navigator.geolocation || Date.now() - freqFeito < 30 * 60e3) return;
+    freqFeito = Date.now();
+    try {
+      const st = navigator.permissions ? await navigator.permissions.query({ name: "geolocation" }).catch(() => null) : null;
+      if (!st || st.state !== "granted") return;
+      const c = await new Promise((ok, no) => navigator.geolocation.getCurrentPosition(p => ok(p.coords), no, { enableHighAccuracy: false, timeout: 15000, maximumAge: 30 * 60e3 }));
+      const dia = "d" + new Date().getDay(), h = await hashCel(gh(c.latitude, c.longitude, 5), dia);
+      const f = { ...((SO.eu && SO.eu.freq) || {}) }, l = (f[dia] || []).filter(x => x !== h);
+      l.unshift(h); f[dia] = l.slice(0, 5);
+      if ((((SO.eu && SO.eu.freq) || {})[dia] || [])[0] === h) return;
+      await fb.updateDoc(D("users", eu()), { freq: f }); if (SO.eu) SO.eu.freq = f;
+      const lo = meuLoc(); if (!lo || km(lo, { la: c.latitude, lo: c.longitude }) > 3) salvarLocal(c.latitude, c.longitude).catch(() => { });
+    } catch (e) { }
+  }
+  function mesmosLugares(p) {
+    const a = (SO.eu && SO.eu.freq) || {}, b = (p && p.freq) || {}; let n = 0;
+    for (const d in a) { const s = new Set(b[d] || []); (a[d] || []).forEach(h => { if (s.has(h)) n++; }); }
+    return n;
+  }
+
   /* ---------- quem está perto ---------- */
   async function carregar(forca) {
     const loc = meuLoc(), r = alcance(), n = loc ? precisao(r) : 0;
@@ -129,7 +158,7 @@
       s.docs.forEach(d => {
         if (d.id === eu()) return;
         const p = A.pub(d.id, d.data()); SO.perfis[d.id] = { ...(SO.perfis[d.id] || {}), ...p };
-        if (p.perto !== true || SO.bloqueados.has(d.id) || p.removido) return;
+        if (p.perto !== true || p.adulto !== true || SO.bloqueados.has(d.id) || p.removido) return;
         const dist = loc ? km(loc, p.loc) : null;
         if (loc && r && (dist == null || dist > r)) return;
         l.push({ uid: d.id, dist });
@@ -138,14 +167,15 @@
       l.forEach(x => {
         const p = SO.perfis[x.uid] || {};
         x.comum = (p.disciplinas || []).filter(d => minhas.has(d)).length + (p.interesses || []).filter(d => meusI.has(d)).length;
-        x.nota = (x.dist == null ? 500 : x.dist) - x.comum * 15 - (p.foto ? 8 : 0) - (p.bio ? 4 : 0);
+        x.lugares = mesmosLugares(p);
+        x.nota = (x.dist == null ? 500 : x.dist) - x.comum * 15 - x.lugares * 40 - (p.foto ? 8 : 0) - (p.bio ? 4 : 0);
       });
       l.sort((a, b) => a.nota - b.nota);
       ST.lista = l; ST.chave = chave; ST.em = Date.now(); ST.idx = 0;
     } catch (e) { console.warn(e); ST.erro = msgErro(e); ST.lista = ST.lista || []; ST.chave = chave; ST.em = Date.now(); }
     ST.carregando = false; pintar();
   }
-  const filtrar = l => (l || []).filter(x => !SO.bloqueados.has(x.uid) && (!ST.so || ((SO.perfis[x.uid] || {}).disciplinas || []).some(d => ((SO.eu || {}).disciplinas || []).includes(d))));
+  const filtrar = l => (l || []).filter(x => !SO.bloqueados.has(x.uid) && !(SO.perfis[x.uid] || {}).menor && (!ST.so || ((SO.perfis[x.uid] || {}).interesses || []).some(d => ((SO.eu || {}).interesses || []).includes(d))));
   function baralho() { const pl = pulados(); return filtrar(ST.lista).filter(x => !SO.seguindo.has(x.uid) && !pl[x.uid]); }
 
   /* ---------- mural: faixa "Colegas perto de você" ---------- */
@@ -154,26 +184,11 @@
       : `<span class="${cls} pt-ini" style="background:${corDe(uid || p.usuario)}">${esc(String(p.nome || "?").replace(/^@/, "").split(/[\s._-]+/).filter(Boolean).slice(0, 2).map(x => x[0]).join("").toUpperCase() || "?")}</span>`;
   }
   function cartaoMini(x) {
-    const p = P(x.uid), d = (p.disciplinas || [])[0] || p.escola || "Professor(a)";
+    const p = P(x.uid), d = (p.interesses || [])[0] || "";
     return `<button class="pt-mini" data-s="pt-ver" data-id="${esc(x.uid)}" aria-label="${esc(p.nome)}">
       ${foto(p, x.uid, "pt-mini-f")}${SO.seguindo.has(x.uid) ? `<i class="pt-seg">${K.check}</i>` : ""}
       <span class="pt-mini-t"><b>${esc(p.nome)}</b><small>${esc(d)}${x.dist != null ? " · " + fmtKm(x.dist) : ""}</small></span></button>`;
   }
-  X.muralCab.push(() => `<button class="pt-alc-bt" data-s="pt-ajustes" aria-label="Alcance: ${esc(nomeAlc(alcance()))}">${I.pin}<span>${alcance() ? alcance() + " km" : "Brasil"}</span></button>`);
-  X.muralTopo.push(() => {
-    if (!SO.eu) return "";
-    const loc = meuLoc();
-    if (!loc && lerLS("cs.ptFechou." + eu(), 0) > Date.now() - 7 * 864e5) return "";
-    if (!loc) return `<section class="card pt-convite"><div class="pt-conv-ic">${I.gente}</div>
-      <div class="pt-conv-t"><b>Conheça professores perto de você</b><small>Só a distância aparece, nunca o endereço.</small></div>
-      <div class="row pt-conv-bt"><button class="btn primary sm" data-s="pt-gps">${I.pin} Usar localização</button><button class="btn sm" data-s="pt-cidade">Digitar cidade</button><button class="cs-ico-bt" data-s="pt-fechar" aria-label="Agora não">${I.x}</button></div></section>`;
-    carregar();
-    const l = filtrar(ST.lista).slice(0, 18);
-    return `<section class="pt-faixa"><div class="pt-faixa-h"><b>Perto de você</b><small>${esc(loc.cid || "")} · ${esc(nomeAlc(alcance()))}</small><button class="cs-link" data-s="pt-descobrir">Conhecer</button></div>
-      ${l.length ? `<div class="pt-faixa-l">${l.map(cartaoMini).join("")}<button class="pt-mini pt-mais" data-s="pt-descobrir">${I.coracao}<span>Conhecer mais</span></button></div>`
-        : `<div class="pt-vazio small muted">${ST.carregando || !ST.lista ? "Procurando colegas…" : `Ninguém ${alcance() ? "nesse alcance" : ""} ainda. <button class="cs-link" data-s="pt-ajustes">Aumentar alcance</button> ou convide colegas.`}</div>`}</section>`;
-  });
-
   /* ---------- tela "Conhecer colegas" (cartões) ---------- */
   function cartaGrande(x) {
     const p = P(x.uid), dis = p.disciplinas || [], int = p.interesses || [], meusD = new Set((SO.eu || {}).disciplinas || []), meusI = new Set((SO.eu || {}).interesses || []);
@@ -183,33 +198,45 @@
       <div class="pt-carta-t">
         <h2>${esc(p.nome)}${seloHtml(p)}</h2>
         <p>${x.dist != null ? `${I.pin} ${esc(fmtKm(x.dist))}` : ""}${p.loc && p.loc.cid ? ` · ${esc(p.loc.cid)}` : ""}</p>
+        ${x.lugares ? `<p class="pt-lug">${I.estrela} Mesmos lugares, mesmos dias</p>` : ""}
         ${p.escola ? `<p>${K.escola || ""} ${esc(p.escola)}</p>` : ""}
         ${dis.length || int.length ? `<div class="pt-chips">${dis.map(d => `<span class="${meusD.has(d) ? "on" : ""}">${esc(d)}</span>`).join("")}${int.map(d => `<span class="i ${meusI.has(d) ? "on" : ""}">${esc(d)}</span>`).join("")}</div>` : ""}
         ${p.bio ? `<p class="pt-bio">${esc(p.bio)}</p>` : ""}
         <button class="cs-link pt-perfil" data-s="ver-perfil" data-id="${esc(x.uid)}">Ver perfil e publicações</button>
       </div></article>`;
   }
-  X.views["pt-descobrir"] = () => {
+  function corpoCartas() {
     carregar();
     const b = baralho(), x = b[0], loc = meuLoc();
-    const cab = `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Conhecer colegas</b>
-      <button class="pt-alc-bt" data-s="pt-ajustes">${I.filtro}<span>${alcance() ? alcance() + " km" : "Brasil"}</span></button></header>`;
     let corpo;
     if (!loc && !ST.lista) corpo = `<div class="empty">${I.gente}<b>Ative a localização</b>
       <button class="btn primary" data-s="pt-gps">Usar localização</button><button class="btn" data-s="pt-cidade">Digitar cidade</button></div>`;
-    else if (!ST.lista || (ST.carregando && !b.length)) corpo = `<div class="empty"><div class="spin"></div><b>Procurando colegas…</b></div>`;
+    else if (!ST.lista || (ST.carregando && !b.length)) corpo = `<div class="empty"><div class="spin"></div></div>`;
     else if (!x) corpo = `<div class="empty">${I.coracao}<b>Você viu todos ${alcance() ? "até " + alcance() + " km" : ""}</b>
       <div class="stack" style="width:100%;max-width:300px">${alcance() && alcance() < 600 ? `<button class="btn primary" data-s="pt-alc" data-v="${ALCANCES[ALCANCES.indexOf(alcance()) + 1]}">Aumentar para ${nomeAlc(ALCANCES[ALCANCES.indexOf(alcance()) + 1])}</button>` : ""}
       ${Object.keys(pulados()).length ? `<button class="btn" data-s="pt-rever">Rever quem eu pulei</button>` : ""}
-      <button class="btn" data-s="pt-convidar">Convidar colegas</button></div></div>`;
+      <button class="btn" data-s="pt-convidar">Convidar amigos</button></div></div>`;
     else corpo = `<div class="pt-deck">${b[1] ? `<div class="pt-atras">${foto(P(b[1].uid), b[1].uid, "pt-carta-f")}</div>` : ""}${cartaGrande(x)}</div>
       <div class="pt-acoes">
         <button class="pt-b pt-b-nao" data-s="pt-pular" data-id="${esc(x.uid)}" aria-label="Pular">${I.x}</button>
         <button class="pt-b pt-b-oi" data-s="pt-oi" data-id="${esc(x.uid)}" aria-label="Dizer oi">${I.oi}</button>
         <button class="pt-b pt-b-sim" data-s="pt-seguir" data-id="${esc(x.uid)}" aria-label="Seguir">${I.coracao}</button>
-      </div><p class="pt-dica small muted">Arraste para o lado: direita segue, esquerda pula</p>`;
-    return cab + `<div class="cs-pag pt-pag">${ST.erro ? `<p class="aviso">${esc(ST.erro)}</p>` : ""}${corpo}</div>`;
+      </div>`;
+    return `${ST.erro ? `<p class="aviso">${esc(ST.erro)}</p>` : ""}${corpo}`;
+  }
+  const botaoAlc = () => `<button class="pt-alc-bt" data-s="pt-ajustes">${I.filtro}<span>${alcance() ? alcance() + " km" : "Brasil"}</span></button>`;
+  X.views["pt-descobrir"] = () => `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Conexões</b>${botaoAlc()}</header>
+    <div class="cs-pag pt-pag">${adulto() ? corpoCartas() : ""}</div>`;
+  /* aba Conexões */
+  X.tabViews.conexoes = () => {
+    if (!adulto()) return `<div class="cs-carr"><div class="spin"></div></div>`;
+    registrarFreq();
+    return `<div class="cs-cab"><h1>Conexões</h1>${botaoAlc()}</div><div class="pt-pag pt-aba">${corpoCartas()}</div>`;
   };
+  /* Amigos (lupa do Mural): distância aproximada e sugestões da região, só para +18 confirmados */
+  X.pessoaSub = (uid, p) => { if (!adulto()) return ""; const me = meuLoc(), d = me && p && p.loc ? km(me, p.loc) : null; return d != null ? fmtKm(d) + (p.loc.cid ? " · " + p.loc.cid : "") : ""; };
+  X.pessoaOrdem = uid => { if (!adulto()) return 0; const me = meuLoc(), p = P(uid), d = me && p.loc ? km(me, p.loc) : null; return d == null ? 1e6 : d; };
+  X.descobrir = () => { if (!adulto() || !meuLoc()) return []; carregar(); return filtrar(ST.lista).slice(0, 30).map(x => x.uid); };
 
   /* arrastar o cartão (eventos no documento: o cartão pode ser redesenhado no meio do gesto) */
   let arr = null;
@@ -242,7 +269,7 @@
   X.depois.push(() => { if (arr) posCarta(); });
   /* ao voltar para o Mural, atualiza quem está perto */
   let abaAnt = "";
-  X.depois.push(t => { const k = t ? t.v : SO.tab; if (k !== abaAnt) { if ((k === "mural" || k === "pt-descobrir") && Date.now() - ST.em > 8000 && meuLoc()) { ST.em = 0; setTimeout(() => carregar(), 0); } abaAnt = k; } });
+  X.depois.push(t => { const k = t ? t.v : SO.tab; if (k !== abaAnt) { if ((k === "conexoes" || k === "pt-descobrir") && Date.now() - ST.em > 8000 && meuLoc() && adulto()) { ST.em = 0; setTimeout(() => carregar(), 0); } abaAnt = k; } });
   function pular(uid) { const m = pulados(); m[uid] = Date.now(); gravarLS("cs.pul." + eu(), m); pintar(); }
   async function seguirCarta(uid) {
     if (!uid) return;
@@ -256,25 +283,25 @@
         window.abrirSheet(`<div class="pt-match"><div class="pt-match-av">${av(SO.eu, 84, eu())}${av(p, 84, uid)}</div>
           <h2>Conexão!</h2><p class="muted">Você e ${esc(p.nome)} se seguem.</p>
           <button class="btn primary cs-grande" data-s="pt-oi" data-id="${esc(uid)}">${I.oi} Dizer oi</button>
-          <button class="btn" data-s="fechar">Continuar conhecendo</button></div>`);
+          <button class="btn" data-s="fechar">Continuar</button></div>`);
       } else toast("Seguindo " + P(uid).nome + ".");
     } catch (e) { }
   }
   async function dizerOi(uid) {
     const p = P(uid), id = await A.garantirDireto(uid); if (!id) return;
     const nome = String(p.nome || "").replace(/^@/, "");
-    if (!(SO.rascunho[id] || "").trim()) SO.rascunho[id] = `Oi, ${nome}! Vi você no ChatMil (${(SO.eu && SO.eu.loc && SO.eu.loc.cid) || "aqui perto"}). Tudo bem?`;
+    if (!(SO.rascunho[id] || "").trim()) SO.rascunho[id] = `Oi, ${nome}! Tudo bem?`;
     window.fecharSheet(); A.abrirChat(id);
   }
 
   /* ---------- ajustes: alcance, disciplina, visibilidade, interesses, local ---------- */
   function sheetAjustes() {
     const loc = meuLoc(), r = alcance(), e = SO.eu || {};
-    window.abrirSheet(`<div class="sheet-h"><h2>Alcance e perfil</h2></div><div class="stack">
-      <div class="f"><span>Mostrar colegas e publicações</span><div class="pt-alcs">${ALCANCES.map(v => `<button type="button" data-s="pt-alc" data-v="${v}" aria-pressed="${v === r}">${v ? v + " km" : "Brasil"}</button>`).join("")}</div></div>
+    window.abrirSheet(`<div class="sheet-h"><h2>Conexões</h2></div><div class="stack">
+      <div class="f"><span>Alcance</span><div class="pt-alcs">${ALCANCES.map(v => `<button type="button" data-s="pt-alc" data-v="${v}" aria-pressed="${v === r}">${v ? v + " km" : "Brasil"}</button>`).join("")}</div></div>
       <div class="cs-menu card flat">
-        <label class="cs-linha" for="pt-so" style="display:flex;align-items:center;gap:12px"><span class="cs-lic">${I.filtro}</span><span style="flex:1"><b>Só da minha disciplina</b></span><input type="checkbox" class="cs-sw" id="pt-so" ${ST.so ? "checked" : ""}></label>
-        <label class="cs-linha" for="pt-vis" style="display:flex;align-items:center;gap:12px"><span class="cs-lic">${I.gente}</span><span style="flex:1"><b>Aparecer para colegas</b></span><input type="checkbox" class="cs-sw" id="pt-vis" ${e.perto !== false && loc ? "checked" : ""}></label>
+        <label class="cs-linha" for="pt-so" style="display:flex;align-items:center;gap:12px"><span class="cs-lic">${I.filtro}</span><span style="flex:1"><b>Mesmos interesses</b></span><input type="checkbox" class="cs-sw" id="pt-so" ${ST.so ? "checked" : ""}></label>
+        <label class="cs-linha" for="pt-vis" style="display:flex;align-items:center;gap:12px"><span class="cs-lic">${I.gente}</span><span style="flex:1"><b>Aparecer em Conexões</b></span><input type="checkbox" class="cs-sw" id="pt-vis" ${e.perto !== false && loc ? "checked" : ""}></label>
         <button data-s="pt-local">${I.pin}<span><b>${loc ? esc(loc.cid || "Local aproximado salvo") : "Definir minha cidade"}</b></span></button>
         ${loc ? `<button data-s="pt-tirar-local">${I.x}<span><b>Apagar minha localização</b></span></button>` : ""}
       </div>
@@ -290,11 +317,11 @@
     if (id === "pt-so") { ST.so = e.target.checked; ST.idx = 0; pintar(); }
     if (id === "pt-vis") {
       if (e.target.checked && !meuLoc()) { e.target.checked = false; return sheetLocal(); }
-      try { await salvarCampos({ perto: e.target.checked }); toast(e.target.checked ? "Você aparece para colegas próximos." : "Você não aparece mais em “Perto de você”."); } catch (er) { e.target.checked = !e.target.checked; }
+      try { await salvarCampos({ perto: e.target.checked }); toast(e.target.checked ? "Você aparece em Conexões." : "Você não aparece mais em Conexões."); } catch (er) { e.target.checked = !e.target.checked; }
     }
   });
   function sheetLocal() {
-    window.abrirSheet(`<div class="sheet-h"><h2>Onde você ensina</h2></div><p class="cs-just small">Guardamos só um ponto aproximado (cerca de 2 km). Outros veem apenas a distância e a cidade.</p>
+    window.abrirSheet(`<div class="sheet-h"><h2>Sua região</h2></div>
       <div class="stack"><button class="btn primary cs-grande" data-s="pt-gps">${I.pin} Usar minha localização</button><button class="btn" data-s="pt-cidade">Digitar a cidade</button></div>`);
   }
 
@@ -307,7 +334,7 @@
       ST.primeiro = id; abrirTela({ v: "pt-descobrir" });
     },
     "pt-convidar": async () => {
-      const url = "https://vonescoelho.github.io/senov-provas/", t = "Estou no ChatMil, a rede dos professores (provas adaptadas, conversas e mural). Entre também: " + url;
+      const url = "https://vonescoelho.github.io/senov-provas/", t = "Estou no ChatMil: vídeos, amigos e conversas, sem anúncios. Entre também: " + url;
       try { if (navigator.share) { await navigator.share({ title: "ChatMil", text: t }); return; } } catch (e) { return; }
       A.copiar(t); toast("Convite copiado. Cole no WhatsApp.");
     },
@@ -352,7 +379,6 @@
   });
 
   /* ---------- mural: aba "Perto", alcance das publicações ---------- */
-  X.muralSeg.push(["perto", "Perto"]);
   const geoDe = p => p.geo || (P(p.autor) || {}).loc;
   X.muralFiltro.push((p, feed) => {
     if (p.autor === eu()) return true;
@@ -366,12 +392,12 @@
     return (d != null ? ` · ${esc(fmtKm(d))}` : "") + (p.alc && p.autor === eu() ? ` · ${I.pin} até ${p.alc} km` : "");
   });
   X.compositorAbrir.push(() => { SO.postAlc = 0; });
-  X.compositorBotoes.push(() => `<button type="button" class="btn sm" data-s="pt-calc" id="pt-calc">${I.alvo}<span>Qualquer distância</span></button>`);
-  X.compositorPainel.push(() => `<div class="pt-alcs" id="pt-calc-p" hidden>${[0, 10, 20, 50, 100, 300].map(v => `<button type="button" data-s="pt-calc-v" data-v="${v}" aria-pressed="${v === 0}">${v ? "Até " + v + " km" : "Qualquer distância"}</button>`).join("")}</div>`);
+  X.compositorBotoes.push(() => !adulto() ? "" : `<button type="button" class="btn sm" data-s="pt-calc" id="pt-calc">${I.alvo}<span>Qualquer distância</span></button>`);
+  X.compositorPainel.push(() => !adulto() ? "" : `<div class="pt-alcs" id="pt-calc-p" hidden>${[0, 10, 20, 50, 100, 300].map(v => `<button type="button" data-s="pt-calc-v" data-v="${v}" aria-pressed="${v === 0}">${v ? "Até " + v + " km" : "Qualquer distância"}</button>`).join("")}</div>`);
   X.postDados.push(para => {
     if (para) return {};
     const me = meuLoc(), alc = SO.postAlc || 0;
-    if (!me || (SO.eu.perto === false && !alc)) return {};
+    if (!me || !adulto() || (SO.eu.perto === false && !alc)) return {};
     return { geo: { la: me.la, lo: me.lo, g2: me.g2, g3: me.g3, g4: me.g4 }, ...(alc ? { alc } : {}) };
   });
   /* publicações perto (além das 120 mais recentes do Brasil) */
@@ -397,14 +423,14 @@
   /* ---------- perfil: distância e interesses ---------- */
   const perfilAnt = X.perfilExtra;
   X.perfilExtra = (uid, meu) => {
-    const p = meu ? (SO.eu || {}) : P(uid), me = meuLoc(), d = !meu && me ? km(me, p.loc) : null, int = p.interesses || [];
+    const p = meu ? (SO.eu || {}) : P(uid), me = meuLoc(), d = !meu && me && adulto() ? km(me, p.loc) : null, int = p.interesses || [];
     const h = (d != null || int.length || meu) ? `<section class="card flat pt-perfil-x">
       ${d != null ? `<p>${I.pin} ${esc(fmtKm(d))}${p.loc && p.loc.cid ? " · " + esc(p.loc.cid) : ""}</p>` : meu && p.loc ? `<p>${I.pin} ${esc(p.loc.cid || "Local aproximado")}${p.perto === false ? " · oculto" : ""}</p>` : ""}
       ${int.length ? `<div class="pt-chips">${int.map(t => `<span class="i">${esc(t)}</span>`).join("")}</div>` : ""}
-      ${meu ? `<button class="cs-link" data-s="pt-ajustes">${int.length || p.loc ? "Editar alcance e interesses" : "Adicionar cidade e interesses"}</button>` : ""}</section>` : "";
+      ${meu ? `<button class="cs-link" data-s="pt-ajustes">${int.length || p.loc ? "Editar interesses" : "Adicionar interesses"}</button>` : ""}</section>` : "";
     return h + (perfilAnt ? perfilAnt(uid, meu) : "");
   };
-  X.configPriv.push(() => `<button class="cs-linha" data-s="pt-ajustes" style="display:flex;align-items:center;gap:12px;width:100%"><span class="cs-lic">${I.pin}</span><span style="flex:1;text-align:left"><b>Perto de você</b></span></button>`);
+  X.configPriv.push(() => !adulto() ? "" : `<button class="cs-linha" data-s="pt-ajustes" style="display:flex;align-items:center;gap:12px;width:100%"><span class="cs-lic">${I.pin}</span><span style="flex:1;text-align:left"><b>Conexões</b></span></button>`);
 
   /* ---------- estilos ---------- */
   const css = document.createElement("style");
@@ -433,6 +459,7 @@
 .pt-mais svg{width:30px;height:30px}
 .pt-vazio{padding:10px 4px}
 .pt-pag{display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:8px}
+.pt-aba{padding-bottom:20px}.pt-lug{color:#FFD166}
 .pt-deck{position:relative;width:100%;max-width:420px;aspect-ratio:3/4.3;max-height:calc(100vh - 230px)}
 .pt-atras{position:absolute;inset:10px 10px -6px;border-radius:24px;overflow:hidden;opacity:.55;transform:scale(.96)}
 .pt-atras .pt-carta-f{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}

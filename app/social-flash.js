@@ -3,7 +3,8 @@
    - música da galeria ou som do celular;
    - quem vê: todos, só quem eu sigo ou pessoas escolhidas;
    - Destaques: até 5 fotos ou vídeos que ficam no perfil.
-   Nada fica “ouvindo” o servidor: os Flashes são buscados quando a aba Conversas abre (poupa bateria e internet). */
+   Nada fica “ouvindo” o servidor: os Flashes são buscados quando o Mural abre (poupa bateria e internet).
+   O mesmo criador (câmera, edição, música) publica no XFlesh (destino "xflesh", até 60 s, não vence). */
 (function () {
   "use strict";
   if (!window.SOCIAL || !window.SOCIAL.ext || !window.SOCIAL.ext.midia) return;
@@ -89,8 +90,8 @@
   };
   X.perfilAv = (uid, html) => anel(uid, html, 96);
 
-  /* faixa no topo das Conversas */
-  X.conversasTopo = () => {
+  /* cartões dos Flashes no topo do Mural */
+  const cartoesFlash = () => {
     carregarFlashes(false);
     const pessoas = [...FL.porUid.entries()].sort((a, b) => (todosVistos(a[1]) - todosVistos(b[1])) || (b[1][b[1].length - 1].criado - a[1][a[1].length - 1].criado));
     const meu = SO.eu || {};
@@ -103,6 +104,7 @@
       ${pessoas.map(([uid, l]) => { const p = P(uid); return cartao("fl-ver", uid, l, (p.nome || "").split(" ")[0], p); }).join("")}
     </div>`;
   };
+  X.muralTopo.unshift(cartoesFlash);
   X.acoes["fl-meu"] = () => {
     if (!FL.meus.length) return abrirCriador("flash");
     window.abrirSheet(`<div class="sheet-h"><h2>Seu Flash</h2></div><div class="cs-menu">
@@ -211,7 +213,7 @@
     VW.dur = f.tipo === "video" ? (f.dur || 10) : (f.dur || 6); VW.gasto = 0; VW.pausa = false;
     VW.el.innerHTML = `<div class="cs-flv-barras">${g.itens.map((_, i) => `<i><b style="width:${i < s.i ? 100 : 0}%"></b></i>`).join("")}</div>
       <div class="cs-flv-top">${av(p, 38, g.uid)}<span><b>${esc(meu ? "Você" : p.nome || "")}</b><small>${s.tipo === "destaque" ? "Destaque" : haQuanto(f.criado || Date.now())}${f.col === "flashesPriv" ? " · para algumas pessoas" : ""}</small></span>
-        ${f.musica ? `<button class="cs-vbt" data-s="flv-som" aria-label="Som">${lerLS("cs.flsom", true) ? I.som : I.semSom}</button>` : ""}
+        ${f.musica || f.mus ? `<button class="cs-vbt" data-s="flv-som" aria-label="Som">${lerLS("cs.flsom", true) ? I.som : I.semSom}</button>` : ""}
         <button class="cs-vbt" data-s="flv-fechar" aria-label="Fechar">${I.fechar}</button></div>
       <div class="cs-flv-palco"><div class="spin"></div></div>
       ${f.legenda ? `<p class="cs-flv-leg">${esc(f.legenda)}</p>` : ""}
@@ -241,6 +243,13 @@
         try {
           const mb = await baixar(f.col, f.id, "som", f.musicaMime || "audio/webm"); if (itemAtual() !== meuItem) return;
           const mu = URL.createObjectURL(mb); VW.urls.push(mu); VW.aud = new Audio(mu); VW.aud.muted = !lerLS("cs.flsom", true); VW.aud.play().catch(() => { });
+        } catch (e) { }
+      } else if (f.mus) {
+        try {
+          const u = f.mus.fonte === "chatmil" ? await X.urlMusica({ id: f.mus.id }) : f.mus.url; if (itemAtual() !== meuItem || !u) return;
+          if (VW.midia && f.tipo === "video") VW.midia.volume = 0.35;
+          const a = new Audio(u); VW.aud = a; a.muted = !lerLS("cs.flsom", true);
+          a.addEventListener("loadedmetadata", () => { try { a.currentTime = f.mus.inicio || 0; } catch (e) { } a.play().catch(() => { }); }, { once: true });
         } catch (e) { }
       }
       if (s.tipo === "flash") marcarVisto(f);
@@ -363,6 +372,8 @@
   /* ================= Criar Flash: câmera, efeitos, música, quem vê ================= */
   const TONS = [["natural", "Natural", ""], ["quente", "Quente", "sepia(.16) saturate(1.12)"], ["rosado", "Rosado", "hue-rotate(-6deg) saturate(1.16)"],
     ["bronze", "Bronze", "sepia(.28) saturate(1.28) contrast(1.04)"], ["frio", "Frio", "hue-rotate(8deg) saturate(.92) brightness(1.02)"], ["pb", "P&B", "grayscale(1) contrast(1.08)"]];
+  const maxDur = () => CR.destino === "xflesh" ? 60 : MAXDUR;
+  const nomeDestino = () => ({ flash: "Novo Flash", destaque: "Novo destaque", xflesh: "Novo XFlesh" })[CR.destino] || "Novo Flash";
   const CR = { el: null, destino: "flash", stream: null, frente: true, modo: "foto", ef: lerLS("cs.flef", { suave: 0.35, luz: 0.2, tom: "natural" }),
     gravando: null, partes: [], tGrav: 0, timer: null, raf: 0, fonte: null, fonteTipo: null, blob: null, musica: null, legenda: "", publico: null, para: [], somOriginal: true, cv: null };
   function filtroDe(ef, extra) {
@@ -389,10 +400,10 @@
     }
     cx.filter = "none";
   }
-  function abrirCriador(destino) {
+  function abrirCriador(destino, musica) {
     fecharCriador();
-    Object.assign(CR, { destino, modo: "foto", fonte: null, fonteTipo: null, blob: null, musica: null, legenda: "", somOriginal: true, publico: destino === "flash" ? ((SO.eu && SO.eu.privFlash) || "todos") : null, para: [] });
-    const el = document.createElement("div"); el.className = "cs-flc"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", destino === "flash" ? "Novo Flash" : "Novo destaque");
+    Object.assign(CR, { destino, modo: destino === "xflesh" ? "video" : "foto", musicaInicial: musica || null, fonte: null, fonteTipo: null, blob: null, musica: null, legenda: "", somOriginal: true, publico: destino === "flash" ? ((SO.eu && SO.eu.privFlash) || "todos") : null, para: [] });
+    const el = document.createElement("div"); el.className = "cs-flc"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", nomeDestino());
     document.body.appendChild(el); CR.el = el; document.body.classList.add("cs-vis-on");
     /* no Android: abre direto a câmera do aparelho (CameraX, com modos, zoom, HDR…); a do navegador fica de reserva */
     if (X.temCameraNativa) { el.innerHTML = `<div class="cs-flc-sem"><div class="spin"></div></div>`; cameraDoCelular(true); }
@@ -407,7 +418,7 @@
   }
   async function cameraDoCelular(primeira) {
     pararCamera(); cancelAnimationFrame(CR.raf);
-    const n = await X.midia_nativa("camera", { modo: CR.modo === "video" ? "video" : "foto", frente: false, maxSeg: MAXDUR });
+    const n = await X.midia_nativa("camera", { modo: CR.modo === "video" ? "video" : "foto", frente: false, maxSeg: maxDur() });
     if (!CR.el) return;
     if (n === null) return telaCamera();                       /* sem câmera do aparelho: usa a do navegador */
     /* cancelou: volta para a edição (se já tinha foto/vídeo) ou fecha — nunca troca para a câmera do navegador */
@@ -427,7 +438,7 @@
   }
   async function telaCamera() {
     const el = CR.el; if (!el) return;
-    el.innerHTML = `<div class="cs-flc-top"><button class="cs-vbt" data-s="flc-fechar" aria-label="Fechar">${I.fechar}</button><b>${CR.destino === "flash" ? "Novo Flash" : "Novo destaque"}</b>
+    el.innerHTML = `<div class="cs-flc-top"><button class="cs-vbt" data-s="flc-fechar" aria-label="Fechar">${I.fechar}</button><b>${nomeDestino()}</b>
         ${X.temCameraNativa ? `<button class="cs-vbt" data-s="flc-celular" aria-label="Câmera do celular (HD)"><b style="font-size:.78rem">HD</b></button>` : ""}<button class="cs-vbt" data-s="flc-virar" aria-label="Trocar câmera">${I.virar}</button></div>
       <div class="cs-flc-palco"><canvas id="flc-cv"></canvas><div class="cs-flc-sem" id="flc-sem" hidden><b>Câmera indisponível</b><span>Escolha uma foto ou vídeo da galeria.</span></div><span class="cs-flc-rec" id="flc-rec" hidden></span></div>
       ${painelEfeitos()}
@@ -487,14 +498,14 @@
     rec.onstop = () => {
       clearInterval(CR.timer); CR.gravando = null;
       const dur = (Date.now() - CR.tGrav) / 1000, b = new Blob(CR.partes, { type: (mime || "video/webm").split(";")[0] });
-      if (dur < 1) return toast("Vídeo muito curto."); usarVideo(b, Math.min(MAXDUR, dur), true);
+      if (dur < 1) return toast("Vídeo muito curto."); usarVideo(b, Math.min(maxDur(), dur), true);
     };
     CR.gravando = rec; CR.tGrav = Date.now(); rec.start(500);
     const d = $("#flc-disp"); d.classList.add("gravando"); const rc = $("#flc-rec"); rc.hidden = false;
     const prog = $("#flc-prog"), L = 2 * Math.PI * 46; prog.style.strokeDasharray = L;
     CR.timer = setInterval(() => {
-      const t = (Date.now() - CR.tGrav) / 1000; rc.textContent = "● " + mmss(t) + " / 0:30"; prog.style.strokeDashoffset = L * (1 - t / MAXDUR);
-      if (t >= MAXDUR) rec.stop();
+      const t = (Date.now() - CR.tGrav) / 1000; rc.textContent = "● " + mmss(t) + " / " + mmss(maxDur()); prog.style.strokeDashoffset = L * (1 - t / maxDur());
+      if (t >= maxDur()) rec.stop();
     }, 200);
   };
   X.acoes["flc-galeria"] = async () => {
@@ -519,7 +530,7 @@
     if (CR.fonteUrl) URL.revokeObjectURL(CR.fonteUrl); CR.fonteUrl = url;
     await new Promise(r => { v.onloadedmetadata = r; v.onerror = r; setTimeout(r, 6000); });
     let d = isFinite(v.duration) && v.duration > 0 ? v.duration : dur;
-    Object.assign(CR, { fonte: v, fonteTipo: "video", jaComEfeito, blob, dur: Math.min(MAXDUR, d || MAXDUR), durTotal: d || 0, inicioVideo: 0 });
+    Object.assign(CR, { fonte: v, fonteTipo: "video", jaComEfeito, blob, dur: Math.min(maxDur(), d || maxDur()), durTotal: d || 0, inicioVideo: 0 });
     telaEditar();
   }
   function textoPublico() {
@@ -527,20 +538,20 @@
   }
   function telaEditar() {
     const el = CR.el; if (!el) return;
-    const video = CR.fonteTipo === "video", longo = video && CR.durTotal > MAXDUR + 0.5;
+    if (CR.musicaInicial && !CR.musica) { usarMusicaLib(CR.musicaInicial); CR.musicaInicial = null; }
+    const video = CR.fonteTipo === "video", longo = video && CR.durTotal > maxDur() + 0.5;
     el.innerHTML = `<div class="cs-flc-top"><button class="cs-vbt" data-s="flc-refazer" aria-label="Voltar para a câmera">${I.ant}</button><b>${video ? "Vídeo" : "Foto"}</b>
         <button class="cs-vbt" data-s="flc-fechar" aria-label="Fechar">${I.fechar}</button></div>
       <div class="cs-flc-palco"><canvas id="flc-cv"></canvas></div>
       ${CR.jaComEfeito ? "" : painelEfeitos()}
       <div class="cs-flc-ed">
-        ${longo ? `<label class="cs-flc-linha">${I.tela}<span>Trecho de 30 s · começa em <b id="flc-vini-t">0:00</b></span><input type="range" id="flc-vini" min="0" max="${Math.floor(CR.durTotal - MAXDUR)}" value="0"></label>` : ""}
-        <button class="cs-flc-linha" data-s="flc-musica">${I.musica}<span>${CR.musica ? `<b>${esc(CR.musica.nome)}</b> <small id="flc-mus-t">começa em ${mmss(CR.musica.inicio)}</small>` : "Adicionar música ou som do celular"}</span>${CR.musica ? `<i data-s="flc-mus-tirar" role="button" aria-label="Tirar música">${I.fechar}</i>` : ""}</button>
+        ${longo ? `<label class="cs-flc-linha">${I.tela}<span>Trecho de ${maxDur()} s · começa em <b id="flc-vini-t">0:00</b></span><input type="range" id="flc-vini" min="0" max="${Math.floor(CR.durTotal - maxDur())}" value="0"></label>` : ""}
+        <button class="cs-flc-linha cs-flc-mus ${CR.musica ? "on" : ""}" data-s="flc-musica">${CR.musica && CR.musica.lib && X.capaMusica ? X.capaMusica(CR.musica.lib, "cs-flc-capa") : I.musica}<span>${CR.musica ? `<b>${esc(CR.musica.nome)}</b> <small id="flc-mus-t">começa em ${mmss(CR.musica.inicio)}</small>` : "Adicionar música"}</span>${CR.musica ? `<i data-s="flc-mus-tirar" role="button" aria-label="Tirar música">${I.fechar}</i>` : ""}</button>
         ${CR.musica ? `<input type="range" id="flc-mus-ini" min="0" max="${Math.max(0, Math.floor((CR.musica.dur || 0) - CR.dur))}" value="${CR.musica.inicio}" aria-label="Início da música">` : ""}
         ${video ? `<button class="cs-flc-linha" data-s="flc-somorig">${CR.somOriginal ? I.som : I.semSom}<span>Som do vídeo: <b>${CR.somOriginal ? "ligado" : "desligado"}</b></span></button>` : ""}
         <input class="in" id="flc-leg" maxlength="200" placeholder="Escreva uma legenda (opcional)" value="${esc(CR.legenda)}">
         ${CR.destino === "flash" ? `<button class="cs-flc-linha" data-s="flc-publico">${I.pessoas}<span>Quem vê: <b>${esc(textoPublico())}</b></span>${I.prox}</button>` : ""}
-        <button class="btn primary cs-grande" data-s="flc-publicar">${CR.destino === "flash" ? `${I.flash} Publicar Flash` : `${I.estrela} Salvar nos Destaques`}</button>
-        ${CR.destino === "flash" ? `<small class="muted cs-centro">Some depois de 24 horas.</small>` : ""}
+        <button class="btn primary cs-grande" data-s="flc-publicar">${CR.destino === "flash" ? `${I.flash} Publicar Flash` : CR.destino === "xflesh" ? `${I.play} Publicar no XFlesh` : `${I.estrela} Salvar nos Destaques`}</button>
       </div>`;
     CR.cv = el.querySelector("#flc-cv");
     const src = CR.fonte, [w, h] = dims(src), k = Math.min(1, 1280 / Math.max(w, h));
@@ -574,6 +585,19 @@
   X.acoes["flc-somorig"] = () => { CR.somOriginal = !CR.somOriginal; if (CR.fonte) CR.fonte.muted = !CR.somOriginal; telaEditar(); };
   X.acoes["flc-musica"] = async (el, ev) => {
     if (ev && ev.target.closest("[data-s='flc-mus-tirar']")) return X.acoes["flc-mus-tirar"]();
+    if (X.escolherMusica) return window.abrirSheet(`<div class="sheet-h"><h2>Música</h2></div><div class="cs-menu">
+      <button data-s="flc-mus-lib">${I.musica}<span><b>Biblioteca</b></span></button><button data-s="flc-mus-cel">${I.som}<span><b>Do celular</b></span></button></div>`);
+    X.acoes["flc-mus-cel"]();
+  };
+  X.acoes["flc-mus-lib"] = async () => {
+    window.fecharSheet(); if (CR.prevAud) CR.prevAud.pause(); if (CR.fonte && CR.fonte.pause && CR.fonteTipo === "video") CR.fonte.pause();
+    const m = await X.escolherMusica({ titulo: "Música", trecho: Math.round(CR.dur || 15) });
+    if (!CR.el) return; if (!m) { telaEditar(); return; }
+    usarMusicaLib(m); telaEditar();
+  };
+  function usarMusicaLib(m) { CR.musica = { lib: m, nome: m.titulo + " · " + m.artista, dur: m.dur || 0, inicio: m.inicio || 0 }; }
+  X.acoes["flc-mus-cel"] = async () => {
+    window.fecharSheet();
     const [f] = await M.escolher("audio/*", false); if (!f || !CR.el) return;
     const u = URL.createObjectURL(f), a = new Audio(u);
     await new Promise(r => { a.onloadedmetadata = r; a.onerror = r; setTimeout(r, 5000); });
@@ -583,10 +607,15 @@
     telaEditar();
   };
   X.acoes["flc-mus-tirar"] = () => { if (CR.prevAud) { CR.prevAud.pause(); CR.prevAud = null; } CR.musica = null; telaEditar(); };
-  function tocarPreviaMusica() {
+  async function urlLib(m) { return m.fonte === "chatmil" ? X.urlMusica(m) : m.url; }
+  async function tocarPreviaMusica() {
     if (CR.prevAud) CR.prevAud.pause();
-    const u = URL.createObjectURL(CR.musica.arq), a = new Audio(u); CR.prevAud = a; a.currentTime = CR.musica.inicio; a.volume = 0.8;
-    a.ontimeupdate = () => { if (a.currentTime > CR.musica.inicio + CR.dur) a.currentTime = CR.musica.inicio; };
+    const mu = CR.musica; let u;
+    try { u = mu.lib ? await urlLib(mu.lib) : URL.createObjectURL(mu.arq); } catch (e) { return; }
+    if (CR.musica !== mu || !CR.el) return;
+    const a = new Audio(u); CR.prevAud = a; a.volume = 0.8;
+    a.addEventListener("loadedmetadata", () => { try { a.currentTime = mu.inicio; } catch (e) { } }, { once: true });
+    a.ontimeupdate = () => { if (CR.musica === mu && a.currentTime > mu.inicio + CR.dur) a.currentTime = mu.inicio; };
     a.play().catch(() => { });
     if (CR.fonte && CR.fonteTipo === "video") CR.fonte.volume = 0.35;
   }
@@ -646,7 +675,9 @@
     const ref = fb.doc(C(col)), agora = Date.now();
     const doc = { dono: eu(), tipo: o.tipo, mime: o.mime, dur: Math.round(o.dur || 0), legenda: o.legenda || "", thumb: o.thumb || null, musica: !!o.som, musicaMime: o.som ? (o.somMime || o.som.type) : null,
       semSomOriginal: !!o.semSomOriginal, tamanho: o.midia.size, partes: Math.max(1, Math.ceil(o.midia.size / PARTE)), criado: agora, criadoEm: TS(), ...(o.origem ? { origem: o.origem } : {}) };
-    if (col !== "destaques") doc.expira = agora + DIA;
+    if (col !== "destaques" && col !== "xflesh") doc.expira = agora + DIA;
+    if (o.mus) doc.mus = o.mus;
+    if (o.extra) Object.assign(doc, o.extra);
     if (col === "flashesPriv") doc.para = o.para;
     await fb.setDoc(ref, doc);
     await subirPartes(col, ref.id, "partes", o.midia, f => barra && barra(f * (o.som ? 0.85 : 1)));
@@ -661,7 +692,7 @@
     if (CR.prevAud) { CR.prevAud.pause(); }
     const video = CR.fonteTipo === "video";
     if (video) CR.fonte.pause();
-    const barra = M.barraEnvio(CR.destino === "flash" ? "Flash" : "destaque"), txt = document.querySelector(".cs-up span");
+    const barra = M.barraEnvio(CR.destino === "flash" ? "Flash" : CR.destino === "xflesh" ? "XFlesh" : "destaque"), txt = document.querySelector(".cs-up span");
     const fase = t => { if (txt) txt.textContent = t; };
     try {
       let midia, mime, dur = CR.dur, thumb = await miniatura(CR.fonte);
@@ -669,27 +700,38 @@
         const cv = document.createElement("canvas"), [w, h] = dims(CR.fonte), k = Math.min(1, 1440 / Math.max(w, h)); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
         const cx = cv.getContext("2d"); if (CR.jaComEfeito) cx.drawImage(CR.fonte, 0, 0, cv.width, cv.height); else comEfeito(cx, cv.width, cv.height, CR.fonte, CR.ef, false);
         midia = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.85)); mime = "image/jpeg"; cv.width = cv.height = 0;
-        dur = CR.musica ? Math.min(MAXDUR, 15) : 6;
+        dur = CR.musica ? Math.min(maxDur(), 15) : 6;
       } else {
-        const precisa = !CR.jaComEfeito || CR.durTotal > MAXDUR + 0.5 || CR.blob.size > 12e6;
+        const precisa = !CR.jaComEfeito || CR.durTotal > maxDur() + 0.5 || CR.blob.size > 12e6;
         if (precisa) {
           fase("Preparando o vídeo…");
-          midia = await M.recodificar(CR.blob, { maxLado: 960, bps: 1100000, inicio: CR.inicioVideo || 0, dur: MAXDUR, somOriginal: true,
+          midia = await M.recodificar(CR.blob, { maxLado: 960, bps: 1100000, inicio: CR.inicioVideo || 0, dur: maxDur(), somOriginal: true,
             efeito: CR.jaComEfeito ? null : (cx, W, H, v) => comEfeito(cx, W, H, v, CR.ef, false), onProg: f => barra(f * 0.5) });
         } else midia = CR.blob;
-        mime = midia.type || "video/webm"; dur = Math.min(MAXDUR, CR.dur);
+        mime = midia.type || "video/webm"; dur = Math.min(maxDur(), CR.dur);
       }
-      let som = null, somMime = null;
-      if (CR.musica) { fase("Preparando a música…"); const r = await cortarMusica(CR.musica.arq, CR.musica.inicio, dur, f => barra(0.5 + f * 0.2)); som = r.blob; somMime = r.mime; }
-      fase(CR.destino === "flash" ? "Publicando o Flash…" : "Salvando o destaque…");
-      if (CR.destino === "destaque") {
-        await gravar("destaques", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal }, f => barra(0.7 + f * 0.3));
+      let som = null, somMime = null, mus = null;
+      if (CR.musica && CR.musica.lib) {
+        const m = CR.musica.lib;
+        mus = { id: String(m.id).slice(0, 60), fonte: m.fonte === "chatmil" ? "chatmil" : "openverse", titulo: String(m.titulo || "").slice(0, 120), artista: String(m.artista || "").slice(0, 100), inicio: Math.max(0, Math.round(CR.musica.inicio || 0)), dur: Math.round(m.dur || 0),
+          ...(m.fonte !== "chatmil" && /^https:\/\//.test(m.url || "") ? { url: m.url, lic: String(m.lic || "").slice(0, 40), link: String(m.link || "").slice(0, 300) } : {}),
+          ...(m.capa && /^https:\/\//.test(m.capa) && m.capa.length <= 600 ? { capa: m.capa } : {}) };
+        if (!video) dur = Math.min(maxDur(), 15);
+      } else if (CR.musica) { fase("Preparando a música…"); const r = await cortarMusica(CR.musica.arq, CR.musica.inicio, dur, f => barra(0.5 + f * 0.2)); som = r.blob; somMime = r.mime; }
+      fase(CR.destino === "flash" ? "Publicando o Flash…" : CR.destino === "xflesh" ? "Publicando…" : "Salvando o destaque…");
+      if (CR.destino === "xflesh") {
+        const f = await gravar("xflesh", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, mus, extra: { nCurt: 0, nComent: 0, nComp: 0 } }, f => barra(0.7 + f * 0.3));
+        if (mus && mus.fonte === "chatmil" && X.usoMusica) X.usoMusica(f.id, mus.id);
+        if (X.xfleshPublicado) X.xfleshPublicado(f);
+        toast("Publicado no XFlesh!");
+      } else if (CR.destino === "destaque") {
+        await gravar("destaques", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, mus }, f => barra(0.7 + f * 0.3));
         FL.dest.delete(eu()); toast("Salvo nos Destaques do seu perfil.");
       } else {
         const priv = CR.publico !== "todos";
         const para = CR.publico === "seguindo" ? [...(SO.seguindo || [])].slice(0, 400) : CR.publico === "escolher" ? CR.para : null;
         if (priv && (!para || !para.length)) throw { msg: CR.publico === "seguindo" ? "Você ainda não segue ninguém. Escolha “Todos” ou marque pessoas." : "Escolha quem vai ver." };
-        const f = await gravar(priv ? "flashesPriv" : "flashes", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, para }, f => barra(0.7 + f * 0.3));
+        const f = await gravar(priv ? "flashesPriv" : "flashes", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, para, mus }, f => barra(0.7 + f * 0.3));
         FL.meus.push(f); toast("Flash publicado! Fica 24 horas.");
       }
       barra(null); CR.publicando = false; fecharCriador(); pintar();
@@ -700,6 +742,9 @@
   X.configPriv.push(p => `<div class="cs-linha"><span class="cs-lic">${I.flash}</span><span><b>Quem vê meus Flashes</b><small>Dá para mudar em cada Flash</small>
     <span class="seg cs-seg-mini"><button data-s="priv-flash" data-v="todos" aria-pressed="${(p.privFlash || "todos") === "todos"}">Todos</button><button data-s="priv-flash" data-v="seguindo" aria-pressed="${p.privFlash === "seguindo"}">Só quem eu sigo</button></span></span></div>`);
   X.acoes["priv-flash"] = async el => { try { await fb.updateDoc(D("users", eu()), { privFlash: el.dataset.v }); } catch (e) { toast(msgErro(e)); } };
+
+  X.flash = { baixar, apagarTudo, abrirCriador, subirPartes };
+  X.criarXFlesh = m => abrirCriador("xflesh", m || null);
 
   /* ================= Voltar (Android) ================= */
   const voltarAnt = window.SENOV_voltar;
@@ -802,7 +847,9 @@
 label.cs-flc-linha{flex-wrap:wrap}label.cs-flc-linha input{width:100%;accent-color:#FFC83D}
 #flc-mus-ini{accent-color:#FFC83D}
 .cs-flc-ed .in{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.25)}
-.cs-flc-seg{display:flex;margin:4px 0 14px}.cs-flc-seg button{flex:1}
+.cs-flc-seg{display:flex;margin:4px 0 14px}
+.cs-flc-mus.on{background:linear-gradient(90deg,rgba(236,72,153,.28),rgba(139,92,246,.28))}
+.cs-flc-capa{width:40px;height:40px;border-radius:10px;object-fit:cover;flex:none}.cs-flc-seg button{flex:1}
 .cs-flc-pessoas{display:flex;flex-direction:column;gap:2px;max-height:44vh;overflow:auto;margin-bottom:12px}
 .cs-flc-pessoas[hidden]{display:none}
 .cs-flc-p{display:flex;align-items:center;gap:12px;padding:8px 6px;border-radius:14px;cursor:pointer}

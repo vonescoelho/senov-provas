@@ -10,8 +10,8 @@
   const $ = s => document.querySelector(s);
   const API = "https://api.openverse.org/v1/audio/";
   const LICENCAS = "by,by-sa,cc0,by-nc,by-nc-sa,pdm";
-  const TRECHO = 30;
-  const CATS = [["Em alta", "happy upbeat"], ["Alegre", "happy"], ["Calma", "calm relaxing"], ["Romântica", "romantic love"], ["Inspiradora", "inspiring"],
+  let TRECHO = 30;
+  const CATS = [["ChatMil", null], ["Em alta", "happy upbeat"], ["Alegre", "happy"], ["Calma", "calm relaxing"], ["Romântica", "romantic love"], ["Inspiradora", "inspiring"],
     ["Acústico", "acoustic guitar"], ["Piano", "piano"], ["Pop", "pop"], ["Infantil", "kids children"], ["Lo-fi", "lofi"], ["Festa", "dance party"], ["Brasil", "brazil samba bossa"]];
   const I = {
     nota: ic('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
@@ -21,7 +21,8 @@
     voltar: ic('<path d="M15 18l-6-6 6-6"/>'),
     busca: ic('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>')
   };
-  const MU = { sel: null, cat: 0, busca: "", lista: null, carregando: false, erro: "", escolhida: null, inicio: 0, tocandoId: null, audio: null, timer: null };
+  const temChatMil = () => !!X.musicasChatMil && !MU.soLivre;
+  const MU = { sel: null, cat: 1, cb: null, soLivre: true, titulo: "", trecho: 30, busca: "", lista: null, carregando: false, erro: "", escolhida: null, inicio: 0, tocandoId: null, audio: null, timer: null };
   const lerLS = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } };
   const gravarLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
   const mmss = s => { s = Math.max(0, Math.round(+s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
@@ -74,9 +75,16 @@
 
   /* ---------- escolher a música (tela própria, por cima da janela de publicar) ---------- */
   async function buscar() {
+    const ehCM = !MU.busca.trim() && CATS[MU.cat][1] === null;
+    let cm = [];
+    if (temChatMil() && (ehCM || MU.busca.trim())) {
+      MU.carregando = true; MU.erro = ""; if (ehCM) { MU.lista = MU.lista && MU.lista.every(x => x.fonte === "chatmil") ? MU.lista : null; pintarLista(); }
+      try { cm = await X.musicasChatMil(MU.busca); } catch (e) { console.warn(e); }
+      if (ehCM) { MU.lista = cm; MU.carregando = false; return pintarLista(); }
+    }
     const q = MU.busca.trim() || CATS[MU.cat][1], k = "cs.mus." + q.toLowerCase();
     const c = lerLS(k, null);
-    if (c && Date.now() - c.em < 12 * 3600e3) { MU.lista = c.r; MU.erro = ""; return pintarLista(); }
+    if (c && Date.now() - c.em < 12 * 3600e3) { MU.lista = [...cm, ...c.r]; MU.erro = ""; MU.carregando = false; return pintarLista(); }
     MU.carregando = true; MU.erro = ""; pintarLista();
     try {
       const r = await fetch(`${API}?q=${encodeURIComponent(q)}&category=music&license=${LICENCAS}&page_size=30&mature=false`);
@@ -85,19 +93,22 @@
       const lista = (j.results || []).filter(x => x.url && /^https:\/\//.test(x.url) && x.duration > 30000 && x.duration < 900000 && !/nd/.test(x.license || ""))
         .map(x => ({ id: String(x.id), titulo: String(x.title || "Sem título").slice(0, 100), artista: String(x.creator || "Artista").slice(0, 80), url: x.url,
           dur: Math.round(x.duration / 1000), lic: [x.license, x.license_version].filter(Boolean).join(" "), link: x.foreign_landing_url || "", capa: x.thumbnail || "" }));
-      MU.lista = lista; gravarLS(k, { em: Date.now(), r: lista });
-    } catch (e) { console.warn(e); MU.erro = "Não deu para carregar as músicas agora. Confira a internet e tente de novo."; MU.lista = c ? c.r : []; }
+      MU.lista = [...cm, ...lista]; gravarLS(k, { em: Date.now(), r: lista });
+    } catch (e) { console.warn(e); MU.erro = "Não deu para carregar as músicas agora. Confira a internet e tente de novo."; MU.lista = [...cm, ...(c ? c.r : [])]; }
     MU.carregando = false; pintarLista();
   }
-  function abrir() {
+  function abrir(op) {
     fechar();
+    op = op || {}; MU.cb = op.cb || null; MU.soLivre = !op.cb; MU.titulo = op.titulo || "Música para a foto"; TRECHO = op.trecho || 30;
+    if (!temChatMil() && CATS[MU.cat][1] === null) MU.cat = 1;
+    if (op.cb && temChatMil() && !MU.busca) MU.cat = 0;
     const el = document.createElement("div"); el.id = "cs-mus"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Escolher música");
-    el.innerHTML = `<header class="cs-mus-h"><button class="cs-ico-bt" data-s="mus-fechar" aria-label="Fechar">${I.voltar}</button><b>Música para a foto</b></header>
+    el.innerHTML = `<header class="cs-mus-h"><button class="cs-ico-bt" data-s="mus-fechar" aria-label="Fechar">${I.voltar}</button><b>${esc(MU.titulo)}</b></header>
       <form class="cs-mus-busca" id="mus-f"><span>${I.busca}</span><input class="in" id="mus-q" type="search" placeholder="Buscar música ou artista" enterkeyhint="search" value="${esc(MU.busca)}"></form>
-      <div class="cs-mus-cats">${CATS.map(([n], i) => `<button type="button" data-s="mus-cat" data-v="${i}" aria-pressed="${!MU.busca && MU.cat === i}">${esc(n)}</button>`).join("")}</div>
+      <div class="cs-mus-cats">${CATS.map(([n, q], i) => q === null && !temChatMil() ? "" : `<button type="button" data-s="mus-cat" data-v="${i}" aria-pressed="${!MU.busca && MU.cat === i}">${esc(n)}</button>`).join("")}</div>
       <div class="cs-mus-lista" id="mus-lista"></div>
       <div class="cs-mus-trecho" id="mus-trecho" hidden></div>
-      <p class="cs-mus-cred">Músicas gratuitas com licença Creative Commons, via Openverse. Os créditos aparecem na publicação.</p>`;
+      <p class="cs-mus-cred">ChatMil: faixas de artistas independentes · Livres: Creative Commons (Openverse)</p>`;
     document.body.appendChild(el); document.body.classList.add("cs-mus-aberta");
     try { history.pushState({ mus: 1 }, ""); } catch (e) { }
     buscar();
@@ -106,6 +117,7 @@
     const el = $("#cs-mus"); if (!el) return;
     if (MU.tocandoId && MU.tocandoId.startsWith("l")) parar();
     el.remove(); document.body.classList.remove("cs-mus-aberta"); MU.escolhida = null;
+    if (MU.cb) { const cb = MU.cb; MU.cb = null; cb(null); }
     if (!deHistorico) { try { if (history.state && history.state.mus) history.back(); } catch (e) { } }
   }
   window.addEventListener("popstate", () => { if ($("#cs-mus")) fechar(true); });
@@ -115,10 +127,14 @@
     const l = MU.lista || [];
     el.innerHTML = (MU.erro ? `<p class="small cs-mus-erro">${esc(MU.erro)} <button type="button" class="cs-link" data-s="mus-cat" data-v="${MU.cat}">Tentar de novo</button></p>` : "")
       + (l.length ? l.map((m, i) => `<div class="cs-mus-item ${MU.escolhida && MU.escolhida.id === m.id ? "sel" : ""}" data-mus-id="l${esc(m.id)}">
-        <button type="button" class="cs-mus-bt" data-s="mus-prev" data-v="${i}" aria-label="Ouvir ${esc(m.titulo)}">${MU.tocandoId === "l" + m.id ? I.pausa : I.play}</button>
-        <button type="button" class="cs-mus-esc" data-s="mus-escolher" data-v="${i}"><b>${esc(m.titulo)}</b><small>${esc(m.artista)} · ${mmss(m.dur)}</small></button></div>`).join("")
+        <button type="button" class="cs-mus-bt cs-mus-capa" data-s="mus-prev" data-v="${i}" aria-label="Ouvir ${esc(m.titulo)}">${capa(m)}<i>${MU.tocandoId === "l" + m.id ? I.pausa : I.play}</i></button>
+        <button type="button" class="cs-mus-esc" data-s="mus-escolher" data-v="${i}"><b>${esc(m.titulo)}</b><small>${m.fonte === "chatmil" ? `<span class="cs-mus-cm">ChatMil</span>` : ""}${esc(m.artista)} · ${mmss(m.dur)}</small></button></div>`).join("")
         : (MU.erro ? "" : `<div class="cs-mus-vazio"><b>Nenhuma música encontrada</b><span class="small muted">Tente outra palavra.</span></div>`));
   }
+  const capa = m => m.fonte === "chatmil" && X.capaMusica ? X.capaMusica(m, "cs-mus-img")
+    : m.capa && /^https:\/\//.test(m.capa) ? `<img class="cs-mus-img" src="${esc(m.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : "";
+  /* faixa do ChatMil: o áudio vem em partes; resolve o endereço antes de tocar */
+  async function urlDe(m) { if (m.fonte !== "chatmil") return m.url; try { return await X.urlMusica(m); } catch (e) { toast("Não deu para tocar agora."); return null; } }
   function pintarTrecho() {
     const el = $("#mus-trecho"), m = MU.escolhida; if (!el) return;
     if (!m) { el.hidden = true; return; }
@@ -133,7 +149,7 @@
     if (e.target.id === "mus-ini" && MU.escolhida) { MU.inicio = +e.target.value; const t = $("#mus-ini-t"); if (t) t.textContent = `${mmss(MU.inicio)} – ${mmss(Math.min(MU.escolhida.dur, MU.inicio + TRECHO))}`; }
   });
   document.addEventListener("change", e => {
-    if (e.target.id === "mus-ini" && MU.escolhida) tocar("t" + MU.escolhida.id + "_" + MU.inicio, MU.escolhida.url, MU.inicio, 12);
+    if (e.target.id === "mus-ini" && MU.escolhida) { const m = MU.escolhida; urlDe(m).then(u => u && tocar("t" + m.id + "_" + MU.inicio, u, MU.inicio, 12)); }
   });
   document.addEventListener("submit", e => {
     if (e.target.id !== "mus-f") return; e.preventDefault();
@@ -141,16 +157,22 @@
   });
   const pintarCompositor = () => { try { const pc = $("#cs-pc-fotos"); if (pc) { const f = X.fotosExtra; /* repinta só o pedaço da música */ const velho = pc.querySelector(".cs-pc-mus"); const html = f.map(g => g() || "").join(""); const tmp = document.createElement("div"); tmp.innerHTML = html; const novo = tmp.querySelector(".cs-pc-mus"); if (velho && novo) velho.replaceWith(novo); else if (velho) velho.remove(); else if (novo) pc.appendChild(novo); } } catch (e) { } };
 
+  /* escolher música para XFlesh / Flash: devolve {id, fonte, titulo, artista, capa, dur, url?, inicio} ou null */
+  X.escolherMusica = op => new Promise(res => abrir({ ...(op || {}), cb: res }));
   Object.assign(X.acoes, {
     "mus-abrir": () => abrir(),
     "mus-fechar": () => fechar(),
     "mus-tirar": () => { MU.sel = null; parar(); pintarCompositor(); },
     "mus-prev-sel": () => { if (MU.sel) tocar("pc", MU.sel.url, MU.sel.inicio, 15); },
     "mus-cat": el => { MU.cat = +el.dataset.v; MU.busca = ""; const q = $("#mus-q"); if (q) q.value = ""; document.querySelectorAll(".cs-mus-cats [data-s=mus-cat]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.v === MU.cat)));MU.escolhida = null; pintarTrecho(); buscar(); },
-    "mus-prev": el => { const m = (MU.lista || [])[+el.dataset.v]; if (m) tocar("l" + m.id, m.url, Math.min(30, Math.max(0, m.dur - TRECHO)), 15); },
-    "mus-escolher": el => { const m = (MU.lista || [])[+el.dataset.v]; if (!m) return; MU.escolhida = m; MU.inicio = Math.min(30, Math.max(0, m.dur - TRECHO)); pintarLista(); pintarTrecho(); },
-    "mus-ouvir-trecho": () => { const m = MU.escolhida; if (m) tocar("t" + m.id, m.url, MU.inicio, 15); },
-    "mus-usar": () => { const m = MU.escolhida; if (!m) return; MU.sel = { ...m, inicio: MU.inicio }; parar(); fechar(); pintarCompositor(); toast("Música adicionada à foto."); },
+    "mus-prev": async el => { const m = (MU.lista || [])[+el.dataset.v]; if (!m) return; const u = await urlDe(m); if (u) tocar("l" + m.id, u, m.fonte === "chatmil" ? 0 : Math.min(30, Math.max(0, m.dur - TRECHO)), 15); },
+    "mus-escolher": el => { const m = (MU.lista || [])[+el.dataset.v]; if (!m) return; MU.escolhida = m; MU.inicio = m.fonte === "chatmil" ? 0 : Math.min(30, Math.max(0, m.dur - TRECHO)); pintarLista(); pintarTrecho(); },
+    "mus-ouvir-trecho": async () => { const m = MU.escolhida; if (!m) return; const u = await urlDe(m); if (u) tocar("t" + m.id, u, MU.inicio, 15); },
+    "mus-usar": () => {
+      const m = MU.escolhida; if (!m) return;
+      if (MU.cb) { const cb = MU.cb; MU.cb = null; parar(); const r = { ...m, inicio: MU.inicio }; fechar(); cb(r); return; }
+      MU.sel = { ...m, inicio: MU.inicio }; parar(); fechar(); pintarCompositor(); toast("Música adicionada à foto.");
+    },
     "mus-tocar": el => { const p = SO.posts.find(x => x.id === el.dataset.id) || ((SO.origCache || {})[el.dataset.id]); const m = p && p.musica; if (m) tocar("p" + p.id, m.url, m.inicio || 0, TRECHO); },
     "mus-link": (el, ev) => { if (ev) ev.preventDefault(); if (A.abrirLink) A.abrirLink(el.dataset.v); }
   });
@@ -177,6 +199,10 @@
 .cs-mus-lista{flex:1;overflow-y:auto;padding:0 14px 10px;display:flex;flex-direction:column;gap:6px}
 .cs-mus-item{display:flex;align-items:center;gap:10px;padding:6px;border-radius:14px}.cs-mus-item.sel{background:color-mix(in srgb,var(--primary) 12%,transparent)}
 .cs-mus-item .cs-mus-bt{background:var(--surface-2);color:var(--ink)}.cs-mus-item.on .cs-mus-bt{background:var(--primary);color:var(--primary-ink,#fff)}
+.cs-mus-capa{position:relative;width:52px!important;height:52px!important;border-radius:12px!important;overflow:hidden;padding:0}
+.cs-mus-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0}
+.cs-mus-capa>i{position:relative;z-index:1;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;display:grid;place-items:center}.cs-mus-capa>i svg{width:14px;height:14px}
+.cs-mus-cm{display:inline-block;font-size:.66rem;font-weight:800;color:#fff;background:linear-gradient(90deg,#EC4899,#8B5CF6);border-radius:6px;padding:1px 6px;margin-right:6px;vertical-align:1px}
 .cs-mus-esc{flex:1;min-width:0;border:0;background:none;text-align:left;font:inherit;color:var(--ink);display:flex;flex-direction:column;cursor:pointer;padding:4px 0}
 .cs-mus-esc b,.cs-mus-esc small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cs-mus-esc small{color:var(--muted)}
 .cs-mus-vazio{display:flex;flex-direction:column;align-items:center;gap:6px;padding:40px 0}

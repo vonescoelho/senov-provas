@@ -181,6 +181,7 @@
       <button data-s="rc-copiar">${KI.copiar}<span><b>Só copiar o link</b></span></button></div>`);
     X._texto = texto;
   }
+  X.escolherConversa = escolherConversa;
   X.acoes["rc-para"] = async el => { window.fecharSheet(); const ok = await enviarMsg(el.dataset.id, { texto: X._texto }); if (ok !== false) toast("Enviado!"); };
   X.acoes["rc-copiar"] = () => { window.fecharSheet(); copiar(X._texto); };
 
@@ -283,8 +284,8 @@
         ${it.validade ? `<small class="muted">Válido até ${esc(it.validade.split("-").reverse().join("/"))}</small>` : ""}
       </div></article>`;
   }
-  X.tabs.push({ pos: 2, k: "vitrine", n: "Vitrine", i: KI.loja });
-  X.tabViews.vitrine = vVitrine;
+  /* a Vitrine (materiais para professores) fica dentro de Provas */
+  X.provasSub.push({ k: "vitrine", n: "Vitrine", view: () => vVitrine().replace('<div class="cs-cab"><h1>Vitrine</h1>', '<div class="cs-cab cs-cab-sub">') });
   X.acoes["vit-cat"] = el => { V.cat = el.dataset.v; pintar(); };
   X.acoes["vit-desc"] = el => el.classList.toggle("aberta");
   X.acoes["vit-foto"] = el => { const it = (V.itens || []).find(x => x.id === el.dataset.id); if (it && A.verFotos) A.verFotos(it.fotos, +el.dataset.v, "vitrineImgs"); };

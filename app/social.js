@@ -77,16 +77,19 @@
     escola: ic('<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/>'),
     megafone: ic('<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/>'),
     check: ic('<path d="M20 6 9 17l-5-5"/>'),
-    pen: ic('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>')
+    pen: ic('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+    xflesh: ic('<rect x="5" y="2.5" width="14" height="19" rx="4"/><path d="M10.2 8.8v6.4l5.2-3.2z" fill="currentColor"/>'),
+    conexoes: ic('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><path d="M12 12.8s-2.7-1.6-2.7-3.4a1.45 1.45 0 0 1 2.7-.8 1.45 1.45 0 0 1 2.7.8c0 1.8-2.7 3.4-2.7 3.4z"/>'),
+    nota: ic('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>')
   };
 
   /* Extensões (social-mais.js): telas, abas, ações e tipos de mensagem extras */
-  const EXT = { views: {}, tabViews: {}, acoes: {}, tabs: [], provasSub: [], msg: null, chatBotoes: null, composerBotoes: null, composerFim: null,
+  const EXT = { views: {}, tabViews: {}, acoes: {}, tabs: [], provasSub: [], perfilCanto: [], msg: null, chatBotoes: null, composerBotoes: null, composerFim: null,
     conversasTopo: null, depois: [], avisos: [], muralTopo: [], muralSeg: [], muralFiltro: [], muralCab: [], compositorBotoes: [], compositorPainel: [], compositorAbrir: [], postDados: [], postMeta: [], perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [], portao: null, postCorpo: [], fotosExtra: [], conversasFixos: [] };
 
   /* ================= Estado ================= */
   const SO = {
-    tab: "conversas", pilha: [], carregando: true, user: null, eu: null, euCarregado: false,
+    tab: "xflesh", pilha: [], carregando: true, user: null, eu: null, euCarregado: false,
     tela: "boas-vindas", erro: "", ocupado: false,
     chats: [], leituras: {}, perfis: {}, buscando: {}, seguindo: new Set(), bloqueados: new Set(),
     posts: [], feed: "todos", msgs: {}, brutas: {}, coments: {}, rascunho: {}, figAberta: false, pacote: 0,
@@ -94,7 +97,7 @@
     cad: { nome: "", email: "", senha: "", usuario: "", escola: "", disciplinas: [], foto: null, ok: null, verSenha: false },
     un: {}
   };
-  try { const t = localStorage.getItem("cs.tab"); if (["conversas", "mural", "provas", "perfil"].includes(t)) SO.tab = t; } catch (e) { }
+  try { const t = localStorage.getItem("cs.tab"); if (["xflesh", "mural", "conversas", "provas", "conexoes", "perfil"].includes(t)) SO.tab = t; } catch (e) { }
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const eu = () => SO.user && SO.user.uid;
@@ -229,7 +232,7 @@
     SO.user = u; SO.pres = SO.pres || {}; SO.eu = null; SO.euCarregado = false; SO.fotoPropria = undefined; SO.chats = []; SO.posts = []; SO.pilha = [];
     if (trocou) {
       SO.perfis = {}; SO.buscando = {}; SO.msgs = {}; SO.brutas = {}; SO.coments = {}; SO.rascunho = {}; SO.contagens = {}; SO.novos = null; SO.leituras = {};
-      if (u) { SO.tab = "conversas"; lembrarTab(); }
+      if (u) { SO.tab = "xflesh"; lembrarTab(); }
       try { if (typeof CHAT !== "undefined") { CHAT.msgs = []; CHAT.d = {}; CHAT.perg = null; CHAT.espera = null; } } catch (e) { }
     }
     SO.carregando = false;
@@ -434,7 +437,7 @@
     if (ofensivo(c.nome)) return erro("O nome tem palavras não permitidas.");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email)) return erro("Confira o e-mail.");
     if (c.senha.length < 8) return erro("A senha precisa ter pelo menos 8 caracteres.");
-    if (!aceite) return erro("Para continuar, confirme que é professor(a) e aceite os termos.");
+    if (!aceite) return erro("Para continuar, aceite os termos.");
     ocupar("Criando…");
     try {
       const r = await fb.createUserWithEmailAndPassword(auth, c.email, c.senha);
@@ -465,6 +468,11 @@
     try { await fb.sendPasswordResetEmail(auth, email); SO.erro = ""; toast("Enviamos um link para criar nova senha. Veja o seu e-mail."); }
     catch (e) { erro(msgErro(e)); }
   }
+  function idadeDe(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ""); if (!m) return null;
+    const h = new Date(), a = +m[1], me = +m[2], d = +m[3]; if (a < 1900 || a > h.getFullYear()) return null;
+    return h.getFullYear() - a - ((h.getMonth() + 1 < me || (h.getMonth() + 1 === me && h.getDate() < d)) ? 1 : 0);
+  }
   async function salvarPerfil(novo) {
     /* novo = {nome, usuario, escola, disciplinas, bio, foto}; cria ou atualiza, trocando o @usuário se mudou */
     const uid = eu(), antigo = SO.eu, u = novo.usuario;
@@ -476,6 +484,7 @@
       privMsg: (antigo && antigo.privMsg) || "todos", inst: inst(SO.user), atualizadoEm: TS()
     };
     if (!antigo) dados.criadoEm = TS();
+    if (novo.nasc) { const id = idadeDe(novo.nasc); if (id != null) { dados.aniver = novo.nasc.slice(5); dados.menor = id < 18; if (!antigo && id < 18) dados.privMsg = "seguindo"; } }
     if (dados.inst) await SO.user.getIdToken(true).catch(() => { });
     const b = fb.writeBatch(db);
     const pf = (antigo && antigo.privFoto) || "todos";
@@ -490,10 +499,13 @@
   }
   async function concluirPerfil() {
     const c = SO.cad;
-    c.nome = $("#cs-nome").value.trim(); c.usuario = limparUsuario($("#cs-usu").value); c.escola = $("#cs-escola").value;
+    c.nome = $("#cs-nome").value.trim(); c.usuario = limparUsuario($("#cs-usu").value); c.nasc = ($("#cs-nasc") || {}).value || c.nasc || "";
     if (c.nome.length < 3) return erro("Digite o seu nome.");
+    const id = idadeDe(c.nasc);
+    if (id == null) return erro("Informe a data de nascimento.");
+    if (id < 13) return erro("O ChatMil é para maiores de 13 anos.");
     ocupar("Salvando…");
-    try { await salvarPerfil(c); SO.tab = "conversas"; lembrarTab(); toast("Bem-vindo(a) ao ChatMil!"); pintar(); }
+    try { await salvarPerfil(c); SO.tab = "xflesh"; lembrarTab(); toast("Bem-vindo(a) ao ChatMil!"); pintar(); }
     catch (e) { erro(e.msg || msgErro(e)); }
   }
 
@@ -516,7 +528,7 @@
       <div class="cs-figs" aria-hidden="true"><span class="f1">${figurinha("nota10", 92)}</span><span class="f2">${figurinha("cafe", 84)}</span><span class="f3">${figurinha("estudar", 88)}</span></div>
       <div class="cs-logo">${K.chat}</div>
       <h1>ChatMil</h1>
-      <p class="cs-lema">Conversas, grupos e provas para professores. Sem anúncios.</p>
+      <p class="cs-lema">Vídeos, amigos e conversas. Sem anúncios.</p>
       <div class="cs-auth-bt">
         <button class="btn primary cs-grande" data-s="ir" data-v="criar">Criar minha conta</button>
         <button class="btn cs-grande" data-s="ir" data-v="entrar">Já tenho conta</button>
@@ -533,7 +545,7 @@
         <label class="f" for="cs-nome">Seu nome<input class="in" id="cs-nome" autocomplete="name" value="${esc(c.nome)}" placeholder="Ex.: Maria da Silva"></label>
         <label class="f" for="cs-email">E-mail<input class="in" id="cs-email" type="email" inputmode="email" autocomplete="email" value="${esc(c.email)}" placeholder="seuemail@exemplo.com"></label>
         ${campoSenha("cs-senha", "Crie uma senha (mínimo 8 caracteres)", "new-password")}
-        <label class="cs-aceite" for="cs-aceite"><input type="checkbox" id="cs-aceite"><span>Sou professor(a) e aceito os <button type="button" class="cs-link" data-s="termos">termos de uso e a política de privacidade</button>.</span></label>
+        <label class="cs-aceite" for="cs-aceite"><input type="checkbox" id="cs-aceite"><span>Aceito os <button type="button" class="cs-link" data-s="termos">termos de uso e a política de privacidade</button>.</span></label>
         ${erroHtml()}
         <button class="btn primary cs-grande">Continuar</button>
       </form>
@@ -571,15 +583,14 @@
     const sug = sugestoes(c.nome);
     return `<section class="cs-auth">
       <div class="cs-passos"><i class="on"></i><i class="on"></i></div>
-      <h1>Seu perfil</h1><p class="muted">Passo 2 de 2 · Como os colegas vão ver você</p>
+      <h1>Seu perfil</h1><p class="muted">Passo 2 de 2</p>
       <form class="stack" id="cs-f-perfil" novalidate>
         ${campoFoto(c.foto, c.nome)}
-        <label class="f" for="cs-nome"><span>Nome completo <small class="muted">(só você vê; vai no cabeçalho das provas)</small></span><input class="in" id="cs-nome" value="${esc(c.nome)}"></label>
+        <label class="f" for="cs-nome">Nome<input class="in" id="cs-nome" value="${esc(c.nome)}"></label>
+        <label class="f" for="cs-nasc">Data de nascimento<input class="in" id="cs-nasc" type="date" max="${new Date().toISOString().slice(0, 10)}" value="${esc(c.nasc || "")}"></label>
         <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(c.usuario)}" placeholder="seu.nome"></span></label><small class="muted">É o nome que os outros veem em tudo no ChatMil.</small>
         <span id="cs-usu-ok" class="cs-ok" aria-live="polite"></span>
         ${sug.length ? `<div class="chips cs-sug">${sug.map(s => `<button type="button" class="chip" data-s="sug" data-v="${s}">@${s}</button>`).join("")}</div>` : ""}
-        <label class="f" for="cs-escola"><span>Escola <small class="muted">(opcional)</small></span><input class="in" id="cs-escola" value="${esc(c.escola)}" placeholder="Onde você ensina"></label>
-        <div class="f"><span>Disciplinas <small class="muted">(opcional)</small></span>${chipsDisciplinas(c.disciplinas, "cad")}</div>
         ${erroHtml()}
         <button class="btn primary cs-grande">Concluir</button>
         <button type="button" class="btn ghost" data-s="sair">Sair</button>
@@ -953,7 +964,7 @@
     const lista = postsVisiveis(), eup = SO.eu || {}, h = l => l.map(f => { try { return f() || ""; } catch (e) { console.warn(e); return ""; } }).join("");
     const segs = [["todos", "Todos"], ...EXT.muralSeg, ["seguindo", "Seguindo"]];
     if (!segs.some(x => x[0] === SO.feed)) SO.feed = "todos";
-    return `<div class="cs-cab"><h1>Mural</h1>${h(EXT.muralCab)}<button class="cs-ico-bt" data-s="buscar-pessoas" aria-label="Encontrar colegas">${K.busca}</button></div>
+    return `<div class="cs-cab"><h1>Mural</h1>${h(EXT.muralCab)}<button class="cs-ico-bt" data-s="amigos" aria-label="Amigos">${K.busca}</button></div>
       ${avisoEmail()}
       ${h(EXT.muralTopo)}
       <button class="card cs-novo-post" data-s="novo-post">${av(eup, 40, eu())}<span>Nova publicação</span><i class="cs-np-foto" data-s="novo-post-foto" role="button" aria-label="Foto: câmera ou galeria">${K.foto}</i></button>
@@ -1235,24 +1246,28 @@
   function htmlResultados(acao) {
     if (SO.resultados == null) {
       if (acao !== "ver-perfil") return "";
-      const meus = [...SO.seguindo].filter(u => !SO.bloqueados.has(u)).map(u => ({ uid: u, ...P(u) }));
-      const novos = (SO.novos || []).filter(p => p.uid !== eu() && !SO.seguindo.has(p.uid) && !SO.bloqueados.has(p.uid));
-      return (meus.length ? `<h2 class="cs-sec">Seus contatos</h2><div class="cs-lista">${meus.map(p => itemPessoa(p, acao)).join("")}</div>`
-        : `<p class="small muted">Nenhum contato ainda.</p>`)
-        + (novos.length ? `<h2 class="cs-sec">Novos no ChatMil</h2><div class="cs-lista">${novos.map(p => itemPessoa(p, acao)).join("")}</div>` : "");
+      const ordem = EXT.pessoaOrdem || (() => 0);
+      const meus = [...SO.seguindo].filter(u => !SO.bloqueados.has(u)).map(u => ({ uid: u, ...P(u) })).sort((a, b) => ordem(a.uid) - ordem(b.uid));
+      const vistos = new Set(meus.map(p => p.uid));
+      const extra = (EXT.descobrir ? EXT.descobrir() : []).map(u => ({ uid: u, ...P(u) }));
+      const novos = [...extra, ...(SO.novos || [])].filter(p => p.uid !== eu() && !SO.seguindo.has(p.uid) && !SO.bloqueados.has(p.uid) && !vistos.has(p.uid) && vistos.add(p.uid));
+      return (meus.length ? `<h2 class="cs-sec">Seguindo</h2><div class="cs-lista">${meus.map(p => itemPessoa(p, acao)).join("")}</div>`
+        : `<p class="small muted">Ninguém ainda.</p>`)
+        + (novos.length ? `<h2 class="cs-sec">Descobrir</h2><div class="cs-lista">${novos.map(p => itemPessoa(p, acao)).join("")}</div>` : "");
     }
     if (!SO.resultados.length) return `<p class="small muted" style="padding:8px 2px">Ninguém encontrado. Confira a grafia do nome ou do @usuário.</p>`;
     return `<div class="cs-lista">${SO.resultados.filter(p => !SO.bloqueados.has(p.uid)).map(p => itemPessoa(p, acao)).join("")}</div>`;
   }
   function itemPessoa(p, acao) {
     const seg = SO.seguindo.has(p.uid);
-    return `<div class="cs-item"><button type="button" class="cs-quem" data-s="${acao}" data-id="${esc(p.uid)}">${av(p, 46, p.uid)}<span class="cs-item-t"><b>${esc(p.nome)}${seloHtml(p)}</b><span>${esc(p.escola || (p.disciplinas || []).slice(0, 2).join(", ") || "Professor(a)")}</span></span></button>
+    return `<div class="cs-item"><button type="button" class="cs-quem" data-s="${acao}" data-id="${esc(p.uid)}">${av(p, 46, p.uid)}<span class="cs-item-t"><b>${esc(p.nome)}${seloHtml(p)}</b><span>${esc((EXT.pessoaSub && EXT.pessoaSub(p.uid, p)) || p.escola || (p.usuario ? "@" + p.usuario : ""))}</span></span></button>
       ${acao === "ver-perfil" ? `<button type="button" class="cs-ico-bt" data-s="abrir-direto" data-id="${esc(p.uid)}" aria-label="Mandar mensagem para ${esc(p.nome)}">${K.chat}</button><button type="button" class="btn sm ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(p.uid)}">${seg ? "Seguindo" : "Seguir"}</button>` : `<button type="button" class="btn sm primary" data-s="${acao}" data-id="${esc(p.uid)}">Adicionar</button>`}</div>`;
   }
   function atualizarResultados() { const el = $("#cs-res"); if (el) { const t = topo(); el.innerHTML = htmlResultados(t && t.v === "novo-grupo" ? "g-add" : t && t.v === "add-membro" ? "m-add" : "ver-perfil"); } }
   function vBuscar() {
     if (!SO.novos) { SO.novos = []; fb.getDocs(fb.query(C("users"), fb.orderBy("criadoEm", "desc"), fb.limit(15))).then(s => { SO.novos = s.docs.map(d => pub(d.id, d.data())); SO.novos.forEach(p => SO.perfis[p.uid] = p); atualizarResultados(); }).catch(() => { }); }
-    return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Contatos</b></header>
+    const tt = topo();
+    return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>${tt && tt.titulo ? esc(tt.titulo) : "Contatos"}</b></header>
       <div class="cs-pag stack"><label class="cs-busca grande">${K.busca}<input id="cs-p-busca" placeholder="Nome ou @usuário" autocomplete="off" autocapitalize="none" value="${esc(SO.busca)}" aria-label="Buscar pessoas"></label>
       <div id="cs-res">${htmlResultados("ver-perfil")}</div></div>`;
   }
@@ -1304,12 +1319,41 @@
         ${(() => { const r = numerosRede(uid, p, n); return `<div class="cs-nums"><div><b>${n.posts}</b><span>publicações</span></div><div><b>${r.seguidores}</b><span>seguidores</span></div><div><b>${r.seguindo}</b><span>seguindo</span></div></div>`; })()}
         ${meu ? `<div class="row cs-perfil-bt"><button class="btn" data-s="editar-perfil">${K.pen} Editar perfil</button><button class="btn" data-s="config">${K.gear} Configurações</button></div>`
           : p.removido ? "" : `<div class="row cs-perfil-bt"><button class="btn ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(uid)}">${seg ? ((SO.segOculto || new Set()).has(uid) ? K.lock + " Em segredo" : K.check + " Seguindo") : K.addUser + " Seguir"}</button><button class="btn" data-s="abrir-direto" data-id="${esc(uid)}">${K.chat} Mensagem</button></div>`}
+      ${meu && aba ? perfilCanto() : ""}
       </section>
       ${EXT.perfilExtra ? EXT.perfilExtra(uid, meu) : ""}
       ${meu && aba ? avisoEmail() : ""}
       <h2 class="cs-sec">Publicações</h2>
       ${posts.length ? posts.map(x => htmlPost(x)).join("") : `<p class="muted small">${meu ? "Você ainda não publicou no mural." : "Nenhuma publicação ainda."}</p>`}
       </div>`;
+  }
+  /* cantinho do perfil: Professor (libera Provas), +18 (libera Conexões) e extras (Central do Artista) */
+  function perfilCanto() {
+    const ad = ehAdulto(), menor = !!(SO.eu && SO.eu.menor);
+    return `<div class="cs-canto">
+      ${EXT.perfilCanto.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
+      <button class="cs-canto-b ${ehProf() ? "on" : ""}" data-s="sou-prof">${K.escola}<span>${ehProf() ? "Professor(a)" : "Sou professor"}</span></button>
+      ${menor ? "" : `<button class="cs-canto-b ${ad ? "on" : ""}" data-s="adulto">${ad ? K.conexoes : K.shield}<span>${ad ? "Conexões" : "+18"}</span></button>`}</div>`;
+  }
+  function sheetProf() {
+    const pr = (SO.eu && SO.eu.prof) || {};
+    window.abrirSheet(`<div class="sheet-h"><h2>Professor(a)</h2></div>
+      <form class="stack" id="cs-f-prof" novalidate>
+        <label class="f" for="cs-inep">Código INEP da escola<input class="in" id="cs-inep" inputmode="numeric" maxlength="8" autocomplete="off" value="${esc(pr.inep || "")}" placeholder="8 números"></label>
+        <label class="f" for="cs-pescola">Escola<input class="in" id="cs-pescola" maxlength="100" value="${esc(pr.escola || (SO.eu && SO.eu.escola) || "")}"></label>
+        <button class="btn primary cs-grande">Liberar Provas</button>
+        ${pr.inep ? `<button type="button" class="btn ghost" data-s="prof-tirar">Remover</button>` : ""}</form>`);
+  }
+  async function salvarProf() {
+    const inep = (($("#cs-inep") || {}).value || "").replace(/\D/g, ""), escola = (($("#cs-pescola") || {}).value || "").trim();
+    if (inep.length !== 8) return toast("O código INEP tem 8 números.");
+    if (escola.length < 3) return toast("Digite o nome da escola.");
+    if (ofensivo(escola)) return toast("Há palavras não permitidas.");
+    try {
+      await fb.updateDoc(D("users", eu()), { prof: { inep, escola: escola.slice(0, 100), em: Date.now() }, escola: escola.slice(0, 100) });
+      if (SO.eu) Object.assign(SO.eu, { prof: { inep, escola }, escola });
+      window.fecharSheet(); SO.tab = "provas"; lembrarTab(); pintar(); window.scrollTo(0, 0);
+    } catch (e) { toast(msgErro(e)); }
   }
   function sheetPessoa(uid) {
     const p = P(uid), bloq = SO.bloqueados.has(uid);
@@ -1479,12 +1523,14 @@
     <li>Não publique dados pessoais de estudantes (nomes completos, fotos, laudos, notas).</li>
     <li>Use <b>Denunciar</b> para mensagens ofensivas, assédio ou golpes, e <b>Bloquear</b> para parar de receber mensagens de alguém.</li>
     <li>Em “Quem pode me mandar mensagem”, escolha “Só quem eu sigo” para mais privacidade.</li></ul>`;
-  const TXT_TERMOS = `<p class="cs-just">O ChatMil é uma rede para professores, sem anúncios. Ao usar, você concorda em:</p>
-    <ul class="cs-ul"><li>Tratar os colegas com respeito. Palavrões, xingamentos e qualquer forma de preconceito (racismo, LGBTfobia, capacitismo, machismo, xenofobia, intolerância religiosa) são proibidos e bloqueados automaticamente.</li>
-    <li>Não publicar dados pessoais de estudantes nem conteúdo impróprio.</li>
-    <li>Contas que desrespeitarem as regras podem ser suspensas.</li></ul>
-    <p class="cs-just"><b>Privacidade.</b> Guardamos o seu nome, @usuário, foto, escola, disciplinas, bio, publicações e mensagens, só para o funcionamento do app. O seu e-mail não aparece para outras pessoas. Não vendemos dados. Você pode excluir a sua conta a qualquer momento em Configurações. Tratamento de dados conforme a LGPD (Lei 13.709/2018).</p>
-    <p class="cs-just">As questões cadastradas no criador de provas seguem o termo de compartilhamento próprio.</p>`;
+  const TXT_TERMOS = `<p class="cs-just">O ChatMil é uma rede social brasileira, sem anúncios, para todas as idades a partir de 13 anos. Ao usar, você concorda em:</p>
+    <ul class="cs-ul"><li>Tratar as pessoas com respeito. Xingamentos e qualquer forma de preconceito (racismo, LGBTfobia, capacitismo, machismo, xenofobia, intolerância religiosa) são proibidos e bloqueados automaticamente.</li>
+    <li>Não publicar dados pessoais de outras pessoas, conteúdo impróprio, golpes, apostas ou links falsos (são bloqueados antes do envio).</li>
+    <li>Publicar no XFlesh, no Mural e na Central do Artista só o que é seu ou o que você tem direito de usar.</li>
+    <li>Contas com várias denúncias são suspensas automaticamente e podem pedir revisão ao Suporte.</li></ul>
+    <p class="cs-just"><b>Menores de 18 anos.</b> Contas de 13 a 17 anos ficam protegidas: só recebem mensagens de quem seguem e não acessam Conexões. Conexões exige confirmação de maioridade, feita no próprio celular.</p>
+    <p class="cs-just"><b>Privacidade.</b> Guardamos o seu nome, @usuário, foto, publicações e mensagens, só para o funcionamento do app. Do nascimento, guardamos apenas dia e mês (aniversário) e se a conta é de menor. Selfie e documento da verificação são conferidos no celular e não são enviados. Não vendemos dados. Você pode excluir a sua conta a qualquer momento em Configurações. Tratamento de dados conforme a LGPD (Lei 13.709/2018) e o ECA Digital.</p>
+    <p class="cs-just"><b>Professores.</b> Recursos de provas e aulas ficam disponíveis para quem informa o código INEP da escola; as questões seguem o termo de compartilhamento próprio.</p>`;
   function sheetExcluir() {
     window.abrirSheet(`<div class="sheet-h"><h2>Excluir conta</h2></div>
       <p class="cs-just">Isso apaga o seu perfil, as suas publicações e tira você dos grupos. <b>Não dá para desfazer.</b> As mensagens que você já enviou em conversas continuam visíveis para os outros participantes.</p>
@@ -1555,16 +1601,15 @@
     else if (!SO.eu) { semNav = true; html = vPerfilInicial(); }
     else if (EXT.portao && (gate = EXT.portao())) { semNav = true; html = gate; }
     else if (t) { full = true; html = vTela(t); }
-    else html = EXT.tabViews[SO.tab] ? EXT.tabViews[SO.tab]() : SO.tab === "mural" ? vMural() : SO.tab === "provas" ? vProvas() : SO.tab === "perfil" ? vPerfil(eu(), true) : vConversas();
+    else { abaValida(); html = EXT.tabViews[SO.tab] ? EXT.tabViews[SO.tab]() : SO.tab === "mural" ? vMural() : SO.tab === "provas" ? vProvas() : SO.tab === "perfil" ? vPerfil(eu(), true) : SO.tab === "conversas" ? vConversas() : vMural(); }
     const b = document.body;
     b.classList.add("cs-on");
     b.classList.toggle("cs-sem-nav", semNav || full);
     b.classList.toggle("cs-chatbg", !!(full && t && t.v === "chat"));
     b.classList.toggle("cs-com-compor", !!(full && t && (t.v === "chat" || t.v === "post" || t.v === "notas")));
     const nl = SO.chats.filter(naoLidas).length;
-    const tabs = [["conversas", "Conversas", K.chat, nl], ["mural", "Mural", K.mural, 0], ["provas", "Provas", K.prova, 0], ["perfil", "Perfil", K.user, 0]];
-    EXT.tabs.forEach(x => tabs.splice(x.pos, 0, [x.k, x.n, x.i, 0]));
-    b.classList.toggle("cs-5abas", tabs.length > 4);
+    const tabs = abas(nl);
+    b.classList.toggle("cs-5abas", tabs.length > 4); b.classList.toggle("cs-6abas", tabs.length > 5); b.style.setProperty("--nabas", tabs.length);
     $("#nav").innerHTML = semNav || full ? "" : tabs.map(([k, n, i, c]) => `<button data-st="${k}" ${SO.tab === k ? 'aria-current="page"' : ""}><span class="ico">${i}${c ? `<i class="cs-badge">${c > 99 ? "99+" : c}</i>` : ""}</span>${n}</button>`).join("");
     $("#who").innerHTML = "";
     /* telas de entrar/criar conta: o que já foi digitado não se perde se a tela for redesenhada */
@@ -1580,6 +1625,22 @@
     EXT.depois.forEach(f => { try { f(t); } catch (e) { console.warn(e); } });
     try { document.title = nl ? `(${nl}) ChatMil` : "ChatMil"; } catch (e) { }
     return true;
+  }
+  /* abas: XFlesh · Mural · Conversas · Perfil; Provas (professor) e Conexões (+18 verificado) aparecem quando liberadas */
+  const ehProf = () => !!(SO.eu && SO.eu.prof && SO.eu.prof.inep);
+  const ehAdulto = () => !!(window.CS_IDADE && window.CS_IDADE.liberado());
+  const adultoIndefinido = () => !!(window.CS_IDADE && window.CS_IDADE.estado().doc === undefined);
+  function abas(nl) {
+    const l = [["xflesh", "XFlesh", K.xflesh, 0], ["mural", "Mural", K.mural, 0], ["conversas", "Conversas", K.chat, nl || 0]];
+    if (ehProf()) l.push(["provas", "Provas", K.prova, 0]);
+    if (ehAdulto()) l.push(["conexoes", "Conexões", K.conexoes, 0]);
+    l.push(["perfil", "Perfil", K.user, 0]);
+    EXT.tabs.filter(x => !x.se || x.se()).forEach(x => l.splice(Math.min(x.pos, l.length - 1), 0, [x.k, x.n, x.i, 0]));
+    return l;
+  }
+  function abaValida() {
+    if (SO.tab === "conexoes" && adultoIndefinido()) return;
+    if (!abas().some(x => x[0] === SO.tab)) { SO.tab = "xflesh"; lembrarTab(); }
   }
   function autosize(ta) { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight + 2, 140) + "px"; }
   function limparPilha() { const n = SO.pilha.length; SO.pilha = []; if (n) { try { history.go(-n); } catch (e) { } } }
@@ -1624,6 +1685,14 @@
       case "voltar": voltar(); break;
       case "novo": sheetNovo(); break;
       case "buscar-pessoas": window.fecharSheet(); SO.busca = ""; SO.resultados = null; abrirTela({ v: "buscar" }); break;
+      case "amigos": window.fecharSheet(); SO.busca = ""; SO.resultados = null; abrirTela({ v: "buscar", titulo: "Amigos" }); break;
+      case "sou-prof": sheetProf(); break;
+      case "prof-tirar": try { await fb.updateDoc(D("users", eu()), { prof: null }); if (SO.eu) SO.eu.prof = null; window.fecharSheet(); pintar(); } catch (e) { toast(msgErro(e)); } break;
+      case "adulto":
+        if (SO.eu && SO.eu.menor) { toast("Disponível a partir dos 18 anos."); break; }
+        if (ehAdulto()) { SO.tab = "conexoes"; lembrarTab(); pintar(); window.scrollTo(0, 0); break; }
+        if (window.CS_IDADE && window.CS_IDADE.verificar) window.CS_IDADE.verificar(); else toast("Tente de novo em instantes.");
+        break;
       case "novo-grupo": window.fecharSheet(); SO.ng = null; SO.busca = ""; SO.resultados = null; SO.erro = ""; abrirTela({ v: "novo-grupo" }); break;
       case "entrar-codigo": sheetEntrarCodigo(); break;
       case "entrar-grupo": entrarGrupo(id, v); break;
@@ -1824,6 +1893,7 @@
       case "cs-f-criar": criarConta(); break;
       case "cs-f-entrar": entrar(); break;
       case "cs-f-perfil": concluirPerfil(); break;
+      case "cs-f-prof": salvarProf(); break;
       case "cs-f-editar": salvarEdicao(); break;
       case "cs-f-grupo": criarGrupo(); break;
       case "cs-f-egrupo": salvarGrupo(); break;
@@ -1880,7 +1950,7 @@
     if (MI.el) { fecharFotos(); return true; }
     if ($("#layer") && $("#layer").innerHTML) { window.fecharSheet(); return true; }
     if (SO.pilha.length) { voltar(); return true; }
-    if (SO.user && SO.eu && SO.tab !== "conversas") { SO.tab = "conversas"; lembrarTab(); pintar(); return true; }
+    if (SO.user && SO.eu && SO.tab !== "xflesh") { SO.tab = "xflesh"; lembrarTab(); pintar(); return true; }
     if (!SO.user && SO.tela !== "boas-vindas") { SO.tela = "boas-vindas"; pintar(); return true; }
     return false;
   };
@@ -1900,6 +1970,11 @@ body.cs-chatbg{background-image:radial-gradient(color-mix(in srgb,var(--primary)
 .cs-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
 .cs-cab h1{font-size:1.55rem}
 .cs-marca{display:flex;align-items:center;gap:10px}
+@media (max-width:899px){body.cs-on #nav{grid-template-columns:repeat(var(--nabas,4),1fr);max-width:680px}}
+body.cs-6abas .nav button{font-size:.62rem;padding-inline:0;letter-spacing:-.01em}body.cs-6abas .nav .ico{padding:3px 8px}
+.cs-canto{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:12px}
+.cs-canto-b{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:5px 11px;font:inherit;font-size:.76rem;font-weight:700;cursor:pointer}
+.cs-canto-b svg{width:15px;height:15px}.cs-canto-b.on{color:var(--primary);border-color:color-mix(in srgb,var(--primary) 40%,var(--line))}
 .cs-ico-bt{width:46px;height:46px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--ink);flex:none;padding:0}
 .cs-ico-bt:hover{background:var(--surface-2)}
 .cs-ico-bt svg{width:24px;height:24px}
@@ -2193,5 +2268,5 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   document.head.appendChild(css);
 
   window.SOCIAL = { render: renderSocial, ext: EXT,
-    _: { SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk, itemPessoa, seguir, pub, reabrirMsgs } };
+    _: { SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk, itemPessoa, seguir, pub, reabrirMsgs, ehProf, ehAdulto, lembrarTab, idadeDe } };
 })();
