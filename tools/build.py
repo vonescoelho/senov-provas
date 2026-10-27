@@ -42,7 +42,7 @@ subprocess.run([os.path.join(os.path.abspath(NM), ".bin", "esbuild"), os.path.jo
                 "--format=iife", "--global-name=FB", "--target=es2019", "--legal-comments=none",
                 "--outfile=" + os.path.join(WWW, "vendor", "firebase.js")], check=True, cwd=RAIZ)
 # módulos da rede social (só na versão aplicativo; no claude.ai o app segue sem eles)
-MODULOS = ("firebase-config.js", "social-extras.js", "social.js", "social-cripto.js", "social-midia.js", "social-chamada.js", "social-flash.js", "social-mais.js", "social-perto.js", "social-idade.js", "social-banco.js", "social-musica.js", "social-app.js", "social-notas.js", "social-links.js")
+MODULOS = ("firebase-config.js", "social-extras.js", "social.js", "social-cripto.js", "social-midia.js", "social-chamada.js", "social-flash.js", "social-mais.js", "social-perto.js", "social-idade.js", "social-banco.js", "social-musica.js", "social-artista.js", "social-xflesh.js", "social-app.js", "social-notas.js", "social-links.js")
 for arq in MODULOS:
     shutil.copy(os.path.join(RAIZ, "app", arq), os.path.join(WWW, arq))
 # imagens das questões de exemplo (encarte do mercadinho, leitura do AEE)
