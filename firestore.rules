@@ -54,7 +54,13 @@ service cloud.firestore {
         && textoOk('bio', 300) && textoOk('escola', 100) && textoOk('foto', 150000)
         && (request.resource.data.get('inst', false) == false
             || (request.auth.token.email_verified == true && request.auth.token.email.matches('.*[.](gov|edu)[.]br$')))
-        && request.resource.data.get('privMsg', 'todos') in ['todos', 'seguindo'];
+        && request.resource.data.get('privMsg', 'todos') in ['todos', 'seguindo']
+        // selo "adulto" só com a maioridade confirmada (idade/{uid}.ok)
+        && (request.resource.data.get('adulto', false) == false
+            || (exists(/databases/$(database)/documents/idade/$(uid)) && get(/databases/$(database)/documents/idade/$(uid)).data.ok == true))
+        && (!('prof' in request.resource.data) || request.resource.data.prof == null
+            || (request.resource.data.prof is map && request.resource.data.prof.inep is string && request.resource.data.prof.inep.matches('^[0-9]{8}$')))
+        && (!('freq' in request.resource.data) || (request.resource.data.freq is map && request.resource.data.freq.size() <= 7));
       allow delete: if logado() && uid == eu();
 
       // quem eu sigo: só eu vejo (pode ter "seguir em segredo"); as regras usam exists() normalmente
@@ -305,6 +311,75 @@ service cloud.firestore {
       return request.resource.data.dono == eu() && request.resource.data.partes is int && request.resource.data.partes <= 20
         && textoOk('legenda', 200) && textoOk('thumb', 40000);
     }
+    // ===== XFlesh: vídeos curtos (mídia em partes de até 750 KB, como os Flashes, mas não vencem) =====
+    function musOk() {
+      return !('mus' in request.resource.data) || request.resource.data.mus == null || (request.resource.data.mus is map
+        && request.resource.data.mus.id is string && request.resource.data.mus.id.size() <= 60
+        && request.resource.data.mus.fonte in ['chatmil', 'openverse']
+        && request.resource.data.mus.titulo is string && request.resource.data.mus.titulo.size() <= 120
+        && request.resource.data.mus.artista is string && request.resource.data.mus.artista.size() <= 100
+        && (!('url' in request.resource.data.mus) || request.resource.data.mus.url == null || (request.resource.data.mus.url is string && request.resource.data.mus.url.matches('^https://.*') && request.resource.data.mus.url.size() <= 500))
+        && (!('capa' in request.resource.data.mus) || request.resource.data.mus.capa == null || (request.resource.data.mus.capa is string && request.resource.data.mus.capa.size() <= 600)));
+    }
+    function umAMais(campo, sub) {
+      return mudou().hasOnly([campo]) && request.resource.data[campo] == resource.data.get(campo, 0) + 1
+        && !exists(path('/databases/' + database + '/documents/' + sub + '/' + eu())) && existsAfter(path('/databases/' + database + '/documents/' + sub + '/' + eu()));
+    }
+    function umAMenos(campo, sub) {
+      return mudou().hasOnly([campo]) && request.resource.data[campo] == resource.data.get(campo, 0) - 1
+        && exists(path('/databases/' + database + '/documents/' + sub + '/' + eu())) && !existsAfter(path('/databases/' + database + '/documents/' + sub + '/' + eu()));
+    }
+    match /xflesh/{id} {
+      function f() { return get(/databases/$(database)/documents/xflesh/$(id)).data; }
+      allow read: if logado();
+      allow create: if logado() && flashOk() && request.resource.data.tipo in ['video', 'foto'] && textoOk('legenda', 300) && musOk()
+        && request.resource.data.nCurt == 0 && request.resource.data.nComent == 0 && request.resource.data.nComp == 0 && request.resource.data.tamanho is int && request.resource.data.tamanho <= 15000000;
+      allow update: if logado() && (
+        (resource.data.dono == eu() && mudou().hasOnly(['legenda']) && textoOk('legenda', 300))
+        || umAMais('nCurt', 'xflesh/' + id + '/curtidas') || umAMenos('nCurt', 'xflesh/' + id + '/curtidas')
+        || umAMais('nComp', 'xflesh/' + id + '/compart')
+        || (mudou().hasOnly(['nComent']) && (request.resource.data.nComent == resource.data.nComent + 1 || request.resource.data.nComent == resource.data.nComent - 1)));
+      allow delete: if logado() && resource.data.dono == eu();
+      match /partes/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
+      match /som/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
+      match /curtidas/{uid} { allow read: if logado(); allow create, delete: if logado() && uid == eu(); }
+      match /compart/{uid} { allow read: if logado(); allow create: if logado() && uid == eu(); }
+      match /coments/{cid} {
+        allow read: if logado();
+        allow create: if logado() && request.resource.data.autor == eu() && request.resource.data.texto is string && request.resource.data.texto.size() > 0 && request.resource.data.texto.size() <= 500 && linkOk();
+        allow delete: if logado() && (resource.data.autor == eu() || f().dono == eu());
+      }
+    }
+
+    // ===== Central do Artista: faixas autorais (mídia em partes) e contadores que dão alcance =====
+    match /musicas/{id} {
+      function m() { return get(/databases/$(database)/documents/musicas/$(id)).data; }
+      allow read: if logado();
+      allow create: if logado() && request.resource.data.dono == eu() && request.resource.data.autoral == true
+        && request.resource.data.titulo is string && request.resource.data.titulo.size() > 0 && request.resource.data.titulo.size() <= 100
+        && request.resource.data.artista is string && request.resource.data.artista.size() > 0 && request.resource.data.artista.size() <= 80
+        && textoOk('genero', 30) && textoOk('capa', 150000) && textoOk('letra', 8000)
+        && request.resource.data.partes is int && request.resource.data.partes <= 24
+        && request.resource.data.nUsos == 0 && request.resource.data.nCurt == 0 && request.resource.data.nComp == 0;
+      allow update: if logado() && (
+        (resource.data.dono == eu() && mudou().hasOnly(['titulo', 'genero', 'capa', 'letra', 'editadoEm'])
+          && request.resource.data.titulo is string && request.resource.data.titulo.size() > 0 && request.resource.data.titulo.size() <= 100
+          && textoOk('genero', 30) && textoOk('capa', 150000) && textoOk('letra', 8000))
+        || umAMais('nCurt', 'musicas/' + id + '/curtidas') || umAMenos('nCurt', 'musicas/' + id + '/curtidas')
+        || umAMais('nComp', 'musicas/' + id + '/compart')
+        // uso: +1 por XFlesh que usa a faixa (o XFlesh precisa existir e apontar para ela)
+        || (mudou().hasOnly(['nUsos', 'ultUso']) && request.resource.data.nUsos == resource.data.nUsos + 1
+            && request.resource.data.ultUso is string
+            && !exists(/databases/$(database)/documents/musicas/$(id)/usos/$(request.resource.data.ultUso))
+            && existsAfter(/databases/$(database)/documents/musicas/$(id)/usos/$(request.resource.data.ultUso))
+            && getAfter(/databases/$(database)/documents/xflesh/$(request.resource.data.ultUso)).data.mus.id == id));
+      allow delete: if logado() && resource.data.dono == eu();
+      match /partes/{pid} { allow read: if logado(); allow create: if logado() && m().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && m().dono == eu(); }
+      match /curtidas/{uid} { allow read: if logado(); allow create, delete: if logado() && uid == eu(); }
+      match /compart/{uid} { allow read: if logado(); allow create: if logado() && uid == eu(); }
+      match /usos/{xid} { allow read: if logado(); allow create: if logado() && getAfter(/databases/$(database)/documents/xflesh/$(xid)).data.dono == eu(); }
+    }
+
     match /flashes/{id} {
       function f() { return get(/databases/$(database)/documents/flashes/$(id)).data; }
       allow read: if logado();
