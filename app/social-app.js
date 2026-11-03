@@ -71,7 +71,7 @@
 
   /* ---------- Configurações › Aplicativo ---------- */
   X.configExtra.push(() => {
-    if (!NATIVO) return `<div class="card flat stack cs-at-card"><div class="cs-at-l">${I.app}<span><b>Aplicativo</b><small>Versão web: atualiza sozinha.</small></span></div>
+    if (!NATIVO) return `<div class="card flat stack cs-at-card"><div class="cs-at-l">${I.app}<span><b>Aplicativo</b></span></div>
       <button class="btn" data-s="at-recarregar">Recarregar o app</button></div>`;
     const st = AT.conferindo ? "Conferindo…" : temNova() ? `Versão ${esc("1.0." + AT.nova.versao)} disponível${AT.nova.tamanho ? " · " + mb(AT.nova.tamanho) : ""}` : AT.erro ? AT.erro : AT.conferido ? "Você está com a versão mais nova." : "";
     return `<div class="card flat stack cs-at-card"><div class="cs-at-l">${I.app}<span><b>Atualizar o aplicativo</b><small>Instalada: ${esc(AT.nome || "1.0." + AT.instalada)}</small></span>${temNova() ? `<span class="pill d1">Nova</span>` : ""}</div>
@@ -84,7 +84,7 @@
     if (!NTP) return;
     if (!temNova()) { conferir(true).then(() => { if (temNova()) sheetAtualizar(); else toast("Você já está com a versão mais nova."); }); return; }
     window.abrirSheet(`<div class="sheet-h"><h2>Atualizar o FlashPapo</h2></div>
-      <p class="small">Versão nova: <b>1.0.${AT.nova.versao}</b>${AT.nova.tamanho ? ` (${mb(AT.nova.tamanho)})` : ""}. Suas conversas e provas continuam no app.</p>
+      <p class="small">Versão nova: <b>1.0.${AT.nova.versao}</b>${AT.nova.tamanho ? ` (${mb(AT.nova.tamanho)})` : ""}.</p>
       <div id="at-corpo">${AT.baixando ? corpoBaixando() : `<button class="btn primary cs-grande" data-s="at-baixar">${I.seta} Baixar e instalar</button><button class="btn ghost" data-s="fechar">Depois</button>`}</div>`);
   }
   const corpoBaixando = () => `<div class="cs-at-prog" id="at-prog"><i style="width:${Math.round(AT.prog * 100)}%"></i></div><p class="small muted" id="at-prog-t">Baixando…</p>`;

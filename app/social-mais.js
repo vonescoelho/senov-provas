@@ -301,14 +301,14 @@
     window.abrirSheet(`<div class="sheet-h"><h2>${esc(it.titulo)}</h2></div><div class="cs-menu">
       ${V.admin ? `<button data-s="vit-editar" data-id="${esc(it.id)}">${KI.tag}<span><b>Editar produto</b></span></button>` : ""}
       <button data-s="copiar" data-v="${esc(it.link)}">${KI.copiar}<span><b>Copiar link</b></span></button>
-      ${(it.tags || []).concat(it.categoria ? [it.categoria] : []).map(t => `<button data-s="vit-esconder" data-v="${esc(t)}">${KI.ban}<span><b>Não mostrar “${esc((CATS.find(c => c[0] === t) || [, t])[1])}”</b><small>Esconde todos os produtos deste assunto</small></span></button>`).join("")}
-      ${V.admin ? "" : `<button data-s="denunciar" data-tipo="vitrine" data-uid="" data-id="${esc(it.id)}">${KI.ban}<span><b>Denunciar</b><small>Conteúdo que não combina com a escola</small></span></button>`}</div>`);
+      ${(it.tags || []).concat(it.categoria ? [it.categoria] : []).map(t => `<button data-s="vit-esconder" data-v="${esc(t)}">${KI.ban}<span><b>Não mostrar “${esc((CATS.find(c => c[0] === t) || [, t])[1])}”</b></span></button>`).join("")}
+      ${V.admin ? "" : `<button data-s="denunciar" data-tipo="vitrine" data-uid="" data-id="${esc(it.id)}">${KI.ban}<span><b>Denunciar</b></span></button>`}</div>`);
   };
   async function salvarPrefs(patch) { try { await fb.updateDoc(D("users", eu()), patch); } catch (e) { toast(msgErro(e)); } }
   X.acoes["vit-esconder"] = async el => { window.fecharSheet(); await salvarPrefs({ vitBloq: fb.arrayUnion(el.dataset.v) }); toast("Assunto escondido. Você pode desfazer no fim da Vitrine."); };
   X.acoes["vit-bloqueados"] = () => {
     const b = (SO.eu && SO.eu.vitBloq) || [];
-    window.abrirSheet(`<div class="sheet-h"><h2>Assuntos escondidos</h2></div><div class="cs-menu">${b.map(t => `<button data-s="vit-mostrar" data-v="${esc(t)}">${KI.tag}<span><b>${esc((CATS.find(c => c[0] === t) || [, t])[1])}</b><small>Toque para voltar a mostrar</small></span></button>`).join("")}</div>`);
+    window.abrirSheet(`<div class="sheet-h"><h2>Assuntos escondidos</h2></div><div class="cs-menu">${b.map(t => `<button data-s="vit-mostrar" data-v="${esc(t)}">${KI.tag}<span><b>${esc((CATS.find(c => c[0] === t) || [, t])[1])}</b></span></button>`).join("")}</div>`);
   };
   X.acoes["vit-mostrar"] = async el => { window.fecharSheet(); await salvarPrefs({ vitBloq: fb.arrayRemove(el.dataset.v) }); };
   document.addEventListener("input", e => { if (e.target.id === "vit-q") { V.q = e.target.value; clearTimeout(V.t); V.t = setTimeout(pintar, 250); } });
@@ -336,10 +336,10 @@
   X.acoes["vit-gmenu"] = el => {
     const it = (V.itens || []).find(x => x.id === el.dataset.id); if (!it) return;
     window.abrirSheet(`<div class="sheet-h"><h2>${esc(it.titulo)}</h2></div><div class="cs-menu">
-      <button data-s="vit-editar" data-id="${esc(it.id)}">${KI.tag}<span><b>Editar</b><small>Fotos, preço, descrição e link</small></span></button>
+      <button data-s="vit-editar" data-id="${esc(it.id)}">${KI.tag}<span><b>Editar</b></span></button>
       <button data-s="vit-pausar" data-id="${esc(it.id)}">${KI.ban}<span><b>${it.ativo === false ? "Voltar a mostrar" : "Pausar (esconder)"}</b><small>${it.ativo === false ? "O produto volta para a vitrine" : "Some da vitrine sem apagar"}</small></span></button>
       <button data-s="vit-destacar" data-id="${esc(it.id)}">${KI.tag}<span><b>${it.destaque ? "Tirar do topo" : "Destacar no topo"}</b></span></button>
-      <button data-s="vit-duplicar" data-id="${esc(it.id)}">${KI.copiar}<span><b>Duplicar</b><small>Cria uma cópia para editar</small></span></button>
+      <button data-s="vit-duplicar" data-id="${esc(it.id)}">${KI.copiar}<span><b>Duplicar</b></span></button>
       <button data-s="rc-abrir" data-v="${esc(it.link)}">${KI.link}<span><b>Testar o link</b></span></button>
       <button class="perigo" data-s="vit-remover" data-id="${esc(it.id)}">${KI.lixo}<span><b>Apagar produto</b></span></button></div>`);
   };
@@ -347,7 +347,7 @@
   X.acoes["vit-destacar"] = async el => { window.fecharSheet(); const it = (V.itens || []).find(x => x.id === el.dataset.id); if (!it) return; try { await fb.updateDoc(D("vitrine", it.id), { destaque: !it.destaque, atualizadoEm: TS() }); } catch (e) { toast(msgErro(e)); } };
   X.acoes["vit-remover"] = async el => {
     window.fecharSheet(); const it = (V.itens || []).find(x => x.id === el.dataset.id); if (!it) return;
-    if (!el.dataset.ok) { window.abrirSheet(`<div class="sheet-h"><h2>Apagar “${esc(it.titulo)}”?</h2></div><p class="cs-just">O produto e as fotos serão apagados.</p><div class="row"><button class="btn" data-s="fechar" style="flex:1">Cancelar</button><button class="btn cs-perigo-f" data-s="vit-remover" data-id="${esc(it.id)}" data-ok="1" style="flex:1">Apagar</button></div>`); return; }
+    if (!el.dataset.ok) { window.abrirSheet(`<div class="sheet-h"><h2>Apagar “${esc(it.titulo)}”?</h2></div><div class="row"><button class="btn" data-s="fechar" style="flex:1">Cancelar</button><button class="btn cs-perigo-f" data-s="vit-remover" data-id="${esc(it.id)}" data-ok="1" style="flex:1">Apagar</button></div>`); return; }
     try { await fb.deleteDoc(D("vitrine", it.id)); (it.fotos || []).forEach(f => { fb.deleteDoc(D("vitrineImgs", f.id + "m")).catch(() => { }); if (f.f) fb.deleteDoc(D("vitrineImgs", f.id + "f")).catch(() => { }); }); toast("Produto apagado."); } catch (e) { toast(msgErro(e)); }
   };
 

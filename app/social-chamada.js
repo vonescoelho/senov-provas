@@ -450,8 +450,8 @@
           ${perm("bateria", "Bateria livre", "Toque para permitir", st.bateria)}
           ${perm("sobrepor", "Sobre outros apps", "Toque para permitir", st.sobrepor)}
           <button data-s="chn-desligar"><span class="cs-lic">${I.desligar}</span><span><b>Desativar</b></span></button>`
-        : `<button data-s="chn-ativar"><span class="cs-lic">${I.sino}</span><span><b>Tocar com app fechado</b><small>Toque para ativar</small></span></button>`)
-        : `<div class="cs-linha"><span class="cs-lic">${I.sino}</span><span><b>Tocar com o app fechado</b><small>No app Android</small></span></div>`}
+        : `<button data-s="chn-ativar"><span class="cs-lic">${I.sino}</span><span><b>Tocar com app fechado</b></span></button>`)
+        : `<div class="cs-linha"><span class="cs-lic">${I.sino}</span><span><b>Tocar com o app fechado</b></span></div>`}
       <div class="cs-linha"><span class="cs-lic">${I.alerta}</span><span><b>Ligação Urgente</b></span></div>
       <div class="seg cs-ch-seg">${[["ninguem", "Ninguém"], ["seguindo", "Quem eu sigo"], ["escolhidos", "Escolher"]].map(([k, n]) => `<button data-s="chn-auto" data-v="${k}" aria-pressed="${c.modo === k}">${n}${k === "escolhidos" && c.modo === k ? ` (${(c.uids || []).length})` : ""}</button>`).join("")}</div>
     </div>`;

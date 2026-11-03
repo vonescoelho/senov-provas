@@ -347,8 +347,8 @@
       desenharMudo();
     },
     "xf-criar": () => window.abrirSheet(`<div class="sheet-h"><h2>Criar</h2></div><div class="cs-menu">
-      <button data-s="xf-criar-xf">${K.xflesh}<span><b>MyFlash</b><small>Vídeo ou foto no feed</small></span></button>
-      <button data-s="xf-criar-fl">${I.camera}<span><b>Flash</b><small>Some em 24 horas</small></span></button></div>`),
+      <button data-s="xf-criar-xf">${K.xflesh}<span><b>MyFlash</b></span></button>
+      <button data-s="xf-criar-fl">${I.camera}<span><b>Flash</b></span></button></div>`),
     "xf-criar-xf": () => { window.fecharSheet(); if (X.criarXFlesh) X.criarXFlesh(); },
     "xf-criar-fl": () => { window.fecharSheet(); if (X.criarFlash) X.criarFlash(); },
     "xf-curtir": el => curtir(el.dataset.id),

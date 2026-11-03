@@ -47,7 +47,7 @@
     if (f && !"anotacoes".includes(A.semAc ? A.semAc(f) : f)) return "";
     const l = NT.lista || [], pend = l.filter(n => !n.feito), alta = pend.filter(n => n.prioridade === 1).length;
     const ult = ordenar(l)[0];
-    const sub = !l.length ? "Guarde textos, fotos, links e arquivos" : alta ? `${alta} de prioridade alta · ${pend.length} pendente${pend.length === 1 ? "" : "s"}` : ult ? (ult.texto || ult.arq && ult.arq.nome || "Foto").slice(0, 60) : "";
+    const sub = !l.length ? "" : alta ? `${alta} de prioridade alta · ${pend.length} pendente${pend.length === 1 ? "" : "s"}` : ult ? (ult.texto || ult.arq && ult.arq.nome || "Foto").slice(0, 60) : "";
     /* entra na lista pela última anotação (ou última vez que abriu), como uma conversa comum */
     const em = Math.max(l.length ? Math.max(...l.map(n => A.ms(n.em) || 0)) : 0, +(lerNum("cs.notas.em." + (eu() || "")) || 0)) || 1;
     return { em, html: `<button class="cs-item" data-s="notas-abrir" role="listitem"><span class="cs-av cs-nt-av" style="width:52px;height:52px">${I.nota}</span>
@@ -191,7 +191,7 @@
     "notas-fixar": el => { const n = nota(el.dataset.id); if (n) { window.fecharSheet(); atualizar(n.id, { fixada: !n.fixada }); } },
     "notas-apagar": async el => {
       const n = nota(el.dataset.id); if (!n) return;
-      if (el.dataset.ok !== "1") { window.abrirSheet(`<div class="sheet-h"><h2>Apagar anotação?</h2></div><p class="small">Não dá para desfazer.</p><div class="row"><button class="btn" data-s="fechar" style="flex:1">Cancelar</button><button class="btn cs-perigo-f" data-s="notas-apagar" data-id="${esc(n.id)}" data-ok="1" style="flex:1">Apagar</button></div>`); return; }
+      if (el.dataset.ok !== "1") { window.abrirSheet(`<div class="sheet-h"><h2>Apagar anotação?</h2></div><div class="row"><button class="btn" data-s="fechar" style="flex:1">Cancelar</button><button class="btn cs-perigo-f" data-s="notas-apagar" data-id="${esc(n.id)}" data-ok="1" style="flex:1">Apagar</button></div>`); return; }
       window.fecharSheet();
       try { await fb.deleteDoc(D("users", eu(), "notas", n.id)); if (n.arq && X.midia) X.midia.apagarArquivo(n.arq.id, "notaArqs"); toast("Anotação apagada."); } catch (e) { toast(msgErro(e)); }
     },

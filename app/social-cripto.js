@@ -232,7 +232,7 @@
     X.depois.push(() => { if (A.SO.user && A.SO.eu && E.estado === "off") iniciar(); });
     X.avisos.push(() => {
       if (E.estado === "precisaPin") return `<div class="aviso cs-e2e-av">${cad}<span>Digite seu PIN para abrir as mensagens protegidas.</span><button class="btn sm primary" data-s="e2e-pin">PIN</button></div>`;
-      if (E.estado === "semPin") return `<div class="aviso cs-e2e-av">${cad}<span>Crie um PIN para não perder as conversas ao trocar de celular.</span><button class="btn sm primary" data-s="e2e-pin">Criar</button></div>`;
+      if (E.estado === "semPin") return `<div class="aviso cs-e2e-av">${cad}<span>Crie seu PIN.</span><button class="btn sm primary" data-s="e2e-pin">Criar</button></div>`;
       return "";
     });
     const campoPin = (id, ph) => `<input class="in cs-pin" id="${id}" type="password" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="${ph}" aria-label="${ph}">`;
@@ -242,14 +242,13 @@
           <button class="btn primary cs-grande">Abrir conversas</button></form>
           <button class="cs-link" data-s="e2e-esqueci">Esqueci o PIN</button>`);
       } else if (E.estado === "semPin") {
-        window.abrirSheet(`<div class="sheet-h"><h2>${cad} Criar PIN</h2></div><p class="small muted">Com ele você recupera as conversas em outro celular. Ninguém mais consegue abrir.</p>
+        window.abrirSheet(`<div class="sheet-h"><h2>${cad} Criar PIN</h2></div>
           <form class="stack" id="e2e-f-criar">${campoPin("e2e-p1", "PIN (6 a 12 números)")}${campoPin("e2e-p2", "Repita o PIN")}
           <button class="btn primary cs-grande">Criar PIN</button></form>`);
       } else sheetInfo();
     }
     function sheetInfo() {
       window.abrirSheet(`<div class="sheet-h"><h2>${cad} Criptografia</h2></div>
-        <p class="small">Suas conversas, fotos, áudios e arquivos são trancados no seu celular antes de sair. Só quem participa da conversa consegue abrir — nem o FlashPapo lê.</p>
         <div class="cs-menu card flat"><button data-s="e2e-trocar">${K.chave || cad}<span><b>Trocar PIN</b></span></button></div>
         <p class="small muted">Sua chave: ${esc((E.fp || "").replace(/(.{4})/g, "$1 ").trim())}</p>`);
     }

@@ -86,8 +86,8 @@
     xflesh: ic('<rect x="5" y="2.5" width="14" height="19" rx="4"/><path d="M10.2 8.8v6.4l5.2-3.2z" fill="currentColor"/>'),
     conexoes: ic('<path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.7 0 2.5M12 3.5c-.6.8-.6 1.7 0 2.5"/>'),
     nota: ic('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>')
-  };  /* ===== Marca FlashPapo: balão de conversa (Papo) com um raio vazado (Flash) — uma cor só, ou degradê ===== */
-  const LOGO_SIMB = cor => `<path fill-rule="evenodd" fill="COR" stroke="COR" stroke-width="4" stroke-linejoin="round" d="M15.36 67A40 40 0 1 1 39.65 85.64L10 93ZM58 14L29 54H46L41 81L71 39H54Z"/>`.split("COR").join(cor);
+  };  /* ===== Marca FlashPapo: um "P" que é balão de conversa (Papo), com o rabinho embaixo e um brilho vazado (Flash) ===== */
+  const LOGO_SIMB = cor => `<path fill-rule="evenodd" fill="COR" stroke="COR" stroke-width="4" stroke-linejoin="round" d="M21 22Q21 8 35 8H56A30 30 0 0 1 56 68H41V78L15 92L21 78ZM56 20Q59 35 74 38Q59 41 56 56Q53 41 38 38Q53 35 56 20Z"/>`.split("COR").join(cor);
   const LOGO_NOME = "M4.1 46.0V0.0H15.7V46.0ZM13.3 28.8V19.0H36.1V28.8ZM13.3 9.8V0.0H37.1V9.8Z M41.0 46.0V-1.3H52.3V46.0Z M70.7 46.6Q66.3 46.6 62.9 44.5Q59.5 42.4 57.5 38.6Q55.6 34.9 55.6 30.2Q55.6 25.4 57.5 21.6Q59.5 17.8 62.9 15.7Q66.3 13.6 70.7 13.6Q73.7 13.6 76.2 14.7Q78.7 15.8 80.3 17.7Q81.8 19.7 82.2 22.1V38.1Q81.8 40.6 80.3 42.5Q78.7 44.4 76.2 45.5Q73.7 46.6 70.7 46.6ZM73.1 36.6Q75.9 36.6 77.7 34.8Q79.4 33.0 79.4 30.1Q79.4 28.2 78.6 26.8Q77.8 25.4 76.4 24.5Q75.0 23.7 73.2 23.7Q71.4 23.7 70.0 24.5Q68.6 25.4 67.8 26.8Q67.0 28.3 67.0 30.1Q67.0 32.0 67.8 33.4Q68.5 34.9 70.0 35.7Q71.4 36.6 73.1 36.6ZM78.9 46.0V37.5L80.5 29.7L78.9 22.1V14.3H90.0V46.0Z M107.3 46.9Q104.4 46.9 101.6 46.1Q98.8 45.4 96.3 44.0Q93.9 42.7 92.2 40.9L98.4 34.6Q99.9 36.3 102.1 37.2Q104.3 38.1 106.7 38.1Q108.2 38.1 108.9 37.7Q109.7 37.3 109.7 36.6Q109.7 35.6 108.6 35.0Q107.5 34.5 105.8 34.0Q104.1 33.6 102.2 33.0Q100.3 32.4 98.6 31.3Q96.8 30.3 95.7 28.4Q94.7 26.5 94.7 23.6Q94.7 20.6 96.3 18.3Q98.0 16.0 101.0 14.6Q104.0 13.3 108.0 13.3Q112.1 13.3 115.8 14.7Q119.5 16.1 121.7 18.9L115.5 25.2Q113.9 23.4 112.1 22.7Q110.2 22.1 108.6 22.1Q107.1 22.1 106.5 22.5Q105.8 22.9 105.8 23.6Q105.8 24.5 106.9 25.0Q108.0 25.5 109.7 25.9Q111.4 26.3 113.3 27.0Q115.1 27.6 116.8 28.8Q118.5 29.9 119.6 31.8Q120.7 33.7 120.7 36.7Q120.7 41.4 117.1 44.2Q113.4 46.9 107.3 46.9Z M145.0 46.0V28.1Q145.0 25.9 143.7 24.6Q142.4 23.4 140.4 23.4Q139.0 23.4 138.0 23.9Q136.9 24.5 136.3 25.6Q135.7 26.6 135.7 28.1L131.3 26.0Q131.3 22.2 132.9 19.4Q134.5 16.7 137.3 15.1Q140.1 13.6 143.8 13.6Q147.6 13.6 150.4 15.1Q153.2 16.7 154.8 19.3Q156.3 22.0 156.3 25.5V46.0ZM124.4 46.0V-1.3H135.7V46.0Z M170.9 29.5V20.9H180.0Q181.6 20.9 183.0 20.2Q184.4 19.5 185.3 18.2Q186.1 16.8 186.1 14.8Q186.1 12.8 185.3 11.4Q184.4 10.0 183.0 9.3Q181.6 8.6 180.0 8.6H170.9V0.0H182.0Q186.4 0.0 189.9 1.8Q193.5 3.6 195.6 6.8Q197.7 10.1 197.7 14.8Q197.7 19.3 195.6 22.7Q193.5 26.0 189.9 27.8Q186.4 29.5 182.0 29.5ZM161.7 46.0V0.0H173.3V46.0Z M214.3 46.6Q209.8 46.6 206.4 44.5Q203.0 42.4 201.0 38.6Q199.1 34.9 199.1 30.2Q199.1 25.4 201.0 21.6Q203.0 17.8 206.4 15.7Q209.8 13.6 214.3 13.6Q217.2 13.6 219.7 14.7Q222.2 15.8 223.8 17.7Q225.4 19.7 225.7 22.1V38.1Q225.4 40.6 223.8 42.5Q222.2 44.4 219.7 45.5Q217.2 46.6 214.3 46.6ZM216.7 36.6Q219.4 36.6 221.2 34.8Q222.9 33.0 222.9 30.1Q222.9 28.2 222.1 26.8Q221.3 25.4 219.9 24.5Q218.5 23.7 216.7 23.7Q214.9 23.7 213.5 24.5Q212.1 25.4 211.3 26.8Q210.5 28.3 210.5 30.1Q210.5 32.0 211.3 33.4Q212.1 34.9 213.5 35.7Q214.9 36.6 216.7 36.6ZM222.4 46.0V37.5L224.1 29.7L222.4 22.1V14.3H233.5V46.0Z M257.6 46.6Q254.6 46.6 252.0 45.5Q249.4 44.4 247.7 42.5Q246.0 40.6 245.6 38.1V22.6Q246.0 20.1 247.8 18.1Q249.5 16.0 252.0 14.8Q254.6 13.6 257.6 13.6Q262.3 13.6 265.8 15.7Q269.3 17.8 271.2 21.6Q273.2 25.4 273.2 30.2Q273.2 34.9 271.2 38.6Q269.3 42.4 265.8 44.5Q262.3 46.6 257.6 46.6ZM238.8 59.4V14.3H250.1V22.3L248.2 29.9L249.8 37.6V59.4ZM255.5 36.6Q257.4 36.6 258.8 35.7Q260.2 34.9 261.0 33.4Q261.8 32.0 261.8 30.1Q261.8 28.2 261.0 26.8Q260.2 25.4 258.8 24.5Q257.4 23.7 255.6 23.7Q253.8 23.7 252.4 24.5Q251.0 25.3 250.2 26.8Q249.4 28.2 249.4 30.1Q249.4 32.0 250.2 33.4Q251.0 34.9 252.4 35.7Q253.8 36.6 255.5 36.6Z M292.1 46.7Q287.0 46.7 283.0 44.5Q279.0 42.4 276.7 38.6Q274.4 34.8 274.4 30.0Q274.4 25.3 276.7 21.6Q279.0 17.8 283.0 15.7Q287.0 13.5 292.1 13.5Q297.1 13.5 301.1 15.7Q305.1 17.8 307.5 21.6Q309.8 25.3 309.8 30.0Q309.8 34.8 307.5 38.6Q305.2 42.4 301.2 44.5Q297.2 46.7 292.1 46.7ZM292.1 36.7Q294.0 36.7 295.4 35.8Q296.8 35.0 297.5 33.5Q298.3 32.1 298.3 30.1Q298.3 28.2 297.5 26.7Q296.7 25.2 295.3 24.4Q294.0 23.6 292.1 23.6Q290.3 23.6 288.8 24.5Q287.4 25.3 286.6 26.8Q285.9 28.2 285.9 30.2Q285.9 32.1 286.6 33.5Q287.4 35.0 288.8 35.8Q290.3 36.7 292.1 36.7Z";
   const GRAD_LOGO = `<defs><linearGradient id="cmlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF3D7F"/><stop offset=".55" stop-color="#B026FF"/><stop offset="1" stop-color="#6D28FF"/></linearGradient></defs>`;
   /* simbolo(cor): só o símbolo; marca(): símbolo em degradê + nome na cor do texto */
@@ -600,7 +600,7 @@
         ${campoFoto(c.foto, c.nome)}
         <label class="f" for="cs-nome">Nome<input class="in" id="cs-nome" value="${esc(c.nome)}"></label>
         <label class="f" for="cs-nasc">Data de nascimento<input class="in" id="cs-nasc" type="date" max="${new Date().toISOString().slice(0, 10)}" value="${esc(c.nasc || "")}"></label>
-        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(c.usuario)}" placeholder="seu.nome"></span></label><small class="muted">É o nome que os outros veem em tudo no FlashPapo.</small>
+        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(c.usuario)}" placeholder="seu.nome"></span></label>
         <span id="cs-usu-ok" class="cs-ok" aria-live="polite"></span>
         ${sug.length ? `<div class="chips cs-sug">${sug.map(s => `<button type="button" class="chip" data-s="sug" data-v="${s}">@${s}</button>`).join("")}</div>` : ""}
         ${erroHtml()}
@@ -632,7 +632,7 @@
     const verArq = !!SO.verArq && !f;
     const lista = f ? todas : verArq ? arquivadas : todas.filter(c => !cv.arq.includes(c.id));
     const assist = !verArq && ehProf() && (!f || "assistente de provas".includes(f));
-    return `<div class="cs-cab"><div class="cs-marca"><h1>${logoMarca()}</h1></div><div class="row" style="gap:6px">
+    return `<div class="cs-cab"><div class="cs-marca"><h1>${logoNome()}</h1></div><div class="row" style="gap:6px">
         <button class="cs-ico-bt" data-s="novo" aria-label="Contatos e grupos">${K.maisV}</button></div></div>
       ${avisoEmail()}${EXT.avisos.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       <label class="cs-busca">${K.busca}<input id="cs-filtro" placeholder="Buscar conversa ou pessoa" value="${esc(SO.filtroChats)}" aria-label="Buscar conversa ou pessoa"></label>
@@ -809,9 +809,9 @@
     const c = SO.chats.find(x => x.id === id); if (!c) return;
     const cv = cvPref(), t = tituloChat(c), fx = cv.fix.includes(id), aq = cv.arq.includes(id);
     window.abrirSheet(`<div class="sheet-h"><h2>${esc(t.nome)}</h2></div><div class="cs-menu">
-      <button data-s="cv-fixar" data-id="${esc(id)}">${K.fixa}<span><b>${fx ? "Tirar do Destaque" : "Destaque"}</b><small>${fx ? "Volta para a ordem normal" : "Fica sempre no topo da lista"}</small></span></button>
-      <button data-s="cv-arquivar" data-id="${esc(id)}">${K.arq}<span><b>${aq ? "Desarquivar" : "Arquivar"}</b><small>${aq ? "Volta para a lista de conversas" : "Sai da lista; fica em Arquivadas"}</small></span></button>
-      <button class="perigo" data-s="cv-excluir" data-id="${esc(id)}">${K.lixo}<span><b>Excluir conversa</b><small>Apaga as mensagens só para você</small></span></button></div>`);
+      <button data-s="cv-fixar" data-id="${esc(id)}">${K.fixa}<span><b>${fx ? "Tirar do Destaque" : "Destaque"}</b></span></button>
+      <button data-s="cv-arquivar" data-id="${esc(id)}">${K.arq}<span><b>${aq ? "Desarquivar" : "Arquivar"}</b></span></button>
+      <button class="perigo" data-s="cv-excluir" data-id="${esc(id)}">${K.lixo}<span><b>Excluir conversa</b></span></button></div>`);
   }
   function ocultar(chatId, msgId) { const s = ocultasDe(); s.add(chatId + "/" + msgId); try { localStorage.setItem(SO.ocultas.k, JSON.stringify([...s].slice(-3000))); } catch (e) { } }
   function sheetMsg(chatId, msgId) {
@@ -822,8 +822,8 @@
     window.abrirSheet(`<div class="sheet-h"><h2>Mensagem</h2></div><div class="cs-menu">
       ${m.texto && !m.apagada ? `<button data-s="copiar" data-v="${esc(m.texto)}">${K.copiar}<span><b>Copiar texto</b></span></button>` : ""}
       ${paraTodos ? `<button data-s="apagar-msg" data-chat="${esc(chatId)}" data-id="${esc(msgId)}" class="perigo">${K.lixo}<span><b>Apagar para todos</b>${!meu ? "<small>Como administrador do grupo</small>" : ""}</span></button>` : ""}
-      <button data-s="apagar-mim" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.lixo}<span><b>Apagar para mim</b><small>Some só neste celular</small></span></button>
-      ${meu || m.apagada ? "" : `<button data-s="denunciar" data-tipo="mensagem" data-uid="${esc(m.autor)}" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.flag}<span><b>Denunciar</b><small>A equipe do FlashPapo vai analisar</small></span></button>
+      <button data-s="apagar-mim" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.lixo}<span><b>Apagar para mim</b></span></button>
+      ${meu || m.apagada ? "" : `<button data-s="denunciar" data-tipo="mensagem" data-uid="${esc(m.autor)}" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.flag}<span><b>Denunciar</b></span></button>
            <button data-s="ver-perfil" data-id="${esc(m.autor)}">${K.user}<span><b>Ver perfil de ${esc(P(m.autor).nome)}</b></span></button>`}
     </div>`);
   }
@@ -874,8 +874,8 @@
         ${admin ? `<div class="cs-menu card flat">
           <button data-s="editar-grupo" data-id="${esc(c.id)}">${K.pen}<span><b>Editar nome, foto e descrição</b></span>${K.dir}</button>
           <button data-s="add-membro" data-id="${esc(c.id)}">${K.addUser}<span><b>Adicionar participantes</b></span>${K.dir}</button>
-          <label class="cs-linha-sw" for="cs-soadm">${K.megafone}<span><b>Só administradores enviam</b><small>Bom para grupos de avisos</small></span><input type="checkbox" class="cs-sw" id="cs-soadm" data-id="${esc(c.id)}" ${c.soAdmins ? "checked" : ""}></label>
-          <button data-s="novo-codigo" data-id="${esc(c.id)}">${K.codigo}<span><b>Gerar novo código</b><small>O código antigo deixa de funcionar</small></span></button>
+          <label class="cs-linha-sw" for="cs-soadm">${K.megafone}<span><b>Só administradores enviam</b></span><input type="checkbox" class="cs-sw" id="cs-soadm" data-id="${esc(c.id)}" ${c.soAdmins ? "checked" : ""}></label>
+          <button data-s="novo-codigo" data-id="${esc(c.id)}">${K.codigo}<span><b>Gerar novo código</b></span></button>
         </div>` : ""}
         <h2 class="cs-sec">Participantes</h2>
         <div class="cs-lista">${mem.map(u => { const p = P(u); return `<button class="cs-item" data-s="membro" data-chat="${esc(c.id)}" data-id="${esc(u)}">${av(p, 44, u)}<span class="cs-item-t"><b>${esc(u === eu() ? "Você" : p.nome)}${seloHtml(p)}</b><span>${esc(p.escola || "")}</span></span>${(c.admins || []).includes(u) ? '<span class="pill">Admin</span>' : ""}</button>`; }).join("")}</div>
@@ -927,7 +927,7 @@
   /* Confirmação clara antes de ações que não dá para desfazer */
   function pedirConfirmacao(titulo, texto, botao, el) {
     const attrs = Object.entries(el.dataset).map(([k, v]) => `data-${k.replace(/[A-Z]/g, m => "-" + m.toLowerCase())}="${esc(v)}"`).join(" ");
-    window.abrirSheet(`<div class="sheet-h"><h2>${esc(titulo)}</h2></div><p class="cs-just">${texto}</p>
+    window.abrirSheet(`<div class="sheet-h"><h2>${esc(titulo)}</h2></div>
       <div class="row"><button class="btn" data-s="fechar" style="flex:1">Cancelar</button><button class="btn cs-perigo-f" ${attrs} data-ok="1" style="flex:1">${esc(botao)}</button></div>`);
   }
 
@@ -1414,9 +1414,9 @@
     const p = P(uid), bloq = SO.bloqueados.has(uid);
     window.abrirSheet(`<div class="sheet-h"><h2>${esc(p.nome)}</h2></div><div class="cs-menu">
       <button data-s="ver-perfil" data-id="${esc(uid)}">${K.user}<span><b>Ver perfil</b></span></button>
-      ${window.CS_E2E ? `<button data-s="e2e-codigo" data-id="${esc(uid)}">${K.lock}<span><b>Código de segurança</b><small>Conferir a criptografia</small></span></button>` : ""}
+      ${window.CS_E2E ? `<button data-s="e2e-codigo" data-id="${esc(uid)}">${K.lock}<span><b>Código de segurança</b></span></button>` : ""}
       ${bloq ? "" : SO.seguindo.has(uid) ? `<button data-s="seguir" data-id="${esc(uid)}">${K.addUser}<span><b>Deixar de seguir</b></span></button>`
-        : `<button data-s="seguir-oculto" data-id="${esc(uid)}">${K.lock}<span><b>Seguir em segredo</b><small>A pessoa não fica sabendo</small></span></button>`}
+        : `<button data-s="seguir-oculto" data-id="${esc(uid)}">${K.lock}<span><b>Seguir em segredo</b></span></button>`}
       <button data-s="${bloq ? "desbloquear" : "bloquear"}" data-id="${esc(uid)}" class="${bloq ? "" : "perigo"}">${K.ban}<span><b>${bloq ? "Desbloquear" : "Bloquear"}</b><small>${bloq ? "Voltar a ver mensagens e publicações" : "Esta pessoa não poderá mais mandar mensagens para você"}</small></span></button>
       <button data-s="denunciar" data-tipo="perfil" data-uid="${esc(uid)}" data-id="${esc(uid)}">${K.flag}<span><b>Denunciar perfil</b></span></button>
     </div>`);
@@ -1453,13 +1453,13 @@
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Editar perfil</b></header>
       <form class="cs-pag stack" id="cs-f-editar" novalidate>
         ${campoFoto(e.foto, e.nome)}
-        <label class="f" for="cs-nome"><span>Nome completo <small class="muted">(só você vê; vai no cabeçalho das provas)</small></span><input class="in" id="cs-nome" maxlength="60" value="${esc(e.nome)}"></label>
-        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(SO.cad.usuario)}"></span></label><small class="muted">É o nome que os outros veem em tudo no FlashPapo.</small>
+        <label class="f" for="cs-nome"><span>Nome completo</span><input class="in" id="cs-nome" maxlength="60" value="${esc(e.nome)}"></label>
+        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(SO.cad.usuario)}"></span></label>
         <span id="cs-usu-ok" class="cs-ok" aria-live="polite"></span>
         <label class="f" for="cs-escola">Escola<input class="in" id="cs-escola" maxlength="100" value="${esc(e.escola || "")}"></label>
         <div class="f"><span>Disciplinas</span>${chipsDisciplinas(e.disciplinas, "ed")}</div>
-        <label class="f" for="cs-bio"><span>Sobre você <small class="muted">(até 300 caracteres)</small></span><textarea class="in" id="cs-bio" maxlength="300" rows="3" placeholder="Ex.: Professora de Português há 12 anos, apaixonada por leitura.">${esc(e.bio || "")}</textarea></label>
-        ${ehAdulto() && !(SO.eu && SO.eu.menor) ? `<div class="f"><span>Relacionamento <small class="muted">(só aparece em Conexões quem está solteiro)</small></span>
+        <label class="f" for="cs-bio"><span>Sobre você</span><textarea class="in" id="cs-bio" maxlength="300" rows="3" placeholder="Ex.: Professora de Português há 12 anos, apaixonada por leitura.">${esc(e.bio || "")}</textarea></label>
+        ${ehAdulto() && !(SO.eu && SO.eu.menor) ? `<div class="f"><span>Relacionamento</span>
           <div class="cs-seg" role="group" aria-label="Relacionamento">${[["solteiro", "Solteiro(a)"], ["relacionamento", "Num relacionamento"]].map(([v, t]) => `<button type="button" data-s="ed-relac" data-v="${v}" aria-pressed="${(SO.eu && SO.eu.relac) === v}">${t}</button>`).join("")}</div>
           <button type="button" class="cs-link" data-s="pt-ajustes">Interesses e localização das Conexões</button></div>` : ""}
         ${erroHtml()}
@@ -1776,15 +1776,14 @@
       case "cv-sair-arq": SO.verArq = false; pintar(); break;
       case "cv-fixar": { const cv = cvPref(); window.fecharSheet();
         if (cv.fix.includes(id)) { cv.fix = cv.fix.filter(x => x !== id); toast("Saiu do Destaque."); }
-        else { if (cv.fix.length >= 5) { toast("Até 5 conversas em Destaque. Tire uma antes."); break; } cv.fix = [...cv.fix, id]; cv.arq = cv.arq.filter(x => x !== id); toast("Em Destaque: fica sempre no topo."); }
+        else { if (cv.fix.length >= 5) { toast("Até 5 conversas em Destaque. Tire uma antes."); break; } cv.fix = [...cv.fix, id]; cv.arq = cv.arq.filter(x => x !== id); toast("Em destaque."); }
         pintar(); cvSalvar(); break; }
       case "cv-arquivar": { const cv = cvPref(); window.fecharSheet();
         if (cv.arq.includes(id)) { cv.arq = cv.arq.filter(x => x !== id); toast("Conversa desarquivada."); }
         else { cv.arq = [...cv.arq, id]; cv.fix = cv.fix.filter(x => x !== id); toast("Conversa arquivada."); }
         pintar(); cvSalvar(); break; }
       case "cv-excluir": { const c = SO.chats.find(x => x.id === id); if (!c) break;
-        window.abrirSheet(`<div class="sheet-h"><h2>Excluir conversa?</h2></div><p class="small">As mensagens com <b>${esc(tituloChat(c).nome)}</b> somem só para você. A outra pessoa continua vendo tudo. Se chegar mensagem nova, a conversa volta só com as novas.</p>
-          <div class="cs-menu"><button class="perigo" data-s="cv-excluir-ok" data-id="${esc(id)}">${K.lixo}<span><b>Excluir</b></span></button><button data-s="fechar-sheet">${K.x}<span><b>Cancelar</b></span></button></div>`); break; }
+        window.abrirSheet(`<div class="sheet-h"><h2>Excluir conversa?</h2></div><div class="row"><button class="btn" data-s="fechar" style="flex:1">Cancelar</button><button class="btn cs-perigo-f" data-s="cv-excluir-ok" data-id="${esc(id)}" style="flex:1">Excluir</button></div>`); break; }
       case "cv-excluir-ok": { const cv = cvPref(); const c = SO.chats.find(x => x.id === id);
         cv.del = { ...cv.del, [id]: c ? ms(c.atualizadoEm) : Date.now() }; /* hora do servidor: não esconde mensagem nova se o relógio do celular estiver adiantado */ cv.fix = cv.fix.filter(x => x !== id); cv.arq = cv.arq.filter(x => x !== id);
         window.fecharSheet(); if (topo() && topo().id === id) voltar(); pintar(); toast("Conversa excluída."); cvSalvar(); break; }
@@ -1801,7 +1800,7 @@
         try { if (navigator.share) { await navigator.share({ title: "FlashPapo", text: t }); break; } } catch (e) { break; }
         copiar(t); toast("Copiado."); break;
       }
-      case "ed-relac": try { if (!["solteiro", "relacionamento"].includes(v)) break; await fb.updateDoc(D("users", eu()), { relac: v }); if (SO.eu) SO.eu.relac = v; if (SO.ed) SO.ed.relac = v; toast(v === "solteiro" ? "Conexões liberadas." : "Conexões ocultas: você não aparece mais lá."); pintar(); } catch (e) { toast(msgErro(e)); } break;
+      case "ed-relac": try { if (!["solteiro", "relacionamento"].includes(v)) break; await fb.updateDoc(D("users", eu()), { relac: v }); if (SO.eu) SO.eu.relac = v; if (SO.ed) SO.ed.relac = v; toast("Salvo."); pintar(); } catch (e) { toast(msgErro(e)); } break;
       case "prof-tirar": try { await fb.updateDoc(D("users", eu()), { prof: null }); if (SO.eu) SO.eu.prof = null; window.fecharSheet(); pintar(); } catch (e) { toast(msgErro(e)); } break;
       case "adulto":
         if (SO.eu && SO.eu.menor) { toast("Disponível a partir dos 18 anos."); break; }

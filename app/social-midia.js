@@ -561,10 +561,10 @@
     if (g === "video") return comBlob(a, b => verVideo(a, b));
     if (g === "pdf") return comBlob(a, b => verPdf(a, b));
     window.abrirSheet(`<div class="sheet-h"><h2>${esc(a.nome)}</h2></div><p class="small muted">${ROTULO[g]} · ${tamanho(a.tamanho || 0)}</p><div class="cs-menu">
-      ${g === "docx" ? `<button data-s="md-ler" data-v="${esc(a.id)}">${I.tela}<span><b>Ler aqui ou apresentar</b><small>Tela cheia, letra grande, TV e projetor</small></span></button>` : ""}
+      ${g === "docx" ? `<button data-s="md-ler" data-v="${esc(a.id)}">${I.tela}<span><b>Ler aqui ou apresentar</b></span></button>` : ""}
       <button data-s="md-abrircom" data-v="${esc(a.id)}">${I.abrir}<span><b>Abrir com outro aplicativo</b><small>${g === "apk" ? "Salve e instale pelo app Arquivos do celular" : g === "zip" ? "Gerenciador de arquivos, WinZip, RAR…" : "Word, Excel, leitor de arquivos…"}</small></span></button>
-      <button data-s="md-partilhar" data-v="${esc(a.id)}">${I.partilhar}<span><b>Compartilhar</b><small>WhatsApp, e-mail, Drive…</small></span></button>
-      <button data-s="md-salvar" data-v="${esc(a.id)}">${I.baixar}<span><b>Salvar no aparelho</b><small>Pasta Downloads › FlashPapo</small></span></button></div>
+      <button data-s="md-partilhar" data-v="${esc(a.id)}">${I.partilhar}<span><b>Compartilhar</b></span></button>
+      <button data-s="md-salvar" data-v="${esc(a.id)}">${I.baixar}<span><b>Salvar no aparelho</b></span></button></div>
       ${g === "apk" ? `<p class="small muted">Só instale aplicativos de quem você confia.</p>` : ""}`);
   }
   const acaoArq = fn => el => { const a = ACH[el.dataset.v] || VIS.a; if (!a) return; window.fecharSheet(); comBlob(a, b => fn(b, a.nome, a.tipo)); };
@@ -742,7 +742,7 @@
       <div class="stack" id="imp-f">
         <div class="f"><span>Páginas <small class="muted">(o documento tem ${PV.total})</small></span>${seg("pags", [["todas", "Todas"], ["impares", "Ímpares"], ["pares", "Pares"], ["faixa", "Escolher"]])}
           <input class="in" id="imp-faixa" placeholder="Ex.: 1-3, 5, 8" value="${esc(IMP.faixa)}" ${IMP.pags === "faixa" ? "" : "hidden"} inputmode="numeric" aria-label="Páginas escolhidas"></div>
-        <div class="f"><span>Frente e verso <small class="muted">(manual, em qualquer impressora)</small></span>${seg("lados", [["um", "Só frente"], ["frentes", "1º frentes"], ["versos", "2º versos"]])}
+        <div class="f"><span>Frente e verso</span>${seg("lados", [["um", "Só frente"], ["frentes", "1º frentes"], ["versos", "2º versos"]])}
           <label class="cs-aceite" ${IMP.lados === "versos" ? "" : "hidden"} id="imp-inv-l"><input type="checkbox" id="imp-inv" ${IMP.inverter ? "checked" : ""}><span>Ordem invertida (a maioria das impressoras precisa)</span></label></div>
         <div class="f"><span>Páginas por folha</span>${seg("porFolha", [[1, "1 por folha"], [2, "2 por folha (economiza papel)"]])}</div>
         <div class="f"><span>Qualidade</span>${seg("qual", [["normal", "Normal"], ["economia", "Econômica"], ["pb", "Preto e branco"], ["alta", "Alta"]])}
@@ -1251,8 +1251,8 @@
   /* ================= Configurações: dados e armazenamento ================= */
   X.configExtra = X.configExtra || [];
   X.configExtra.push(() => `<h2 class="cs-sec">Armazenamento</h2><div class="cs-menu card flat">
-    <button data-s="md-limpar"><span class="cs-lic">${I.lixo}</span><span><b>Limpar arquivos temporários</b><small>Libera espaço no aparelho. As conversas não são apagadas.</small></span></button>
-    ${lerLS("cs.asr.ok", false) ? `<button data-s="md-limpar-asr"><span class="cs-lic">${I.texto}</span><span><b>Apagar o reconhecimento de voz</b><small>Libera cerca de 80 MB. Baixa de novo se você transcrever outro áudio.</small></span></button>` : ""}</div>`);
+    <button data-s="md-limpar"><span class="cs-lic">${I.lixo}</span><span><b>Limpar arquivos temporários</b></span></button>
+    ${lerLS("cs.asr.ok", false) ? `<button data-s="md-limpar-asr"><span class="cs-lic">${I.texto}</span><span><b>Apagar o reconhecimento de voz</b></span></button>` : ""}</div>`);
   X.acoes["md-limpar"] = () => { CACHE.clear(); URLS.forEach(u => URL.revokeObjectURL(u)); URLS.clear(); cacheBytes = 0; limparTemporarios(true); };
   X.acoes["md-limpar-asr"] = async () => {
     try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.filter(k => /transformers/i.test(k)).map(k => caches.delete(k))); } } catch (e) { }

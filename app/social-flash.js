@@ -125,7 +125,7 @@
     if (!FL.meus.length) return abrirCriador("flash");
     window.abrirSheet(`<div class="sheet-h"><h2>Seu Flash</h2></div><div class="cs-menu">
       <button data-s="fl-ver" data-id="${esc(eu())}">${I.olho}<span><b>Ver meus Flashes</b><small>${FL.meus.length} ativo${FL.meus.length > 1 ? "s" : ""} · somem 24 h depois</small></span></button>
-      <button data-s="fl-novo">${I.camera}<span><b>Novo Flash</b><small>Foto ou vídeo de até 30 segundos</small></span></button>
+      <button data-s="fl-novo">${I.camera}<span><b>Novo Flash</b></span></button>
       ${FL.meus.map((f, i) => `<button data-s="fl-apagar-um" data-v="${i}">${f.thumb ? `<img class="cs-flm-t" src="${f.thumb}" alt="">` : I.flash}<span><b>Apagar Flash ${i + 1}</b><small>${haQuanto(f.criado || Date.now())}${f.legenda ? " · " + esc(f.legenda.slice(0, 40)) : ""}</small></span><i class="cs-flm-lixo">${I.lixo}</i></button>`).join("")}</div>`);
   };
   X.acoes["fl-apagar-um"] = el => {
@@ -171,8 +171,8 @@
     const l = FL.dest.get(eu()) || [];
     if (l.length >= MAXDEST) return toast(`Você já tem ${MAXDEST} destaques. Remova um para adicionar outro.`);
     if (FL.meus.length) return window.abrirSheet(`<div class="sheet-h"><h2>Novo destaque</h2></div><div class="cs-menu">
-      <button data-s="dest-criar">${I.camera}<span><b>Foto ou vídeo novo</b><small>Câmera ou galeria</small></span></button>
-      <button data-s="fl-ver" data-id="${esc(eu())}">${I.flash}<span><b>Destacar um dos meus Flashes</b><small>Abra o Flash e toque em “Destacar”</small></span></button></div>`);
+      <button data-s="dest-criar">${I.camera}<span><b>Foto ou vídeo novo</b></span></button>
+      <button data-s="fl-ver" data-id="${esc(eu())}">${I.flash}<span><b>Destacar um dos meus Flashes</b></span></button></div>`);
     abrirCriador("destaque");
   };
   /* apagar destaques direto pelo perfil */
@@ -781,7 +781,7 @@
   };
 
   /* ================= Configurações: quem vê meus Flashes ================= */
-  X.configPriv.push(p => `<div class="cs-linha"><span class="cs-lic">${I.flash}</span><span><b>Quem vê meus Flashes</b><small>Dá para mudar em cada Flash</small>
+  X.configPriv.push(p => `<div class="cs-linha"><span class="cs-lic">${I.flash}</span><span><b>Quem vê meus Flashes</b>
     <span class="seg cs-seg-mini"><button data-s="priv-flash" data-v="todos" aria-pressed="${(p.privFlash || "todos") === "todos"}">Todos</button><button data-s="priv-flash" data-v="seguindo" aria-pressed="${p.privFlash === "seguindo"}">Só quem eu sigo</button></span></span></div>`);
   X.acoes["priv-flash"] = async el => { try { await fb.updateDoc(D("users", eu()), { privFlash: el.dataset.v }); } catch (e) { toast(msgErro(e)); } };
 
