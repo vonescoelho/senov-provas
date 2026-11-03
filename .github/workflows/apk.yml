@@ -55,7 +55,7 @@ jobs:
           s = s.replace("<application", extra + "\n    <application", 1)
           comp = """
                   <service android:name=".ChamadasService" android:exported="false" android:foregroundServiceType="specialUse">
-                      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Receber chamadas de voz e video do ChatMil com o app fechado" />
+                      <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Receber chamadas de voz e video do FlashPapo com o app fechado" />
                   </service>
                   <receiver android:name=".ChamadaAcaoReceiver" android:exported="false" />
                   <activity android:name=".CameraActivity" android:exported="false" android:theme="@style/AppTheme.NoActionBar" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
@@ -68,6 +68,11 @@ jobs:
           """
           assert "</application>" in s
           s = s.replace("</application>", comp + "    </application>", 1)
+          # chamada de vídeo em janela flutuante
+          import re as _re
+          m = _re.search(r'<activity[^>]*android:name="\.MainActivity"', s)
+          if m and "supportsPictureInPicture" not in s:
+              s = s[:m.end()] + ' android:supportsPictureInPicture="true" android:resizeableActivity="true"' + s[m.end():]
           open(p, "w").write(s)
           g = "android/app/build.gradle"
           t = open(g).read()
@@ -126,7 +131,7 @@ jobs:
 
       - name: Ícone e tela de abertura
         continue-on-error: true
-        run: npx @capacitor/assets generate --android --iconBackgroundColor '#C0268F' --iconBackgroundColorDark '#C0268F' --splashBackgroundColor '#F2F4F9' --splashBackgroundColorDark '#0C1120'
+        run: npx @capacitor/assets generate --android --iconBackgroundColor '#B026FF' --iconBackgroundColorDark '#B026FF' --splashBackgroundColor '#F2F4F9' --splashBackgroundColorDark '#0C1120'
 
       - name: Número da versão
         run: |
@@ -151,9 +156,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-v${{ github.run_number }}
-          name: ChatMil — versão de teste ${{ github.run_number }}
+          name: FlashPapo — versão de teste ${{ github.run_number }}
           body: |
-            APK de teste do ChatMil.
+            APK de teste do FlashPapo.
             No celular: baixe **ChatMil.apk** abaixo, abra o arquivo e permita "instalar apps desconhecidos".
           prerelease: true
           files: ChatMil.apk
