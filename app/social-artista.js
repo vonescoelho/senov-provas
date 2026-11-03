@@ -1,10 +1,10 @@
 /* FlashPapo — Central do Artista: músicos independentes sobem faixas autorais para o próprio Álbum.
-   Em troca, a música entra na biblioteca do MyFlesh e dos Flashes. Quanto mais a faixa é USADA em
+   Em troca, a música entra na biblioteca do MyFlash e dos Flashes. Quanto mais a faixa é USADA em
    vídeos (5 pontos), COMPARTILHADA (3) e CURTIDA (1), mais alcance ela ganha:
      Novo → Subindo (50) → Em alta (250) → Destaque (1.000) → Top FlashPapo (5.000)
    - a biblioteca "FlashPapo" é ordenada por esses pontos (faixas novas ganham vitrine nos 7 primeiros dias);
    - "Em alta" ou mais: aparece no topo da busca de músicas;
-   - "Destaque" ou mais: entra como cartão de artista no meio do MyFlesh;
+   - "Destaque" ou mais: entra como cartão de artista no meio do MyFlash;
    - cada vídeo com a música mostra o disco girando → toque abre a faixa com "Usar esta música".
    O áudio fica no Firestore em partes de 700 KB (como os Flashes). Depende de social.js e social-midia.js. */
 (function () {
@@ -98,7 +98,7 @@
     const fim = l[i + 1] ? l[i + 1].t : l[i].t + 4;
     return { a: l[i].txt, b: l[i + 1] ? l[i + 1].txt : "", f: Math.max(0, Math.min(1, (t - l[i].t) / Math.max(0.5, fim - l[i].t))) };
   };
-  /* um MyFlesh usou a faixa: +1 uso (as regras exigem o MyFlesh apontando para ela) */
+  /* um MyFlash usou a faixa: +1 uso (as regras exigem o MyFlash apontando para ela) */
   X.usoMusica = async (xid, mid) => {
     try {
       const b = fb.writeBatch(A.db);

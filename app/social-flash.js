@@ -4,7 +4,7 @@
    - quem vê: todos, só quem eu sigo ou pessoas escolhidas;
    - Destaques: até 5 fotos ou vídeos que ficam no perfil.
    Nada fica “ouvindo” o servidor: os Flashes são buscados quando o Mural abre (poupa bateria e internet).
-   O mesmo criador (câmera, edição, música) publica no MyFlesh (destino "xflesh", até 60 s, não vence). */
+   O mesmo criador (câmera, edição, música) publica no MyFlash (destino "xflesh", até 60 s, não vence). */
 (function () {
   "use strict";
   if (!window.SOCIAL || !window.SOCIAL.ext || !window.SOCIAL.ext.midia) return;
@@ -389,7 +389,7 @@
   const TONS = [["natural", "Natural", ""], ["quente", "Quente", "sepia(.16) saturate(1.12)"], ["rosado", "Rosado", "hue-rotate(-6deg) saturate(1.16)"],
     ["bronze", "Bronze", "sepia(.28) saturate(1.28) contrast(1.04)"], ["frio", "Frio", "hue-rotate(8deg) saturate(.92) brightness(1.02)"], ["pb", "P&B", "grayscale(1) contrast(1.08)"]];
   const maxDur = () => CR.destino === "xflesh" ? 60 : MAXDUR;
-  const nomeDestino = () => ({ flash: "Novo Flash", destaque: "Novo destaque", xflesh: "Novo MyFlesh" })[CR.destino] || "Novo Flash";
+  const nomeDestino = () => ({ flash: "Novo Flash", destaque: "Novo destaque", xflesh: "Novo MyFlash" })[CR.destino] || "Novo Flash";
   const CR = { el: null, destino: "flash", stream: null, frente: true, modo: "foto", ef: lerLS("cs.flef", { suave: 0.35, luz: 0.2, tom: "natural" }),
     gravando: null, partes: [], tGrav: 0, timer: null, raf: 0, fonte: null, fonteTipo: null, blob: null, musica: null, legenda: "", publico: null, para: [], somOriginal: true, cv: null };
   function filtroDe(ef, extra) {
@@ -593,7 +593,7 @@
         ${video ? `<button class="cs-flc-linha" data-s="flc-somorig">${CR.somOriginal ? I.som : I.semSom}<span>Som do vídeo: <b>${CR.somOriginal ? "ligado" : "desligado"}</b></span></button>` : ""}
         <input class="in" id="flc-leg" maxlength="200" placeholder="Escreva uma legenda (opcional)" value="${esc(CR.legenda)}">
         ${CR.destino === "flash" ? `<button class="cs-flc-linha" data-s="flc-publico">${I.pessoas}<span>Quem vê: <b>${esc(textoPublico())}</b></span>${I.prox}</button>` : ""}
-        <button class="btn primary cs-grande" data-s="flc-publicar">${CR.destino === "flash" ? `${I.flash} Publicar Flash` : CR.destino === "xflesh" ? `${I.play} Publicar no MyFlesh` : `${I.estrela} Salvar nos Destaques`}</button>
+        <button class="btn primary cs-grande" data-s="flc-publicar">${CR.destino === "flash" ? `${I.flash} Publicar Flash` : CR.destino === "xflesh" ? `${I.play} Publicar no MyFlash` : `${I.estrela} Salvar nos Destaques`}</button>
       </div>`;
     CR.cv = el.querySelector("#flc-cv");
     const src = CR.fonte, [w, h] = dims(src), k = Math.min(1, 1280 / Math.max(w, h));
@@ -734,7 +734,7 @@
     if (CR.prevAud) { CR.prevAud.pause(); }
     const video = CR.fonteTipo === "video";
     if (video) CR.fonte.pause();
-    const barra = M.barraEnvio(CR.destino === "flash" ? "Flash" : CR.destino === "xflesh" ? "MyFlesh" : "destaque"), txt = document.querySelector(".cs-up span");
+    const barra = M.barraEnvio(CR.destino === "flash" ? "Flash" : CR.destino === "xflesh" ? "MyFlash" : "destaque"), txt = document.querySelector(".cs-up span");
     const fase = t => { if (txt) txt.textContent = t; };
     try {
       let midia, mime, dur = CR.dur, thumb = await miniatura(CR.fonte);
@@ -765,7 +765,7 @@
         const f = await gravar("xflesh", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, mus, extra: { nCurt: 0, nComent: 0, nComp: 0 } }, f => barra(0.7 + f * 0.3));
         if (mus && mus.fonte === "chatmil" && X.usoMusica) X.usoMusica(f.id, mus.id);
         if (X.xfleshPublicado) X.xfleshPublicado(f);
-        toast("Publicado no MyFlesh!");
+        toast("Publicado no MyFlash!");
       } else if (CR.destino === "destaque") {
         await gravar("destaques", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, mus }, f => barra(0.7 + f * 0.3));
         FL.dest.delete(eu()); toast("Salvo nos Destaques do seu perfil.");

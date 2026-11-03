@@ -1596,7 +1596,7 @@
   const TXT_TERMOS = `<p class="cs-just">O FlashPapo é uma rede social brasileira, sem anúncios, para todas as idades a partir de 13 anos. Ao usar, você concorda em:</p>
     <ul class="cs-ul"><li>Tratar as pessoas com respeito. Xingamentos e qualquer forma de preconceito (racismo, LGBTfobia, capacitismo, machismo, xenofobia, intolerância religiosa) são proibidos e bloqueados automaticamente.</li>
     <li>Não publicar dados pessoais de outras pessoas, conteúdo impróprio, golpes, apostas ou links falsos (são bloqueados antes do envio).</li>
-    <li>Publicar no MyFlesh, no Mural e na Central do Artista só o que é seu ou o que você tem direito de usar.</li>
+    <li>Publicar no MyFlash, no Mural e na Central do Artista só o que é seu ou o que você tem direito de usar.</li>
     <li>Contas com várias denúncias são suspensas automaticamente e podem pedir revisão ao Suporte.</li></ul>
     <p class="cs-just"><b>Menores de 18 anos.</b> Contas de 13 a 17 anos ficam protegidas: só recebem mensagens de quem seguem e não acessam Conexões. Conexões exige confirmação de maioridade, feita no próprio celular.</p>
     <p class="cs-just"><b>Privacidade.</b> Guardamos o seu nome, @usuário, foto, publicações e mensagens, só para o funcionamento do app. Do nascimento, guardamos apenas dia e mês (aniversário) e se a conta é de menor. Selfie e documento da verificação são conferidos no celular e não são enviados. Não vendemos dados. Você pode excluir a sua conta a qualquer momento em Configurações. Tratamento de dados conforme a LGPD (Lei 13.709/2018) e o ECA Digital.</p>
@@ -1696,7 +1696,7 @@
     try { document.title = nl ? `(${nl}) FlashPapo` : "FlashPapo"; } catch (e) { }
     return true;
   }
-  /* abas: MyFlesh · Mural · Conversas · Perfil; Provas (professor) e Conexões (+18 verificado) aparecem quando liberadas */
+  /* abas: MyFlash · Mural · Conversas · Perfil; Provas (professor) e Conexões (+18 verificado) aparecem quando liberadas */
   const ehProf = () => !!(SO.eu && SO.eu.prof && SO.eu.prof.inep);
   const ehAdulto = () => !!(window.CS_IDADE && window.CS_IDADE.liberado());
   const ehSolteiro = () => !!(SO.eu && SO.eu.relac === "solteiro");
@@ -1704,7 +1704,7 @@
   const adultoIndefinido = () => !!(window.CS_IDADE && window.CS_IDADE.estado().doc === undefined);
   function abas(nl) {
     const nn = contarNotif();
-    const l = [["xflesh", "MyFlesh", K.xflesh, 0]];
+    const l = [["xflesh", "MyFlash", K.xflesh, 0]];
     if (nn || SO.tab === "notif") l.push(["notif", "Notificações", K.sino, nn]);
     l.push(["conversas", "Conversas", K.chat, nl || 0]);
     if (ehProf()) l.push(["provas", "Provas", K.prova, 0]);

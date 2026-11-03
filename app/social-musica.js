@@ -157,7 +157,7 @@
   });
   const pintarCompositor = () => { try { const pc = $("#cs-pc-fotos"); if (pc) { const f = X.fotosExtra; /* repinta só o pedaço da música */ const velho = pc.querySelector(".cs-pc-mus"); const html = f.map(g => g() || "").join(""); const tmp = document.createElement("div"); tmp.innerHTML = html; const novo = tmp.querySelector(".cs-pc-mus"); if (velho && novo) velho.replaceWith(novo); else if (velho) velho.remove(); else if (novo) pc.appendChild(novo); } } catch (e) { } };
 
-  /* escolher música para MyFlesh / Flash: devolve {id, fonte, titulo, artista, capa, dur, url?, inicio} ou null */
+  /* escolher música para MyFlash / Flash: devolve {id, fonte, titulo, artista, capa, dur, url?, inicio} ou null */
   X.escolherMusica = op => new Promise(res => abrir({ ...(op || {}), cb: res }));
   Object.assign(X.acoes, {
     "mus-abrir": () => abrir(),
