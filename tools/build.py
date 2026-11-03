@@ -106,8 +106,7 @@ html = f"""<!doctype html>
 open(os.path.join(WWW, "index.html"), "w", encoding="utf-8").write(html)
 
 # ---------- ícones ----------
-# Logo do FlashPapo (junção das propostas 1 e 2): o "C" é um balão de conversa aberto à direita, com rabinho,
-# e dentro dele três barras de som (alta, baixa, alta) formam o "M" — Chat + Mil, conversa + música/artistas.
+# Logo do FlashPapo: balão de conversa (Papo) com um raio vazado (Flash).
 # Funciona em uma cor só (preto ou branco); no ícone fica branco sobre o degradê rosa → roxo.
 from PIL import ImageFilter
 import math
@@ -133,24 +132,18 @@ def gradiente_rapido(S):
     return base.resize((S, S), Image.BICUBIC)
 
 def simbolo(S, escala=1.0, cor=(255, 255, 255, 255)):
-    """C em anel aberto + rabinho + barras do M (coordenadas de 0 a 100)"""
+    """Balão de conversa com rabinho (Papo) e um raio vazado (Flash) — coordenadas de 0 a 100"""
     im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     k = S / 100 * escala; o = S / 2 - 50 * k
     P = lambda x, y: (o + x * k, o + y * k)
-    def bola(x, y, r):
-        cx, cy = P(x, y); d.ellipse([cx - r * k, cy - r * k, cx + r * k, cy + r * k], fill=cor)
-    r, w = 37, 13
-    d.arc([*P(50 - r - w / 2, 50 - r - w / 2), *P(50 + r + w / 2, 50 + r + w / 2)], 42, 318, fill=cor, width=round(w * k))
-    for ang in (42, 318):
-        bola(50 + r * math.cos(math.radians(ang)), 50 + r * math.sin(math.radians(ang)), w / 2)
-    cauda = [P(21, 74), P(10.5, 93), P(34, 84.5)]
+    r = 42
+    d.ellipse([*P(50 - r, 47 - r), *P(50 + r, 47 + r)], fill=cor)
+    cauda = [P(15.36, 67), P(39.65, 85.64), P(10, 93)]
     d.polygon(cauda, fill=cor)
-    d.line(cauda + [cauda[0]], fill=cor, width=round(5 * k), joint="curve")
-    for (x, y) in ((21, 74), (10.5, 93), (34, 84.5)):
-        bola(x, y, 2.5)
-    for x, y in ((33, 34), (48, 45), (63, 34)):
-        d.rounded_rectangle([*P(x, y), *P(x + 11, 64)], radius=5.5 * k, fill=cor)
+    d.line(cauda + [cauda[0]], fill=cor, width=round(4 * k), joint="curve")
+    raio = [P(58, 14), P(29, 54), P(46, 54), P(41, 81), P(71, 39), P(54, 39)]
+    d.polygon(raio, fill=(0, 0, 0, 0))
     return im
 
 def desenhar(tam, fundo=True, escala=1.0, raio=0.22):
