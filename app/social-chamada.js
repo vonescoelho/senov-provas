@@ -8,6 +8,10 @@
   const { SO, fb, D, C, TS, ic, esc, eu, enviarMsg, toast, msgErro, P, av } = A;
   const $ = s => document.querySelector(s);
   const I = {
+    fone2: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z"/></svg>',
+    video2: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="2" y="5.5" width="13.5" height="13" rx="3.2"/><path d="M17 10.2l4.1-2.6c.4-.3.9 0 .9.5v7.8c0 .5-.5.8-.9.5L17 13.8z"/></svg>',
+    saida: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>',
+    entrada: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 7 7 17M15 17H7V9"/></svg>',
     video: ic('<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-3v10l-6-3"/>'),
     videoOff: ic('<path d="M16 16v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5 0h3a2 2 0 0 1 2 2v3.3l6-3.3v10"/><path d="M2 2l20 20"/>'),
     fone: ic('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>'),
@@ -54,10 +58,13 @@
   X.msgChamada = (m, o) => {
     const cls = `cs-m ${o.meu ? "eu" : ""} ${o.seq ? "seq" : ""}`;
     const voz = m.tipoCh === "voz", rtc = !!m.rtc;
-    const tit = rtc ? (voz ? "Chamada de voz" : "Chamada de vídeo") : "Reunião no Jitsi Meet";
+    const urg = /urgente/i.test(m.prev || "");
+    const tit = urg ? "Ligação urgente" : rtc ? (voz ? "Chamada de voz" : "Chamada de vídeo") : "Reunião";
+    const sent = o.meu ? I.saida : I.entrada;
     return `<div class="${cls}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-cmsg">${o.nome}
-      <div class="cs-cmsg-l"><span class="cs-cmsg-ic" style="--c:${voz ? "#0E7490" : "#7C3AED"}">${voz ? I.fone : rtc ? I.video : I.grupo}</span><span><b>${tit}</b><small>${o.meu ? "Você iniciou" : "Convite para entrar"}</small></span></div>
-      <button class="btn sm primary" data-s="${rtc ? "ch-entrar" : "ch-jitsi-entrar"}" data-v="${esc(m.chamada)}">Entrar</button><span class="cs-h">${o.hr}</span></div></div>`;
+      <div class="cs-cmsg-l"><span class="cs-cmsg-ic ${urg ? "urg" : voz ? "voz" : "vid"}">${voz || urg ? I.fone2 : rtc ? I.video2 : I.grupo}</span>
+        <span class="cs-cmsg-t"><b>${tit}</b><small>${sent}${o.meu ? "Você ligou" : "Recebida"} · ${o.hr}</small></span>
+        <button class="cs-cmsg-bt" data-s="${rtc ? "ch-entrar" : "ch-jitsi-entrar"}" data-v="${esc(m.chamada)}" aria-label="Entrar na chamada">${voz || urg ? I.fone2 : I.video2}</button></div></div></div>`;
   };
   X.acoes["ch-jitsi-entrar"] = el => abrirJitsi(el.dataset.v);
   X.acoes["ch-entrar"] = async el => {
@@ -400,18 +407,26 @@
     /* quem segue muda: atualiza a lista de "atender sozinho" */
     let ultSeg = "";
     X.depois.push(() => { const k = [...(SO.seguindo || [])].sort().join(","); if (k !== ultSeg && SO.user) { ultSeg = k; if (cfgAuto().modo === "seguindo") salvarAuto(cfgAuto()); } });
-    document.addEventListener("visibilitychange", () => { if (!document.hidden && SO.user) lerEstado().then(() => { if (A.topo() && A.topo().v === "config") A.pintar(); }); });
+    document.addEventListener("visibilitychange", () => { if (!document.hidden && SO.user) lerEstado().then(() => { const t = A.topo(); if ((t && t.v === "config") || (!t && SO.tab === "conversas")) A.pintar(); }); });
   }
   const ativoNativo = () => !!(NE.estado && NE.estado.ativo && SO.user && NE.estado.uid === SO.user.uid);
   X.avisos.push(() => {
     if (!NV || !SO.user || !NE.estado || ativoNativo()) return "";
     try { if (localStorage.getItem("cs.avisoCh." + eu()) === "nao") return ""; } catch (e) { }
-    return `<div class="aviso cs-aviso-mail">${I.sino}<span>Ative para o celular <b>tocar com o FlashPapo fechado</b> quando alguém ligar.</span><button class="btn sm primary" data-s="chn-ativar">Ativar</button><button class="btn sm ghost" data-s="chn-aviso-nao" aria-label="Agora não">Agora não</button></div>`;
+    return `<div class="aviso cs-aviso-mail">${I.sino}<span>Ativar notificações</span><button class="btn sm primary" data-s="chn-ativar">Ativar</button><button class="btn sm ghost" data-s="chn-aviso-nao" aria-label="Agora não">Agora não</button></div>`;
   });
+  /* ativo, mas faltam permissões para tocar com a tela bloqueada: libera uma por vez */
+  const faltando = () => { const st = NE.estado; if (!st) return null; return !st.notificacoes ? "notificacoes" : !st.telaCheia ? "telaCheia" : !st.sobrepor ? "sobrepor" : !st.bateria ? "bateria" : null; };
+  X.avisos.push(() => {
+    if (!NV || !SO.user || !ativoNativo() || !faltando()) return "";
+    try { if (localStorage.getItem("cs.avisoPerm." + eu()) === faltando()) return ""; } catch (e) { }
+    return `<div class="aviso cs-aviso-mail">${I.sino}<span>Liberar notificações</span><button class="btn sm primary" data-s="chn-perm-prox">Liberar</button><button class="btn sm ghost" data-s="chn-perm-nao" aria-label="Agora não">Agora não</button></div>`;
+  });
+  X.acoes["chn-perm-prox"] = () => { const f = faltando(); if (NV && f) NV.permissao({ tipo: f }).catch(() => { }); };
+  X.acoes["chn-perm-nao"] = () => { try { localStorage.setItem("cs.avisoPerm." + eu(), faltando() || ""); } catch (e) { } A.pintar(); };
   X.acoes["chn-aviso-nao"] = () => { try { localStorage.setItem("cs.avisoCh." + eu(), "nao"); } catch (e) { } A.pintar(); };
   X.acoes["chn-ativar"] = () => {
-    window.abrirSheet(`<div class="sheet-h"><h2>Tocar com o app fechado</h2></div>
-      <p class="cs-just">Para o celular tocar mesmo com o FlashPapo fechado, confirme sua senha <b>uma única vez</b>. Ela não fica guardada: o Android só mantém a conexão de chamadas ativa.</p>
+    window.abrirSheet(`<div class="sheet-h"><h2>Ativar notificações</h2></div>
       <form class="stack" id="chn-f"><input class="in" id="chn-senha" type="password" autocomplete="current-password" placeholder="Sua senha do FlashPapo" aria-label="Senha">
       <button class="btn primary cs-grande">Ativar</button></form>`);
     setTimeout(() => { const i = $("#chn-senha"); if (i) i.focus(); }, 100);
@@ -422,8 +437,8 @@
     const b = e.target.querySelector("button"); b.disabled = true; b.textContent = "Ativando…";
     try {
       await NV.chamadasEntrar({ email: SO.user.email, senha }); await lerEstado();
-      window.fecharSheet(); toast("Pronto! Agora falta liberar as permissões.");
-      A.abrirTela({ v: "config" }); setTimeout(() => { const el = document.getElementById("cs-ch-cfg"); if (el) el.scrollIntoView({ block: "start" }); }, 250);
+      window.fecharSheet(); toast("Notificações ativadas.");
+      const f = faltando(); if (f) setTimeout(() => NV.permissao({ tipo: f }).catch(() => { }), 600);
     } catch (er) { b.disabled = false; b.textContent = "Ativar"; toast(/password|senha|credential|INVALID/i.test(String(er && er.message)) ? "Senha incorreta." : "Não foi possível ativar agora. Verifique a internet."); }
   });
   X.acoes["chn-perm"] = el => { if (NV) NV.permissao({ tipo: el.dataset.v }).catch(() => { }); };
@@ -443,15 +458,15 @@
   X.configExtra.push(() => {
     const c = cfgAuto(), st = NE.estado, ok = ativoNativo();
     const perm = (v, nome, sub, feito) => `<button data-s="chn-perm" data-v="${v}"><span class="cs-lic ${feito ? "cs-ok" : "cs-pend"}">${feito ? I.ok : I.alerta}</span><span><b>${nome}</b>${feito ? "" : `<small>${sub}</small>`}</span></button>`;
-    return `<h2 class="cs-sec" id="cs-ch-cfg">Chamadas</h2><div class="cs-menu card flat">
-      ${NV ? (ok ? `<div class="cs-linha"><span class="cs-lic">${I.ok}</span><span><b>Tocar com app fechado</b></span></div>
+    return `<h2 class="cs-sec" id="cs-ch-cfg">Notificações e chamadas</h2><div class="cs-menu card flat">
+      ${NV ? (ok ? `<div class="cs-linha"><span class="cs-lic">${I.ok}</span><span><b>Notificações ativas</b></span></div>
           ${perm("notificacoes", "Notificações", "Toque para permitir", st.notificacoes)}
           ${perm("telaCheia", "Tela cheia", "Toque para permitir", st.telaCheia)}
           ${perm("bateria", "Bateria livre", "Toque para permitir", st.bateria)}
           ${perm("sobrepor", "Sobre outros apps", "Toque para permitir", st.sobrepor)}
           <button data-s="chn-desligar"><span class="cs-lic">${I.desligar}</span><span><b>Desativar</b></span></button>`
-        : `<button data-s="chn-ativar"><span class="cs-lic">${I.sino}</span><span><b>Tocar com app fechado</b></span></button>`)
-        : `<div class="cs-linha"><span class="cs-lic">${I.sino}</span><span><b>Tocar com o app fechado</b></span></div>`}
+        : `<button data-s="chn-ativar"><span class="cs-lic">${I.sino}</span><span><b>Ativar notificações</b></span></button>`)
+        : `<div class="cs-linha"><span class="cs-lic">${I.sino}</span><span><b>Notificações no app Android</b></span></div>`}
       <div class="cs-linha"><span class="cs-lic">${I.alerta}</span><span><b>Ligação Urgente</b></span></div>
       <div class="seg cs-ch-seg">${[["ninguem", "Ninguém"], ["seguindo", "Quem eu sigo"], ["escolhidos", "Escolher"]].map(([k, n]) => `<button data-s="chn-auto" data-v="${k}" aria-pressed="${c.modo === k}">${n}${k === "escolhidos" && c.modo === k ? ` (${(c.uids || []).length})` : ""}</button>`).join("")}</div>
     </div>`;
@@ -468,6 +483,20 @@
 
   const css = document.createElement("style");
   css.textContent = `
+.cs-cmsg{min-width:232px;padding:10px 10px 10px 12px!important}
+.cs-cmsg-l{display:flex;align-items:center;gap:11px}
+.cs-cmsg-ic{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:none;color:#fff;background:linear-gradient(135deg,#22C3A6,#2563EB);box-shadow:0 4px 12px rgba(37,99,235,.28)}
+.cs-cmsg-ic.vid{background:linear-gradient(135deg,#FF3D7F,#B026FF 60%,#6D28FF);box-shadow:0 4px 12px rgba(176,38,255,.3)}
+.cs-cmsg-ic.urg{background:linear-gradient(135deg,#F97316,#E5484D);box-shadow:0 4px 12px rgba(229,72,77,.3)}
+.cs-cmsg-ic svg{width:21px;height:21px}
+.cs-cmsg-t{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}
+.cs-cmsg-t b{font-size:.95rem;line-height:1.2}
+.cs-cmsg-t small{font-size:.78rem;opacity:.78;display:flex;align-items:center;gap:3px}
+.cs-cmsg-t small svg{width:13px;height:13px}
+.cs-cmsg-bt{width:38px;height:38px;border-radius:50%;border:0;display:grid;place-items:center;flex:none;background:var(--primary-soft);color:var(--primary);cursor:pointer}
+.cs-cmsg-bt svg{width:18px;height:18px}
+.cs-m.eu .cs-cmsg-bt{background:rgba(255,255,255,.2);color:#fff}
+.cs-cmsg>.cs-h{display:none}
 body.cs-ch-on{overflow:hidden}
 .cs-ch{position:fixed;inset:0;z-index:105;background:radial-gradient(circle at 50% 20%,#1d2a52,#070a14 70%);color:#fff;display:flex;flex-direction:column}
 .cs-ch-top{text-align:center;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 6px;display:flex;flex-direction:column;gap:2px}

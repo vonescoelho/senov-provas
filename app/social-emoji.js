@@ -35,6 +35,18 @@ window.CS_EMOJIS = [["Carinhas", "😀", "😀 😃 😄 😁 😆 😅 🤣 �
     document.querySelectorAll(".cs-emo-abas button").forEach(b => b.setAttribute("aria-selected", String(b === el)));
     const c = $("#cs-emo-corpo"); if (c) { c.innerHTML = grade(); c.scrollTop = 0; }
   };
+  /* puxar para o lado no painel troca de categoria */
+  { let x0 = 0, y0 = 0, t0 = 0, dentro = false;
+    document.addEventListener("touchstart", e => { const t = e.touches[0]; dentro = e.touches.length === 1 && !!(e.target.closest && e.target.closest("#cs-emo-corpo")); if (!dentro) return; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); }, { passive: true });
+    document.addEventListener("touchend", e => {
+      if (!dentro) return; dentro = false;
+      const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Date.now() - t0 > 700 || Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+      const bs = [...document.querySelectorAll(".cs-emo-abas button")], i = bs.findIndex(b => b.getAttribute("aria-selected") === "true");
+      const j = i + (dx < 0 ? 1 : -1); if (i < 0 || j < 0 || j >= bs.length) return;
+      X.acoes["emo-aba"](bs[j]); try { bs[j].scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); } catch (er) { }
+    }, { passive: true });
+  }
   function inserir(e) {
     const t = $("#cs-txt"); if (!t) return;
     const a = t.selectionStart != null ? t.selectionStart : t.value.length, b = t.selectionEnd != null ? t.selectionEnd : a;
@@ -44,10 +56,11 @@ window.CS_EMOJIS = [["Carinhas", "😀", "😀 😃 😄 😁 😆 😅 🤣 �
     usar(e);
   }
   /* toque = insere; segurar = prévia grande animada */
-  let seg = null, segurou = false;
+  let seg = null, segurou = false, sxy = null;
+  document.addEventListener("pointermove", ev => { if (seg && sxy && Math.hypot(ev.clientX - sxy[0], ev.clientY - sxy[1]) > 10) { clearTimeout(seg); seg = null; } });
   document.addEventListener("pointerdown", ev => {
     const b = ev.target.closest && ev.target.closest(".cs-emo"); if (!b) return;
-    segurou = false; clearTimeout(seg);
+    segurou = false; clearTimeout(seg); sxy = [ev.clientX, ev.clientY];
     seg = setTimeout(() => { segurou = true; try { navigator.vibrate && navigator.vibrate(20); } catch (e) { } previa(b.dataset.e); }, 420);
   });
   ["pointerup", "pointercancel", "pointerleave"].forEach(n => document.addEventListener(n, () => clearTimeout(seg), true));

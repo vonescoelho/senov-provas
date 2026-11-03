@@ -43,6 +43,7 @@
       AT.nova = melhor; AT.conferido = Date.now(); gravarLS("cs.app.rel", { em: AT.conferido, nova: melhor });
     } catch (e) { console.warn("atualização", e); AT.erro = "Não deu para conferir agora. Veja a internet e tente de novo."; }
     const antes = AT.conferindo; AT.conferindo = false; if (antes && SO.user) pintar();
+    if (forcar === "manual") toast(AT.erro ? "Sem internet agora." : temNova() ? "Nova versão disponível." : "Você está na versão mais nova.");
   }
   const temNova = () => !!(NATIVO && AT.nova && AT.instalada && AT.nova.versao > AT.instalada);
   const mb = n => (n / 1048576).toFixed(1).replace(".", ",") + " MB";
@@ -71,12 +72,10 @@
 
   /* ---------- Configurações › Aplicativo ---------- */
   X.configExtra.push(() => {
-    if (!NATIVO) return `<div class="card flat stack cs-at-card"><div class="cs-at-l">${I.app}<span><b>Aplicativo</b></span></div>
-      <button class="btn" data-s="at-recarregar">Recarregar o app</button></div>`;
-    const st = AT.conferindo ? "Conferindo…" : temNova() ? `Versão ${esc("1.0." + AT.nova.versao)} disponível${AT.nova.tamanho ? " · " + mb(AT.nova.tamanho) : ""}` : AT.erro ? AT.erro : AT.conferido ? "Você está com a versão mais nova." : "";
-    return `<div class="card flat stack cs-at-card"><div class="cs-at-l">${I.app}<span><b>Atualizar o aplicativo</b><small>Instalada: ${esc(AT.nome || "1.0." + AT.instalada)}</small></span>${temNova() ? `<span class="pill d1">Nova</span>` : ""}</div>
-      ${st ? `<p class="small ${temNova() ? "" : "muted"}">${esc(st)}</p>` : ""}
-      ${temNova() ? `<button class="btn primary cs-grande" data-s="at-abrir">${I.seta} Atualizar agora</button>` : `<button class="btn" data-s="at-conferir" ${AT.conferindo ? "disabled" : ""}>Procurar atualização</button>`}</div>`;
+    if (!NATIVO) return `<h2 class="cs-sec">Aplicativo</h2><div class="cs-menu card flat"><button data-s="at-recarregar"><span class="cs-lic">${I.app}</span><span><b>Recarregar o app</b></span></button></div>`;
+    const nova = temNova();
+    const sub = AT.conferindo ? "Conferindo…" : nova ? `Versão ${esc("1.0." + AT.nova.versao)}${AT.nova.tamanho ? " · " + mb(AT.nova.tamanho) : ""}` : `Versão ${esc(AT.nome || "1.0." + AT.instalada)}`;
+    return `<h2 class="cs-sec">Aplicativo</h2><div class="cs-menu card flat"><button data-s="${nova ? "at-abrir" : "at-conferir"}" ${AT.conferindo ? "disabled" : ""}><span class="cs-lic">${I.app}</span><span><b>${nova ? "Atualizar agora" : "Procurar atualização"}</b><small>${sub}</small></span>${nova ? `<span class="pill d1">Nova</span>` : ""}</button></div>`;
   });
 
   /* ---------- baixar e instalar ---------- */
@@ -122,7 +121,7 @@
 
   Object.assign(X.acoes, {
     "at-abrir": () => sheetAtualizar(),
-    "at-conferir": () => conferir(true),
+    "at-conferir": () => conferir("manual"),
     "at-baixar": () => baixar(),
     "at-permitir": async () => { esperandoPermissao = true; try { await NTP.permitirInstalar(); } catch (e) { esperandoPermissao = false; toast("Abra Configurações do Android › Apps › FlashPapo › Instalar apps desconhecidos."); } },
     "at-navegador": () => { if (AT.nova && A.abrirLink) A.abrirLink(AT.nova.url); },

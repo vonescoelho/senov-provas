@@ -291,7 +291,7 @@
             : `<p class="small">${esc(p.nome)} ainda não ativou a criptografia (precisa atualizar o app).</p>`}`);
       }
     });
-    X.configPriv.push(() => `<button class="cs-linha" data-s="e2e-pin" style="display:flex;align-items:center;gap:12px;width:100%"><span class="cs-lic">${cad}</span><span style="flex:1;text-align:left"><b>Criptografia e PIN</b></span><span class="pill ${E.estado === "pronto" ? "d1" : ""}">${E.estado === "pronto" ? "Ativa" : E.estado === "semPin" ? "Criar PIN" : E.estado === "precisaPin" ? "Digite o PIN" : "…"}</span></button>`);
+    X.configPriv.push(() => `<button class="cs-linha" data-s="e2e-pin" style="display:flex;align-items:center;gap:12px;width:100%"><span class="cs-lic">${cad}</span><span style="flex:1;text-align:left"><b>Criptografia</b></span><span class="pill ${E.estado === "pronto" ? "d1" : ""}">${E.estado === "pronto" ? "Ativa" : E.estado === "semPin" ? "Criar PIN" : E.estado === "precisaPin" ? "Digite o PIN" : "…"}</span></button>`);
     const css = document.createElement("style");
     css.textContent = `.cs-e2e-av{display:flex;align-items:center;gap:10px}.cs-e2e-av svg{width:20px;height:20px;flex:none;color:var(--primary)}.cs-e2e-av span{flex:1}
 .cs-pin{font-size:1.4rem;letter-spacing:.35em;text-align:center}

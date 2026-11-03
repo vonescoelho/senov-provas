@@ -691,7 +691,7 @@
     }
     return id;
   }
-  function abrirChat(id) { contarConversa(id); ouvirMsgs(id); { const c = SO.chats.find(x => x.id === id); if (c && c.tipo !== "grupo") ouvirPresenca((c.membros || []).find(m => m !== eu())); } marcarLida(id); abrirTela({ v: "chat", id }); setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 60); }
+  function abrirChat(id) { try { const N = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Nativo; if (N && N.limparAviso) N.limparAviso({ id }).catch(() => { }); } catch (e) { } contarConversa(id); ouvirMsgs(id); { const c = SO.chats.find(x => x.id === id); if (c && c.tipo !== "grupo") ouvirPresenca((c.membros || []).find(m => m !== eu())); } marcarLida(id); abrirTela({ v: "chat", id }); setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 60); }
 
   function vChat(id) {
     const c = SO.chats.find(x => x.id === id);
@@ -707,7 +707,7 @@
       </header>
       ${window.CS_E2E ? (() => { const fa = CS_E2E.faltam(); const sem = fa && fa.chat === c.id ? fa.uids.filter(u => u !== eu()) : [];
         return sem.length ? `<button class="cs-e2e-chat" data-s="e2e-info">🔓 ${esc(sem.map(u => P(u).nome).join(", "))} ainda não ativou a criptografia (precisa atualizar o app)</button>`
-          : CS_E2E.pronto() ? `<button class="cs-e2e-chat" data-s="${g ? "e2e-info" : "e2e-codigo"}" data-id="${esc(g ? "" : t.outro)}">${K.lock} Protegida de ponta a ponta</button>` : ""; })() : ""}
+          : CS_E2E.pronto() ? `<button class="cs-e2e-chat" data-s="${g ? "e2e-info" : "e2e-codigo"}" data-id="${esc(g ? "" : t.outro)}">${K.lock} Mensagens criptografadas</button>` : ""; })() : ""}
       <div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
       ${podeEscrever ? `${SO.figAberta ? (EXT.painelEmoji ? EXT.painelEmoji() : painelFig("fig-msg")) : ""}
       <form class="cs-compor ${EXT.composerFim && !(SO.rascunho[id] || "").trim() ? "vazio" : ""}" id="cs-f-msg" data-id="${esc(id)}">
@@ -782,10 +782,10 @@
     const b = fb.writeBatch(db);
     if (sel) {
       b.set(fb.doc(C("chats", id, "msgs")), { autor: eu(), em: TS(), ...sel.msg });
-      b.update(D("chats", id), { ultima: { autor: eu(), ...sel.ultima }, atualizadoEm: TS() });
+      b.update(D("chats", id), { ultima: { autor: eu(), ...sel.ultima, ...(conteudo.chamada ? { ch: 1 } : {}) }, atualizadoEm: TS() });
     } else {
       b.set(fb.doc(C("chats", id, "msgs")), { autor: eu(), em: TS(), ...conteudo });
-      b.update(D("chats", id), { ultima: { autor: eu(), ...ult }, atualizadoEm: TS() });
+      b.update(D("chats", id), { ultima: { autor: eu(), ...ult, ...(conteudo.chamada ? { ch: 1 } : {}) }, atualizadoEm: TS() });
     }
     try { await b.commit(); return true; } catch (e) { toast(msgErro(e)); return false; }
   }
@@ -1518,34 +1518,31 @@
   setTimeout(barrasDoSistema, 1500);
   function vConfig() {
     const u = SO.user, p = SO.eu || {}, z = typeof ZOOM !== "undefined" ? ZOOM : 1, tm = tema();
+    const linSw = (s, icone, t, on) => `<button class="cs-linha cs-lsw" data-s="${s}" data-v="${on ? "nao" : "sim"}" role="switch" aria-checked="${on}"><span class="cs-lic">${icone}</span><span><b>${t}</b></span><i class="cs-swv" aria-hidden="true"></i></button>`;
     const lin = (s, icone, t, sub, extra) => `<button data-s="${s}">${`<span class="cs-lic">${icone}</span>`}<span><b>${t}</b>${sub ? `<small>${sub}</small>` : ""}</span>${extra == null ? K.dir : extra}</button>`;
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Configurações</b></header>
       <div class="cs-pag stack cs-cfg">
         <button class="card cs-conta" data-s="editar-perfil">${av(p, 56, eu())}<span><b>${esc(p.nome)}</b><small>@${esc(p.usuario)}</small></span>${K.dir}</button>
-        <div class="cs-aparencia" role="radiogroup" aria-label="Aparência">${[["auto", "Automático"], ["claro", "Claro"], ["escuro", "Escuro"]].map(([v, t]) => `<button data-s="tema" data-v="${v}" aria-pressed="${tm === v}" role="radio" aria-checked="${tm === v}"><i class="ap-${v}"><b></b><b></b><b></b></i><span>${t}</span></button>`).join("")}</div>
         <h2 class="cs-sec">Conta</h2>
         <div class="cs-menu card flat">
           ${lin("editar-perfil", K.user, "Editar perfil", "")}
-          ${lin("email", K.mail, "E-mail", esc(u.email), `<span class="pill ${u.emailVerified ? "d1" : ""}">${u.emailVerified ? "Confirmado" : "Opcional"}</span>`)}
+          ${lin("email", K.mail, "E-mail", esc(u.email))}
           ${lin("senha", K.chave, "Alterar senha", "")}
         </div>
         <h2 class="cs-sec">Privacidade e segurança</h2>
         <div class="cs-menu card flat">
           <div class="cs-linha"><span class="cs-lic">${K.lock}</span><span><b>Quem pode me mandar mensagem</b>
             <span class="seg cs-seg-mini"><button data-s="priv" data-v="todos" aria-pressed="${(p.privMsg || "todos") === "todos"}">Todos</button><button data-s="priv" data-v="seguindo" aria-pressed="${p.privMsg === "seguindo"}">Só quem eu sigo</button></span></span></div>
-          <div class="cs-linha"><span class="cs-lic">${K.olho}</span><span><b>Mostrar quando estou online</b>
-            <span class="seg cs-seg-mini"><button data-s="priv-on" data-v="sim" aria-pressed="${p.privOnline !== false}">Sim</button><button data-s="priv-on" data-v="nao" aria-pressed="${p.privOnline === false}">Não</button></span></span></div>
-          <div class="cs-linha"><span class="cs-lic">${K.check}</span><span><b>Confirmação de leitura</b>
-            <span class="seg cs-seg-mini"><button data-s="priv-lido" data-v="sim" aria-pressed="${p.privLeitura !== false}">Sim</button><button data-s="priv-lido" data-v="nao" aria-pressed="${p.privLeitura === false}">Não</button></span></span></div>
+          ${linSw("priv-on", K.olho, "Mostrar quando estou online", p.privOnline !== false)}
+          ${linSw("priv-lido", K.check, "Confirmação de leitura", p.privLeitura !== false)}
           <div class="cs-linha"><span class="cs-lic">${K.user}</span><span><b>Quem vê minha foto de perfil</b>
             <span class="seg cs-seg-mini">${[["todos", "Todos"], ["seguidores", "Seguidores"], ["ninguem", "Ninguém"]].map(([v, t]) => `<button data-s="priv-foto" data-v="${v}" aria-pressed="${((p.privFoto === "seguindo" ? "seguidores" : p.privFoto) || "todos") === v}">${t}</button>`).join("")}</span></span></div>
-          <div class="cs-linha"><span class="cs-lic">${K.grupo}</span><span><b>Mostrar seguidores e quem eu sigo</b>
-            <span class="seg cs-seg-mini"><button data-s="priv-rede" data-v="sim" aria-pressed="${!p.privRede}">Sim</button><button data-s="priv-rede" data-v="nao" aria-pressed="${!!p.privRede}">Esconder</button></span></span></div>
           ${EXT.configPriv.map(f => f(p)).join("")}
           ${lin("bloqueados", K.ban, "Pessoas bloqueadas", SO.bloqueados.size ? SO.bloqueados.size + (SO.bloqueados.size === 1 ? " pessoa" : " pessoas") : "Nenhuma")}
           ${lin("dicas", K.shield, "Dicas de segurança", "")}
         </div>
         <h2 class="cs-sec">Aparência</h2>
+        <div class="cs-aparencia" role="radiogroup" aria-label="Tema">${[["auto", "Automático"], ["claro", "Claro"], ["escuro", "Escuro"]].map(([v, t]) => `<button data-s="tema" data-v="${v}" aria-pressed="${tm === v}" role="radio" aria-checked="${tm === v}"><i class="ap-${v}"><b></b><b></b><b></b></i><span>${t}</span></button>`).join("")}</div>
         <div class="cs-menu card flat">
           <div class="cs-linha"><span class="cs-lic">${K.texto}</span><span><b>Tamanho do texto</b>
             <span class="seg cs-seg-mini">${[[1, "Normal"], [1.1, "Grande"], [1.2, "Maior"]].map(([v, t]) => `<button data-a="zoom" data-v="${v}" aria-pressed="${z === v}">${t}</button>`).join("")}</span></span></div>
@@ -1554,9 +1551,8 @@
         <div class="cs-menu card flat">${lin("dados-escola", K.escola, "Dados da escola", "")}</div>
         ${EXT.configExtra.map(f => f()).join("")}
         <h2 class="cs-sec">Sobre</h2>
-        <div class="cs-menu card flat">${lin("termos", K.info, "Termos de uso e privacidade", "")}</div>
-        <button class="btn cs-grande" data-s="sair">${K.sair} Sair da conta</button>
-        <button class="btn ghost cs-perigo" data-s="excluir">${K.lixo} Excluir minha conta</button>
+        <div class="cs-menu card flat">${lin("termos", K.info, "Termos de uso e privacidade", "")}${lin("conta-mais", K.gear, "Gerenciar conta", "")}</div>
+        <button class="btn cs-grande cs-sair-bt" data-s="sair">${K.sair} Sair da conta</button>
       </div>`;
   }
   function sheetEmail(titulo) {
@@ -1724,6 +1720,36 @@
   function ctxFoto() { const t = topo(); return t && t.v === "editar" ? SO.ed : t && t.v === "novo-grupo" ? SO.ng : t && t.v === "editar-grupo" ? SO.eg : SO.cad; }
   const chatAtual = () => { const t = topo(); return t && SO.chats.find(c => c.id === t.id); };
 
+  /* ================= Toque num aviso do celular: abre a conversa ou o perfil ================= */
+  { const N = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Nativo;
+    let ultAv = "";
+    const abrirAviso = d => {
+      if (!d || !d.id || !SO.user) return; const k = d.tipo + ":" + d.id; if (k === ultAv) return; ultAv = k; setTimeout(() => { ultAv = ""; }, 5000);
+      window.fecharSheet();
+      if (d.tipo === "chat") { limparPilha(); SO.tab = "conversas"; lembrarTab(); pintar(); setTimeout(() => abrirChat(d.id), 350); }
+      else if (d.tipo === "perfil") { setTimeout(() => abrirTela({ v: "perfil", id: d.id }), 200); }
+    };
+    if (N && N.aviso) { try { N.addListener("aviso", abrirAviso); } catch (e) { } EXT.aoTrocarUsuario.push(u => { if (u) setTimeout(() => N.aviso().then(abrirAviso).catch(() => { }), 1800); }); }
+  }
+  /* ================= Puxar para o lado troca de aba ================= */
+  { let x0 = 0, y0 = 0, t0 = 0, alvo = null;
+    document.addEventListener("touchstart", e => { if (e.touches.length !== 1) { alvo = null; return; } const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); alvo = e.target; }, { passive: true });
+    document.addEventListener("touchend", e => {
+      const a = alvo; alvo = null; if (!a || !a.closest) return;
+      const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Date.now() - t0 > 700 || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+      if (x0 < 22 || x0 > window.innerWidth - 22) return; /* bordas: gesto de voltar do Android */
+      if (!SO.user || !SO.eu || topo() || document.querySelector("#layer .scrim") || document.body.classList.contains("cs-com-emo")) return;
+      if (a.closest("input,textarea,select,video,.cs-emop,.chips,.seg,.cs-seg,.cs-aparencia,.cs-mus-cats,[data-noswipe],.cs-ch-entra,.cs-ch-tela")) return;
+      for (let n = a; n && n !== document.body; n = n.parentElement) { if (n.scrollWidth > n.clientWidth + 4 && /(auto|scroll)/.test(getComputedStyle(n).overflowX)) return; }
+      const l = abas().map(x => x[0]), i = l.indexOf(SO.tab); if (i < 0) return;
+      const j = i + (dx < 0 ? 1 : -1); if (j < 0 || j >= l.length) return;
+      SO.tab = l[j]; lembrarTab();
+      document.body.classList.remove("cs-desl-e", "cs-desl-d"); void document.body.offsetWidth; document.body.classList.add(dx < 0 ? "cs-desl-e" : "cs-desl-d");
+      setTimeout(() => document.body.classList.remove("cs-desl-e", "cs-desl-d"), 400);
+      pintar(); window.scrollTo(0, 0);
+    }, { passive: true });
+  }
   /* ================= Segurar a conversa na lista abre: Destaque, Arquivar, Excluir ================= */
   { let cvT = null, cvXY = null, cvFez = false;
     document.addEventListener("pointerdown", e => {
@@ -1991,14 +2017,15 @@
         } catch (e) { toast(msgErro(e)); }
         break;
       case "senha": sheetSenha(); break;
-      case "priv-on": try { const on = v === "sim"; if (!on) await fb.deleteDoc(D("presenca", eu())).catch(() => { }); await fb.updateDoc(D("users", eu()), { privOnline: on }); if (on) setTimeout(iniciarPresenca, 300); toast("Privacidade atualizada."); } catch (e) { toast(msgErro(e)); } break;
-      case "priv-lido": try { await fb.updateDoc(D("users", eu()), { privLeitura: v === "sim" }); toast("Privacidade atualizada."); } catch (e) { toast(msgErro(e)); } break;
+      case "priv-on": try { const on = v === "sim"; if (!on) await fb.deleteDoc(D("presenca", eu())).catch(() => { }); await fb.updateDoc(D("users", eu()), { privOnline: on }); if (on) setTimeout(iniciarPresenca, 300); toast("Salvo."); } catch (e) { toast(msgErro(e)); } break;
+      case "priv-lido": try { await fb.updateDoc(D("users", eu()), { privLeitura: v === "sim" }); toast("Salvo."); } catch (e) { toast(msgErro(e)); } break;
       case "priv-rede": try { await fb.updateDoc(D("users", eu()), { privRede: v === "nao" }); toast(v === "nao" ? "Seus seguidores e quem você segue ficaram escondidos." : "Seguidores e quem você segue aparecem no perfil."); } catch (e) { toast(msgErro(e)); } break;
-      case "priv": try { await fb.updateDoc(D("users", eu()), { privMsg: v }); toast("Privacidade atualizada."); } catch (e) { toast(msgErro(e)); } break;
+      case "priv": try { await fb.updateDoc(D("users", eu()), { privMsg: v }); toast("Salvo."); } catch (e) { toast(msgErro(e)); } break;
       case "bloqueados": abrirTela({ v: "bloqueados" }); break;
       case "tema": aplicarTema(v); pintar(); break;
       case "dados-escola": limparPilha(); SO.tab = "provas"; S.tab = "escola"; lembrarTab(); pintar(); break;
       case "excluir": sheetExcluir(); break;
+      case "conta-mais": window.abrirSheet(`<div class="sheet-h"><h2>Gerenciar conta</h2></div><div class="cs-menu"><button class="perigo" data-s="excluir">${K.lixo}<span><b>Excluir minha conta</b></span></button></div>`); break;
       case "prov-sub": SO.provSub = v || null; pintar(); break;
       default: if (EXT.acoes[s]) EXT.acoes[s](el, ev);
     }
@@ -2101,6 +2128,18 @@ body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padd
 .cs-pf-usu{font-size:1.12rem!important;font-weight:700}
 .cs-pf-pag{gap:16px}
 .cs-pfl{display:flex;flex-direction:column;gap:12px;padding:4px 2px 0}
+.cs-lsw{cursor:pointer!important}.cs-lsw>span:nth-child(2){flex:1;min-width:0}
+.cs-swv{width:52px;height:32px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.cs-swv::before{content:"";position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.cs-lsw[aria-checked=true] .cs-swv{background:var(--primary)}.cs-lsw[aria-checked=true] .cs-swv::before{transform:translateX(20px)}
+.cs-cfg .cs-sec{margin:18px 4px 6px;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.cs-cfg .cs-aparencia{margin-bottom:8px}
+.cs-sair-bt{margin-top:18px}
+body.cs-desl-e #main>*{animation:csDeslE .28s ease-out}body.cs-desl-d #main>*{animation:csDeslD .28s ease-out}
+@keyframes csDeslE{from{opacity:.25}to{opacity:1}}
+@keyframes csDeslD{from{opacity:.25}to{opacity:1}}
+.toast{background:var(--surface)!important;color:var(--ink)!important;border:1px solid var(--line);border-radius:999px!important;padding:11px 18px 11px 14px!important;font-weight:600!important;font-size:.92rem;display:flex;align-items:center;gap:10px;box-shadow:0 12px 32px rgba(20,18,31,.18),0 2px 6px rgba(20,18,31,.08)!important;width:max-content;line-height:1.3}
+.toast::before{content:"";width:9px;height:9px;border-radius:50%;flex:none;background:linear-gradient(135deg,#FF3D7F,#B026FF 55%,#6D28FF)}
 .cs-fixa{display:inline-flex;color:var(--primary)}.cs-fixa svg{width:15px;height:15px}.cs-item .cs-av.cs-arq-ic{display:grid;place-items:center;background:var(--primary-soft)!important;color:var(--primary);border-radius:50%;flex:none}.cs-item .cs-arq-ic svg{width:24px;height:24px}.cs-arq-h{display:flex;align-items:center;gap:8px;margin:2px 0 4px}.cs-arq-h b{font-size:1.1rem}.cs-item{-webkit-touch-callout:none;user-select:none}
 .cs-seg{display:flex;gap:6px;flex-wrap:wrap}.cs-seg button{flex:1;min-width:120px;padding:10px 12px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:inherit;font:inherit;font-weight:600}.cs-seg button[aria-pressed=true]{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
 .cs-pf-top{display:flex;align-items:center;gap:18px}
