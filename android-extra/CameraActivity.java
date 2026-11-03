@@ -24,6 +24,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -47,6 +48,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.camera.core.Camera;
+import androidx.camera.core.CameraInfo;
+import androidx.camera.core.ConcurrentCamera;
+import androidx.camera.core.LayoutSettings;
+import androidx.camera.core.UseCaseGroup;
+import android.media.MediaPlayer;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.FocusMeteringAction;
 import androidx.camera.core.ImageAnalysis;
@@ -95,11 +101,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-/* Câmera do ChatMil (CameraX), igual em todo o app (Flash, conversas, mural, visualização única):
-   modos Retrato / Foto / Vídeo / Noturno / Pro (os que o aparelho tiver), HDR, flash, grade, temporizador,
+/* Câmera do FlashPapo (CameraX), igual em todo o app (Flash, conversas, mural, visualização única):
+   modos Retrato / Foto / Vídeo / Noturno / Pro (os que o aparelho tiver), HDR, flash, temporizador,
    zoom, foco por toque, estabilização, botões de volume como disparador e galeria.
    Ferramentas à esquerda (como no Instagram): Loop (vai e volta), Square (várias fotos em grade)
-   e Effects (5 estilos de cor). Respeita as barras do Android (nada fica embaixo dos botões do celular). */
+   Effects (5 estilos de cor) e Dupla (câmera da frente e de trás ao mesmo tempo, quando o celular permite;
+   senão, foto de trás e logo depois a da frente, juntas). Música antes de gravar (como no TikTok): o som toca
+   enquanto grava e o vídeo sai sem o microfone (a música entra na publicação). Respeita as barras do Android (nada fica embaixo dos botões do celular). */
 public class CameraActivity extends AppCompatActivity {
     private static final int PEDIR_GALERIA = 41;
     private static final String M_RETRATO = "retrato", M_FOTO = "foto", M_VIDEO = "video", M_NOTURNO = "noturno", M_PRO = "pro";
@@ -115,18 +123,17 @@ public class CameraActivity extends AppCompatActivity {
     private ImageAnalysis analise;
     private VideoCapture<Recorder> video;
     private Recording gravando;
-    private boolean frente, terminou, grade, hdr, estabilizar = true, ocupado;
+    private boolean frente, terminou, hdr, estabilizar = true, ocupado;
     private String modo = M_FOTO, efeito = "original";
     private int maxSeg, flash = ImageCapture.FLASH_MODE_OFF, timer = 0;
     private long inicio;
     private TextView tempo, contagem, aviso;
     private View disparo;
     private Icone galeria, trocar;
-    private TextView bFlash, bHdr, bGrade, bTimer;
+    private TextView bFlash, bHdr, bTimer, bMusica;
     private LinearLayout topo, baixo, modos, zooms, ferramentas, faixaEfeitos, faixaSquare, acoesSquare;
     private HorizontalScrollView rolarEfeitos;
     private View brilho, anel;
-    private Grade vGrade;
     private SeekBar exposicao;
     private TextView rotExp;
     private final Handler h = new Handler(Looper.getMainLooper());
@@ -143,7 +150,16 @@ public class CameraActivity extends AppCompatActivity {
     /* Square */
     private int square = 0, squareUltimo = 4;
     private final List<Bitmap> celulas = new ArrayList<>();
-    private boolean ferrAbertas = true, efeitosAbertos;
+    private boolean ferrAbertas = false, efeitosAbertos, ajustesAbertos;
+    private Icone bAjustes;
+    /* Dupla (frente + trás) */
+    private boolean dupla, concorrente;
+    private File duplaA;
+    /* música escolhida antes de gravar */
+    private String musicaUri, musicaNome;
+    private int musicaInicio;
+    private boolean comMusica, musicaPronta, usouMusica;
+    private MediaPlayer tocador;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -157,13 +173,15 @@ public class CameraActivity extends AppCompatActivity {
         modo = "foto".equals(i.getStringExtra("modo")) ? M_FOTO : M_VIDEO;
         frente = i.getBooleanExtra("frente", false);
         maxSeg = Math.max(5, Math.min(600, i.getIntExtra("maxSeg", 180)));
-        grade = prefs.getBoolean("grade", false);
+        musicaUri = i.getStringExtra("musica"); musicaNome = i.getStringExtra("musicaNome"); musicaInicio = Math.max(0, i.getIntExtra("musicaInicio", 0));
+        comMusica = i.getBooleanExtra("comMusica", false);
         flash = prefs.getInt("flash", ImageCapture.FLASH_MODE_OFF);
         hdr = prefs.getBoolean("hdr", false);
         efeito = prefs.getString("efeito", "original");
         if (Efeitos.matriz(efeito) == null) efeito = "original";
         squareUltimo = prefs.getInt("square", 4);
         montarTela();
+        prepararMusica();
         try { new WindowInsetsControllerCompat(getWindow(), raiz).setAppearanceLightStatusBars(false); } catch (Throwable t) { }
         if (temPermissoes()) iniciar();
         else ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO}, 7);
@@ -195,19 +213,9 @@ public class CameraActivity extends AppCompatActivity {
         return g;
     }
 
-    /* grade 3x3 por cima da imagem */
-    private static class Grade extends View {
-        private final Paint p = new Paint();
-        Grade(android.content.Context c) { super(c); p.setColor(Color.argb(150, 255, 255, 255)); p.setStrokeWidth(2f); }
-        @Override protected void onDraw(Canvas c) {
-            float w = getWidth(), hh = getHeight();
-            for (int k = 1; k < 3; k++) { c.drawLine(w * k / 3f, 0, w * k / 3f, hh, p); c.drawLine(0, hh * k / 3f, w, hh * k / 3f, p); }
-        }
-    }
-
     /* ícones desenhados (sem emoji): galeria, trocar câmera, loop, square, efeitos */
     static class Icone extends View {
-        static final int GALERIA = 1, TROCAR = 2, LOOP = 3, SQUARE = 4, EFEITOS = 5;
+        static final int GALERIA = 1, TROCAR = 2, LOOP = 3, SQUARE = 4, EFEITOS = 5, DUPLA = 6, MAIS = 7, AJUSTES = 8, FECHAR = 9;
         int tipo, n = 4; boolean ativo;
         private final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
         Icone(android.content.Context c, int tipo) { super(c); this.tipo = tipo; p.setStyle(Paint.Style.STROKE); p.setStrokeCap(Paint.Cap.ROUND); p.setStrokeJoin(Paint.Join.ROUND); }
@@ -249,6 +257,30 @@ public class CameraActivity extends AppCompatActivity {
                     for (int k = 1; k < lin; k++) c.drawLine(q.left, q.top + q.height() * k / lin, q.right, q.top + q.height() * k / lin, p);
                     break;
                 }
+                case MAIS: {
+                    c.drawLine(cx - r * 0.75f, cy, cx + r * 0.75f, cy, p); c.drawLine(cx, cy - r * 0.75f, cx, cy + r * 0.75f, p);
+                    break;
+                }
+                case FECHAR: {
+                    float d = r * 0.6f; c.drawLine(cx - d, cy - d, cx + d, cy + d, p); c.drawLine(cx + d, cy - d, cx - d, cy + d, p);
+                    break;
+                }
+                case AJUSTES: {
+                    c.drawCircle(cx, cy, r * 0.38f, p);
+                    for (int k = 0; k < 8; k++) {
+                        double a = Math.toRadians(k * 45);
+                        c.drawLine(cx + (float) (Math.cos(a) * r * 0.72f), cy + (float) (Math.sin(a) * r * 0.72f), cx + (float) (Math.cos(a) * r * 1.0f), cy + (float) (Math.sin(a) * r * 1.0f), p);
+                    }
+                    c.drawCircle(cx, cy, r * 0.72f, p);
+                    break;
+                }
+                case DUPLA: {
+                    RectF q = new RectF(cx - r * 0.9f, cy - r * 1.2f, cx + r * 0.9f, cy + r * 1.2f);
+                    c.drawRoundRect(q, r * 0.3f, r * 0.3f, p);
+                    RectF m = new RectF(q.left + r * 0.2f, q.top + r * 0.2f, q.left + r * 0.95f, q.top + r * 1.15f);
+                    c.drawRoundRect(m, r * 0.2f, r * 0.2f, p);
+                    break;
+                }
                 case EFEITOS: {
                     p.setStyle(Paint.Style.FILL_AND_STROKE);
                     estrela(c, cx - r * 0.2f, cy + r * 0.15f, r * 0.95f);
@@ -283,8 +315,6 @@ public class CameraActivity extends AppCompatActivity {
             @Override public void onChildViewRemoved(View pai, View filho) { }
         });
         raiz.addView(preview, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        vGrade = new Grade(this); vGrade.setVisibility(grade ? View.VISIBLE : View.GONE);
-        raiz.addView(vGrade, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         anel = new View(this);
         GradientDrawable ga = new GradientDrawable(); ga.setShape(GradientDrawable.OVAL); ga.setStroke(dp(2), AMARELO); ga.setColor(Color.TRANSPARENT);
@@ -308,10 +338,19 @@ public class CameraActivity extends AppCompatActivity {
         tempo = botao("", 15);
         bFlash = botao("", 15); bFlash.setOnClickListener(v -> trocarFlash());
         bHdr = botao("HDR", 14); bHdr.setOnClickListener(v -> { hdr = !hdr; prefs.edit().putBoolean("hdr", hdr).apply(); pintarTopo(); ligar(); });
-        bGrade = botao("#", 18); bGrade.setContentDescription("Grade"); bGrade.setOnClickListener(v -> { grade = !grade; prefs.edit().putBoolean("grade", grade).apply(); vGrade.setVisibility(grade && square == 0 ? View.VISIBLE : View.GONE); pintarTopo(); });
         bTimer = botao("⏱", 16); bTimer.setContentDescription("Temporizador"); bTimer.setOnClickListener(v -> { timer = timer == 0 ? 3 : timer == 3 ? 10 : 0; pintarTopo(); });
-        topo.addView(fechar); topo.addView(tempo, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        topo.addView(bFlash); topo.addView(bHdr); topo.addView(bGrade); topo.addView(bTimer);
+        /* "Adicionar som" no meio do topo (como no TikTok) */
+        bMusica = botao("", 14); bMusica.setTypeface(null, android.graphics.Typeface.BOLD);
+        bMusica.setBackground(pilula(Color.argb(120, 0, 0, 0), 0)); bMusica.setPadding(dp(14), dp(8), dp(16), dp(8));
+        bMusica.setSingleLine(true); bMusica.setEllipsize(android.text.TextUtils.TruncateAt.END); bMusica.setMaxWidth(dp(220));
+        bMusica.setOnClickListener(v -> pedirMusica());
+        LinearLayout meio = new LinearLayout(this); meio.setGravity(Gravity.CENTER);
+        meio.addView(bMusica); meio.addView(tempo);
+        topo.addView(fechar); topo.addView(meio, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        bAjustes = new Icone(this, Icone.AJUSTES); bAjustes.setContentDescription("Ajustes da câmera");
+        bAjustes.setOnClickListener(v -> { ajustesAbertos = !ajustesAbertos; pintarTopo(); });
+        topo.addView(bFlash); topo.addView(bHdr); topo.addView(bTimer);
+        topo.addView(bAjustes, new LinearLayout.LayoutParams(dp(44), dp(44)));
         raiz.addView(topo, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP));
 
         /* ferramentas à esquerda (Loop, Square, Effects) */
@@ -403,17 +442,21 @@ public class CameraActivity extends AppCompatActivity {
         int idx = flash == ImageCapture.FLASH_MODE_AUTO ? 1 : flash == ImageCapture.FLASH_MODE_ON ? 2 : 0;
         bFlash.setText(!M_VIDEO.equals(modo) ? nomes[idx] : (flash == ImageCapture.FLASH_MODE_ON ? "🔦" : "⚡̸"));
         bFlash.setContentDescription("Flash: " + (idx == 0 ? "desligado" : idx == 1 ? "automático" : "ligado"));
-        bFlash.setVisibility(frente || loop || square > 0 ? View.GONE : View.VISIBLE);
+        bFlash.setVisibility(!ajustesAbertos || frente || loop || square > 0 || dupla ? View.GONE : View.VISIBLE);
+        bAjustes.ativo = ajustesAbertos; bAjustes.invalidate();
         boolean temHdr = extensoes != null && M_FOTO.equals(modo) && !loop && square == 0 && extensaoDisponivel(ExtensionMode.HDR);
-        bHdr.setVisibility(temHdr ? View.VISIBLE : View.GONE);
+        bHdr.setVisibility(ajustesAbertos && temHdr ? View.VISIBLE : View.GONE);
         bHdr.setTextColor(hdr ? AMARELO : Color.WHITE);
-        bGrade.setTextColor(grade ? AMARELO : Color.WHITE);
+        boolean livre = gravando == null && !capturandoLoop;
+        bMusica.setVisibility(comMusica && livre && !loop && square == 0 ? View.VISIBLE : View.GONE);
+        bMusica.setText(musicaUri != null ? "♪  " + (musicaNome != null ? musicaNome : "Música") : "♪  Adicionar som");
+        bMusica.setTextColor(musicaUri != null ? AMARELO : Color.WHITE);
         bTimer.setText(timer == 0 ? "⏱" : "⏱" + timer + "s");
         bTimer.setTextColor(timer == 0 ? Color.WHITE : AMARELO);
-        bTimer.setVisibility(foto && !loop ? View.VISIBLE : View.GONE);
+        bTimer.setVisibility(ajustesAbertos && foto && !loop ? View.VISIBLE : View.GONE);
         if (gravando == null && !capturandoLoop) {
             tempo.setTextColor(Color.WHITE);
-            tempo.setText(loop ? "Loop" : square > 0 ? "Square · " + Math.min(celulas.size() + 1, square) + " de " + square : "");
+            tempo.setText(loop ? "Loop" : square > 0 ? "Square · " + Math.min(celulas.size() + 1, square) + " de " + square : dupla && !concorrente ? "Dupla · trás e frente" : "");
         }
     }
     private void pintarModos() {
@@ -450,24 +493,26 @@ public class CameraActivity extends AppCompatActivity {
         ferramentas.removeAllViews();
         boolean livre = gravando == null && !capturandoLoop && !ocupado;
         ferramentas.setVisibility(livre ? View.VISIBLE : View.INVISIBLE);
-        if (!ferrAbertas) { ferramentas.addView(itemFerramenta(Icone.EFEITOS, "Ferramentas", false, v -> { ferrAbertas = true; pintarFerramentas(); })); return; }
+        boolean algum = loop || square > 0 || dupla || !"original".equals(efeito);
+        if (!ferrAbertas) { ferramentas.addView(itemFerramenta(Icone.MAIS, "", algum, v -> { ferrAbertas = true; pintarFerramentas(); })); return; }
         ferramentas.addView(itemFerramenta(Icone.LOOP, "Loop", loop, v -> alternarLoop()));
         View sq = itemFerramenta(Icone.SQUARE, "Square", square > 0, v -> alternarSquare());
         ferramentas.addView(sq);
+        ferramentas.addView(itemFerramenta(Icone.DUPLA, "Dupla", dupla, v -> alternarDupla()));
         ferramentas.addView(itemFerramenta(Icone.EFEITOS, "Effects", efeitosAbertos || !"original".equals(efeito), v -> { efeitosAbertos = !efeitosAbertos; pintarEfeitos(); pintarFerramentas(); }));
-        TextView fecharF = botao("︿  Fechar", 13); fecharF.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
-        fecharF.setOnClickListener(v -> { ferrAbertas = false; efeitosAbertos = false; pintarEfeitos(); pintarFerramentas(); });
-        ferramentas.addView(fecharF);
+        ferramentas.addView(itemFerramenta(Icone.FECHAR, "", false, v -> { ferrAbertas = false; efeitosAbertos = false; pintarEfeitos(); pintarFerramentas(); }));
     }
     private View itemFerramenta(int tipo, String nome, boolean ativo, View.OnClickListener ok) {
         LinearLayout l = new LinearLayout(this); l.setGravity(Gravity.CENTER_VERTICAL); l.setPadding(0, dp(5), dp(6), dp(5));
         Icone ic = new Icone(this, tipo); ic.ativo = ativo; if (tipo == Icone.SQUARE) ic.n = square > 0 ? square : squareUltimo;
         ic.setBackground(redondo(ativo ? Color.argb(150, 0, 0, 0) : Color.argb(90, 0, 0, 0)));
         l.addView(ic, new LinearLayout.LayoutParams(dp(46), dp(46)));
-        TextView t = botao(nome, 14); t.setPadding(dp(10), 0, 0, 0); t.setTypeface(null, android.graphics.Typeface.BOLD);
-        if (ativo) t.setTextColor(AMARELO);
-        l.addView(t);
-        l.setOnClickListener(ok); l.setContentDescription(nome);
+        if (!nome.isEmpty()) {
+            TextView t = botao(nome, 14); t.setPadding(dp(10), 0, 0, 0); t.setTypeface(null, android.graphics.Typeface.BOLD);
+            if (ativo) t.setTextColor(AMARELO);
+            l.addView(t);
+        }
+        l.setOnClickListener(ok); l.setContentDescription(nome.isEmpty() ? (tipo == Icone.MAIS ? "Mais ferramentas" : "Fechar ferramentas") : nome);
         return l;
     }
     private void pintarEfeitos() {
@@ -602,6 +647,7 @@ public class CameraActivity extends AppCompatActivity {
     private void alternarLoop() {
         if (gravando != null || capturandoLoop || ocupado) return;
         if (square > 0) sairSquare();
+        dupla = false;
         loop = !loop;
         if (loop && M_VIDEO.equals(modo)) modo = M_FOTO;
         pintarModos(); pintarTopo(); pintarDisparo(); pintarFerramentas(); ligar();
@@ -762,7 +808,7 @@ public class CameraActivity extends AppCompatActivity {
     private void alternarSquare() {
         if (gravando != null || capturandoLoop || ocupado) return;
         if (square > 0) { sairSquare(); pintarModos(); pintarTopo(); pintarDisparo(); pintarFerramentas(); ligar(); return; }
-        loop = false;
+        loop = false; dupla = false;
         if (!M_FOTO.equals(modo)) modo = M_FOTO;
         entrarSquare(squareUltimo);
         pintarModos(); pintarTopo(); pintarDisparo(); pintarFerramentas(); ligar();
@@ -770,7 +816,6 @@ public class CameraActivity extends AppCompatActivity {
     private void entrarSquare(int n) {
         square = n; squareUltimo = n; prefs.edit().putInt("square", n).apply();
         limparCelulas();
-        vGrade.setVisibility(View.GONE);
         mosaico.setVisibility(View.VISIBLE);
         pintarFaixaSquare();
         h.post(this::posicionarSquare);
@@ -781,7 +826,6 @@ public class CameraActivity extends AppCompatActivity {
         faixaSquare.setVisibility(View.GONE); acoesSquare.setVisibility(View.GONE);
         preview.setVisibility(View.VISIBLE);
         preview.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        vGrade.setVisibility(grade ? View.VISIBLE : View.GONE);
         h.postDelayed(this::aplicarEfeitoPrevia, 200);
     }
     private void limparCelulas() { mosaico.removeAllViews(); for (Bitmap b : celulas) b.recycle(); celulas.clear(); }
@@ -930,6 +974,11 @@ public class CameraActivity extends AppCompatActivity {
         try {
             provedor.unbindAll();
             analise = null;
+            if (dupla && !loop && square == 0) {
+                if (ligarDupla()) { pintarTopo(); pintarZooms(); camera.getCameraInfo().getZoomState().observe(this, z -> pintarZooms()); ((View) exposicao.getParent()).setVisibility(View.GONE); return; }
+                concorrente = false;
+                if (M_VIDEO.equals(modo)) { modo = M_FOTO; pintarModos(); pintarDisparo(); mostrarAviso("Neste celular a Dupla é em foto: trás e logo depois a frente", 2600); }
+            }
             CameraSelector sel = frente ? CameraSelector.DEFAULT_FRONT_CAMERA : CameraSelector.DEFAULT_BACK_CAMERA;
             if (!provedor.hasCamera(sel)) { frente = !frente; sel = frente ? CameraSelector.DEFAULT_FRONT_CAMERA : CameraSelector.DEFAULT_BACK_CAMERA; }
             boolean vid = M_VIDEO.equals(modo) && !loop && square == 0;
@@ -998,6 +1047,139 @@ public class CameraActivity extends AppCompatActivity {
         }
     }
 
+    /* duas câmeras ao mesmo tempo (CameraX: câmera concorrente com composição, a menor no canto) */
+    private boolean ligarDupla() {
+        try {
+            if (Build.VERSION.SDK_INT < 30) return false;
+            CameraSelector tras = null, fr = null;
+            for (List<CameraInfo> par : provedor.getAvailableConcurrentCameraInfos()) {
+                CameraSelector t = null, f = null;
+                for (CameraInfo ci : par) {
+                    int l = ci.getLensFacing();
+                    if (l == CameraSelector.LENS_FACING_BACK && t == null) t = ci.getCameraSelector();
+                    else if (l == CameraSelector.LENS_FACING_FRONT && f == null) f = ci.getCameraSelector();
+                }
+                if (t != null && f != null) { tras = t; fr = f; break; }
+            }
+            if (tras == null) return false;
+            Preview p = new Preview.Builder().build();
+            p.setSurfaceProvider(preview.getSurfaceProvider());
+            UseCaseGroup.Builder gb = new UseCaseGroup.Builder().addUseCase(p);
+            captura = null; analise = null; video = null;
+            if (M_VIDEO.equals(modo)) {
+                Recorder rec = new Recorder.Builder()
+                    .setQualitySelector(QualitySelector.fromOrderedList(Arrays.asList(Quality.HD, Quality.SD), FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)))
+                    .build();
+                video = new VideoCapture.Builder<>(rec).build();
+                gb.addUseCase(video);
+            }
+            UseCaseGroup g = gb.build();
+            CameraSelector grande = frente ? fr : tras, pequena = frente ? tras : fr;
+            LayoutSettings cheio = new LayoutSettings.Builder().setAlpha(1f).setOffsetX(0f).setOffsetY(0f).setWidth(1f).setHeight(1f).build();
+            LayoutSettings canto = new LayoutSettings.Builder().setAlpha(1f).setOffsetX(-0.56f).setOffsetY(0.58f).setWidth(0.38f).setHeight(0.38f).build();
+            ConcurrentCamera cc = provedor.bindToLifecycle(Arrays.asList(
+                new ConcurrentCamera.SingleCameraConfig(grande, g, cheio, this),
+                new ConcurrentCamera.SingleCameraConfig(pequena, g, canto, this)));
+            camera = cc.getCameras().get(0);
+            concorrente = true;
+            return true;
+        } catch (Throwable t) {
+            try { provedor.unbindAll(); } catch (Exception e) { }
+            video = null;
+            return false;
+        }
+    }
+    private void alternarDupla() {
+        if (gravando != null || capturandoLoop || ocupado) return;
+        if (square > 0) sairSquare();
+        loop = false; dupla = !dupla; duplaA = null;
+        if (M_RETRATO.equals(modo) || M_NOTURNO.equals(modo) || M_PRO.equals(modo)) modo = M_FOTO;
+        pintarModos(); pintarTopo(); pintarDisparo(); pintarFerramentas(); ligar();
+    }
+    /* foto da Dupla ao mesmo tempo: o quadro já vem composto na prévia */
+    private void fotoDaPrevia() {
+        Bitmap b = preview.getBitmap();
+        if (b == null) { Toast.makeText(this, "Não deu para tirar a foto. Tente de novo.", Toast.LENGTH_SHORT).show(); return; }
+        brilho.setAlpha(0.85f); brilho.animate().alpha(0f).setDuration(260).start();
+        final File f = novoArquivo("jpg");
+        ocupado = true;
+        trabalho.execute(() -> {
+            try (FileOutputStream o = new FileOutputStream(f)) { b.compress(Bitmap.CompressFormat.JPEG, 92, o); } catch (Exception e) { }
+            b.recycle();
+            h.post(() -> { ocupado = false; concluir(f, "image/jpeg", false); });
+        });
+    }
+    /* Dupla sem câmera concorrente: junta as duas fotos (a segunda pequena no canto, como no BeReal) */
+    private static Bitmap carregarGirado(File f, int maxLado) throws Exception {
+        BitmapFactory.Options o = new BitmapFactory.Options(); o.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(f.getAbsolutePath(), o);
+        int amostra = 1; while (Math.max(o.outWidth, o.outHeight) / amostra > maxLado * 2) amostra *= 2;
+        o = new BitmapFactory.Options(); o.inSampleSize = amostra;
+        Bitmap b = BitmapFactory.decodeFile(f.getAbsolutePath(), o);
+        int giro = 0;
+        try {
+            int ori = new ExifInterface(f.getAbsolutePath()).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            giro = ori == ExifInterface.ORIENTATION_ROTATE_90 ? 90 : ori == ExifInterface.ORIENTATION_ROTATE_180 ? 180 : ori == ExifInterface.ORIENTATION_ROTATE_270 ? 270 : 0;
+        } catch (Exception e) { }
+        float k = Math.min(1f, maxLado / (float) Math.max(b.getWidth(), b.getHeight()));
+        Matrix m = new Matrix(); m.postScale(k, k); if (giro != 0) m.postRotate(giro);
+        Bitmap r = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), m, true);
+        if (r != b) b.recycle();
+        return r;
+    }
+    private void juntarDupla(File grande, File pequena) {
+        ocupado = true; mostrarAviso("Juntando as fotos…", 0);
+        trabalho.execute(() -> {
+            File saidaF = novoArquivo("jpg");
+            try {
+                Bitmap a = carregarGirado(grande, 1920), b = carregarGirado(pequena, 720);
+                Bitmap r = a.copy(Bitmap.Config.ARGB_8888, true); a.recycle();
+                Canvas c = new Canvas(r);
+                float w = r.getWidth() * 0.34f, hh = w * b.getHeight() / (float) b.getWidth(), m = r.getWidth() * 0.04f, raio = w * 0.12f;
+                RectF q = new RectF(m, m, m + w, m + hh);
+                Paint borda = new Paint(Paint.ANTI_ALIAS_FLAG); borda.setColor(Color.BLACK);
+                RectF qb = new RectF(q.left - 6, q.top - 6, q.right + 6, q.bottom + 6);
+                c.drawRoundRect(qb, raio + 6, raio + 6, borda);
+                Path recorte = new Path(); recorte.addRoundRect(q, raio, raio, Path.Direction.CW);
+                c.save(); c.clipPath(recorte); c.drawBitmap(b, null, q, new Paint(Paint.FILTER_BITMAP_FLAG)); c.restore();
+                b.recycle();
+                try (FileOutputStream o = new FileOutputStream(saidaF)) { r.compress(Bitmap.CompressFormat.JPEG, 90, o); }
+                r.recycle();
+            } catch (Throwable t) { saidaF = grande; }
+            final File fim = saidaF;
+            h.post(() -> { ocupado = false; esconderAviso(); concluir(fim, "image/jpeg", false); });
+        });
+    }
+
+    /* ---------- música antes de gravar ---------- */
+    private void pedirMusica() {
+        if (gravando != null || capturandoLoop || ocupado || terminou) return;
+        terminou = true;
+        pararMusica();
+        Intent r = new Intent(); r.putExtra("acao", "musica");
+        r.putExtra("modo", M_VIDEO.equals(modo) ? "video" : "foto");
+        setResult(RESULT_OK, r);
+        finish();
+    }
+    private void prepararMusica() {
+        if (musicaUri == null) return;
+        try {
+            tocador = new MediaPlayer();
+            tocador.setDataSource(this, Uri.parse(musicaUri));
+            tocador.setOnPreparedListener(m -> { musicaPronta = true; try { m.seekTo(musicaInicio * 1000); } catch (Exception e) { } });
+            tocador.setOnErrorListener((m, a, b2) -> { musicaPronta = false; return true; });
+            tocador.prepareAsync();
+        } catch (Exception e) { tocador = null; }
+    }
+    private void tocarMusica() {
+        if (tocador == null || !musicaPronta) return;
+        try { tocador.seekTo(musicaInicio * 1000); tocador.start(); usouMusica = true; } catch (Exception e) { }
+    }
+    private void pararMusica() {
+        if (tocador == null) return;
+        try { if (tocador.isPlaying()) tocador.pause(); } catch (Exception e) { }
+    }
+
     private File novoArquivo(String ext) {
         File d = new File(getCacheDir(), "chatmil");
         if (!d.exists()) d.mkdirs();
@@ -1009,6 +1191,7 @@ public class CameraActivity extends AppCompatActivity {
         if (loop) { if (!capturandoLoop) comecarLoop(); return; }
         if (square > 0) { if (timer > 0) { contar(timer); return; } fotoSquare(); return; }
         if (!M_VIDEO.equals(modo)) {
+            if (dupla && concorrente) { fotoDaPrevia(); return; }
             if (captura == null) return;
             if (timer > 0) { contar(timer); return; }
             fotografar();
@@ -1020,17 +1203,19 @@ public class CameraActivity extends AppCompatActivity {
         saida = novoArquivo("mp4");
         FileOutputOptions op = new FileOutputOptions.Builder(saida).setDurationLimitMillis(maxSeg * 1000L).build();
         PendingRecording pr = video.getOutput().prepareRecording(this, op);
-        if (temAudio()) { try { pr = pr.withAudioEnabled(); } catch (SecurityException e) { } }
+        boolean comSom = tocador != null && musicaPronta;
+        if (temAudio() && !comSom) { try { pr = pr.withAudioEnabled(); } catch (SecurityException e) { } }
         gravando = pr.start(ex, ev -> {
             if (ev instanceof VideoRecordEvent.Finalize) {
                 VideoRecordEvent.Finalize fin = (VideoRecordEvent.Finalize) ev;
-                gravando = null; h.removeCallbacksAndMessages(null);
+                gravando = null; h.removeCallbacksAndMessages(null); pararMusica();
                 if (!fin.hasError() || fin.getError() == VideoRecordEvent.Finalize.ERROR_DURATION_LIMIT_REACHED) concluir(saida, "video/mp4", true);
                 else { pintarDisparo(); modos.setAlpha(1f); trocar.setAlpha(1f); galeria.setAlpha(1f); pintarFerramentas(); Toast.makeText(CameraActivity.this, "A gravação falhou. Tente de novo.", Toast.LENGTH_SHORT).show(); }
             }
         });
         inicio = System.currentTimeMillis();
-        trocar.setAlpha(0.3f); modos.setAlpha(0.3f); galeria.setAlpha(0.3f);
+        if (comSom) tocarMusica();
+        trocar.setAlpha(0.3f); modos.setAlpha(0.3f); galeria.setAlpha(0.3f); pintarTopo();
         pintarDisparo(); pintarFerramentas();
         relogio();
     }
@@ -1048,6 +1233,15 @@ public class CameraActivity extends AppCompatActivity {
         brilho.setAlpha(0.85f); brilho.animate().alpha(0f).setDuration(260).start();
         captura.takePicture(new ImageCapture.OutputFileOptions.Builder(saida).build(), ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
             @Override public void onImageSaved(ImageCapture.OutputFileResults r) {
+                if (dupla && !concorrente) {
+                    if (duplaA == null) {
+                        duplaA = saida; frente = !frente; ligar();
+                        mostrarAviso("Agora a outra câmera…", 0);
+                        h.postDelayed(() -> { esconderAviso(); disparo.setEnabled(true); fotografar(); }, 1200);
+                        return;
+                    }
+                    File a = duplaA; duplaA = null; frente = !frente; juntarDupla(a, saida); return;
+                }
                 if (Efeitos.matriz(efeito) == null) { concluir(saida, "image/jpeg", false); return; }
                 ocupado = true; mostrarAviso("Aplicando " + Efeitos.NOMES[Efeitos.indice(efeito)] + "…", 0);
                 final File f = saida;
@@ -1113,6 +1307,9 @@ public class CameraActivity extends AppCompatActivity {
         r.putExtra("caminho", f.getAbsolutePath());
         r.putExtra("tipo", tipo);
         if (comEfeitoNoVideo && Efeitos.matriz(efeito) != null) r.putExtra("efeito", efeito);
+        if (musicaUri != null && (usouMusica || !tipo.startsWith("video/"))) r.putExtra("musica", true);
+        if (dupla) r.putExtra("dupla", true);
+        pararMusica();
         setResult(RESULT_OK, r);
         finish();
     }
@@ -1121,6 +1318,7 @@ public class CameraActivity extends AppCompatActivity {
         if (terminou) return; terminou = true;
         capturandoLoop = false;
         if (gravando != null) { try { gravando.stop(); } catch (Exception e) { } gravando = null; }
+        pararMusica();
         setResult(RESULT_CANCELED);
         finish();
     }
@@ -1137,6 +1335,7 @@ public class CameraActivity extends AppCompatActivity {
         capturandoLoop = false;
         if (gravando != null) { try { gravando.stop(); } catch (Exception e) { } }
         try { if (provedor != null) provedor.unbindAll(); } catch (Exception e) { }
+        if (tocador != null) { try { tocador.release(); } catch (Exception e) { } tocador = null; }
         trabalho.shutdown();
         super.onDestroy();
     }

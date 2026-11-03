@@ -43,7 +43,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-/* Recursos do Android usados pelo ChatMil: bloquear captura de tela (visualização única),
+/* Recursos do Android usados pelo FlashPapo: bloquear captura de tela (visualização única),
    abrir arquivo em outro app, salvar em Downloads, imprimir PDF e abrir a transmissão de tela. */
 @CapacitorPlugin(name = "Nativo")
 public class NativoPlugin extends Plugin {
@@ -233,6 +233,13 @@ public class NativoPlugin extends Plugin {
         while ((n = in.read(b)) > 0) out.write(b, 0, n);
     }
 
+    /* liga/desliga a janela flutuante da chamada de vídeo */
+    @PluginMethod
+    public void pip(PluginCall call) {
+        MainActivity.pipChamada = Boolean.TRUE.equals(call.getBoolean("ligar", false));
+        call.resolve();
+    }
+
     @PluginMethod
     public void seguro(final PluginCall call) {
         final boolean ligar = Boolean.TRUE.equals(call.getBoolean("ligar", false));
@@ -327,7 +334,7 @@ public class NativoPlugin extends Plugin {
                         if (agora - ult > 300) { ult = agora; JSObject p = new JSObject(); p.put("lido", lido); p.put("total", total); notifyListeners("atualizacaoProgresso", p); }
                     }
                 }
-                /* confere se é mesmo o ChatMil antes de instalar */
+                /* confere se é mesmo o FlashPapo antes de instalar */
                 android.content.pm.PackageInfo pi = getContext().getPackageManager().getPackageArchiveInfo(f.getPath(), 0);
                 if (pi == null || !getContext().getPackageName().equals(pi.packageName)) { f.delete(); throw new IOException("arquivo inválido"); }
                 Uri u = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", f);
@@ -373,7 +380,7 @@ public class NativoPlugin extends Plugin {
             ContentValues v = new ContentValues();
             v.put(MediaStore.MediaColumns.DISPLAY_NAME, call.getString("nome", f.getName()));
             v.put(MediaStore.MediaColumns.MIME_TYPE, call.getString("tipo", "application/octet-stream"));
-            v.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/ChatMil");
+            v.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/FlashPapo");
             ContentResolver cr = getContext().getContentResolver();
             Uri dest = cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
             if (dest == null) {
@@ -392,7 +399,7 @@ public class NativoPlugin extends Plugin {
     @PluginMethod
     public void imprimir(final PluginCall call) {
         final File f = arquivo(call);
-        final String nome = call.getString("nome", "ChatMil");
+        final String nome = call.getString("nome", "FlashPapo");
         getActivity().runOnUiThread(() -> {
             try {
                 PrintManager pm = (PrintManager) getActivity().getSystemService(Context.PRINT_SERVICE);

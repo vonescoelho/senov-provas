@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 /* Fica ligado em segundo plano (com uma notificação discreta) ouvindo as chamadas
-   que tocam para esta pessoa. Assim o celular toca mesmo com o ChatMil fechado. */
+   que tocam para esta pessoa. Assim o celular toca mesmo com o FlashPapo fechado. */
 public class ChamadasService extends Service {
     static final String CANAL_CONEXAO = "chatmil_conexao";
     static final String CANAL_CHAMADA = "chatmil_chamadas_v2";
@@ -72,11 +72,11 @@ public class ChamadasService extends Service {
         if (Build.VERSION.SDK_INT < 26) return;
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         NotificationChannel con = new NotificationChannel(CANAL_CONEXAO, "Conexão de chamadas", NotificationManager.IMPORTANCE_MIN);
-        con.setDescription("Mantém o ChatMil pronto para tocar quando alguém ligar");
+        con.setDescription("Mantém o FlashPapo pronto para tocar quando alguém ligar");
         con.setShowBadge(false);
         nm.createNotificationChannel(con);
         NotificationChannel ch = new NotificationChannel(CANAL_CHAMADA, "Chamadas recebidas", NotificationManager.IMPORTANCE_HIGH);
-        ch.setDescription("Toque quando alguém liga pelo ChatMil");
+        ch.setDescription("Toque quando alguém liga pelo FlashPapo");
         Uri som = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
         ch.setSound(som, new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE).setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION).build());
         ch.enableVibration(true);
@@ -158,7 +158,7 @@ public class ChamadasService extends Service {
         final boolean auto = urgente && podeAtenderSozinho(this, de);
         /* app aberto na tela: quem toca é o próprio app */
         if (MainActivity.visivel) return;
-        mostrar(cid, "Chamada do ChatMil", voz, urgente, auto);
+        mostrar(cid, "Chamada do FlashPapo", voz, urgente, auto);
         if (de != null) {
             FirebaseFirestore.getInstance(app(this)).collection("users").document(de).get().addOnSuccessListener(u -> {
                 String nome = u.getString("usuario");

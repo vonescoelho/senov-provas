@@ -56,6 +56,14 @@ public class MidiaPlugin extends Plugin {
         i.putExtra("modo", call.getString("modo", "video"));
         i.putExtra("frente", call.getBoolean("frente", false));
         i.putExtra("maxSeg", call.getInt("maxSeg", 180));
+        /* música escolhida antes de gravar (como no TikTok): toca enquanto grava */
+        i.putExtra("comMusica", Boolean.TRUE.equals(call.getBoolean("comMusica", false)));
+        String mu = call.getString("musica", null);
+        if (mu != null && (mu.startsWith("https://") || mu.startsWith("file:"))) {
+            i.putExtra("musica", mu);
+            i.putExtra("musicaNome", call.getString("musicaNome", "Música"));
+            i.putExtra("musicaInicio", call.getInt("musicaInicio", 0));
+        }
         startActivityForResult(call, i, "cameraVoltou");
     }
 
@@ -63,6 +71,9 @@ public class MidiaPlugin extends Plugin {
     private void cameraVoltou(PluginCall call, ActivityResult r) {
         if (call == null) return;
         if (r.getResultCode() != android.app.Activity.RESULT_OK || r.getData() == null) { call.reject("cancelado"); return; }
+        String acao = r.getData().getStringExtra("acao");
+        if (acao != null) { JSObject a = new JSObject(); a.put("acao", acao); a.put("modo", r.getData().getStringExtra("modo")); call.resolve(a); return; }
+        final boolean comMusica = r.getData().getBooleanExtra("musica", false), dupla = r.getData().getBooleanExtra("dupla", false);
         String caminho = r.getData().getStringExtra("caminho"), tipo = r.getData().getStringExtra("tipo"), efeito = r.getData().getStringExtra("efeito");
         if (caminho == null) { call.reject("cancelado"); return; }
         File f = new File(caminho);
@@ -71,11 +82,13 @@ public class MidiaPlugin extends Plugin {
                 f.delete();
                 if (saida == null) { call.reject(erro == null ? "falhou" : erro); return; }
                 info.put("nome", "video-" + System.currentTimeMillis() + ".mp4");
+                info.put("musica", comMusica); info.put("dupla", dupla);
                 call.resolve(info);
             });
         } else {
             JSObject o = new JSObject();
             o.put("caminho", f.getAbsolutePath()); o.put("tipo", "image/jpeg"); o.put("nome", "foto-" + System.currentTimeMillis() + ".jpg"); o.put("bytes", f.length());
+            o.put("musica", comMusica); o.put("dupla", dupla);
             call.resolve(o);
         }
     }

@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/* Atualização do ChatMil sem precisar baixar pelo navegador: confere a última versão publicada
+/* Atualização do FlashPapo sem precisar baixar pelo navegador: confere a última versão publicada
    no GitHub (apk-vN), avisa com uma notificação pequena e baixa/instala pelo próprio app. */
 public class Atualizacao {
     static final String API = "https://api.github.com/repos/vonescoelho/senov-provas/releases?per_page=8";
@@ -110,7 +110,7 @@ public class Atualizacao {
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
             NotificationChannel ch = new NotificationChannel(CANAL, "Atualizações do app", NotificationManager.IMPORTANCE_DEFAULT);
-            ch.setDescription("Avisa quando há uma versão nova do ChatMil");
+            ch.setDescription("Avisa quando há uma versão nova do FlashPapo");
             ch.setShowBadge(false);
             nm.createNotificationChannel(ch);
         }
@@ -120,7 +120,7 @@ public class Atualizacao {
         PendingIntent pi = PendingIntent.getActivity(ctx, ID_NOTIF, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification n = new NotificationCompat.Builder(ctx, CANAL)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("✨ ChatMil novinho te esperando · toque e veja")
+            .setContentTitle("✨ FlashPapo novinho te esperando · toque e veja")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(pi)

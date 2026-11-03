@@ -13,6 +13,8 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     /* o app está na tela? (se estiver, quem toca a chamada é o próprio app) */
     static volatile boolean visivel = false;
+    /* chamada de vídeo em andamento: ao sair do app, vira janela flutuante (picture-in-picture) */
+    static volatile boolean pipChamada = false;
     private int ultimoTeclado = -1;
 
     @Override
@@ -33,6 +35,24 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onResume() { super.onResume(); visivel = true; }
+
+    @Override
+    public void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        entrarFlutuante();
+    }
+    void entrarFlutuante() {
+        if (!pipChamada || Build.VERSION.SDK_INT < 26) return;
+        try {
+            if (Build.VERSION.SDK_INT >= 24 && isInPictureInPictureMode()) return;
+            enterPictureInPictureMode(new android.app.PictureInPictureParams.Builder().setAspectRatio(new android.util.Rational(9, 16)).build());
+        } catch (Throwable t) { }
+    }
+    @Override
+    public void onPictureInPictureModeChanged(boolean flutuando, android.content.res.Configuration nova) {
+        super.onPictureInPictureModeChanged(flutuando, nova);
+        try { if (bridge != null && bridge.getWebView() != null) bridge.getWebView().evaluateJavascript("window.SENOV_pip&&window.SENOV_pip(" + flutuando + ")", null); } catch (Throwable t) { }
+    }
 
     @Override
     public void onPause() { visivel = false; super.onPause(); }
