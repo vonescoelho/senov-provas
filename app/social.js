@@ -1351,7 +1351,7 @@
     const ad = ehAdulto(), menor = !!(SO.eu && SO.eu.menor);
     return `<div class="cs-canto">
       ${EXT.perfilCanto.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
-      <button class="cs-canto-b ${ehProf() ? "on" : ""}" data-s="sou-prof">${K.escola}<span>${ehProf() ? "Professor(a)" : "Sou professor"}</span></button>
+      <button class="cs-canto-b ${ehProf() ? "on" : ""}" data-s="sou-prof">${K.escola}<span>${ehProf() ? "Prof(a)" : "Sou prof(a)"}</span></button>
       ${menor ? "" : `<button class="cs-canto-b ${ad && ehSolteiro() ? "on" : ""}" data-s="adulto">${ad ? K.conexoes : K.shield}<span>${ad ? "Conexões" : "+18"}</span></button>`}</div>`;
   }
   function sheetProf() {
@@ -1423,6 +1423,9 @@
         <label class="f" for="cs-escola">Escola<input class="in" id="cs-escola" maxlength="100" value="${esc(e.escola || "")}"></label>
         <div class="f"><span>Disciplinas</span>${chipsDisciplinas(e.disciplinas, "ed")}</div>
         <label class="f" for="cs-bio"><span>Sobre você <small class="muted">(até 300 caracteres)</small></span><textarea class="in" id="cs-bio" maxlength="300" rows="3" placeholder="Ex.: Professora de Português há 12 anos, apaixonada por leitura.">${esc(e.bio || "")}</textarea></label>
+        ${ehAdulto() && !(SO.eu && SO.eu.menor) ? `<div class="f"><span>Relacionamento <small class="muted">(só aparece em Conexões quem está solteiro)</small></span>
+          <div class="cs-seg" role="group" aria-label="Relacionamento">${[["solteiro", "Solteiro(a)"], ["relacionamento", "Num relacionamento"]].map(([v, t]) => `<button type="button" data-s="ed-relac" data-v="${v}" aria-pressed="${(SO.eu && SO.eu.relac) === v}">${t}</button>`).join("")}</div>
+          <button type="button" class="cs-link" data-s="pt-ajustes">Interesses e localização das Conexões</button></div>` : ""}
         ${erroHtml()}
         <button class="btn primary cs-grande">Salvar</button>
       </form>`;
@@ -1462,8 +1465,21 @@
     const r = document.documentElement;
     if (t === "claro") r.dataset.theme = "light"; else if (t === "escuro") r.dataset.theme = "dark"; else delete r.dataset.theme;
     try { localStorage.setItem("cs.tema", t); } catch (e) { }
+    barrasDoSistema();
+  }
+  /* hora, bateria e notificações sempre visíveis: ícones escuros no tema claro e claros no escuro */
+  function barrasDoSistema() {
+    try {
+      const t = tema(), mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+      const escuro = t === "escuro" || (t === "auto" && !!(mq && mq.matches));
+      const N = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Nativo;
+      if (N && N.barras) N.barras({ escuro }).catch(() => { });
+    } catch (e) { }
   }
   aplicarTema(tema());
+  try { const mq = window.matchMedia("(prefers-color-scheme: dark)"); (mq.addEventListener ? mq.addEventListener("change", barrasDoSistema) : mq.addListener(barrasDoSistema)); } catch (e) { }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) setTimeout(barrasDoSistema, 300); });
+  setTimeout(barrasDoSistema, 1500);
   function vConfig() {
     const u = SO.user, p = SO.eu || {}, z = typeof ZOOM !== "undefined" ? ZOOM : 1, tm = tema();
     const lin = (s, icone, t, sub, extra) => `<button data-s="${s}">${`<span class="cs-lic">${icone}</span>`}<span><b>${t}</b>${sub ? `<small>${sub}</small>` : ""}</span>${extra == null ? K.dir : extra}</button>`;
@@ -1719,6 +1735,7 @@
         try { if (navigator.share) { await navigator.share({ title: "FlashPapo", text: t }); break; } } catch (e) { break; }
         copiar(t); toast("Copiado."); break;
       }
+      case "ed-relac": try { if (!["solteiro", "relacionamento"].includes(v)) break; await fb.updateDoc(D("users", eu()), { relac: v }); if (SO.eu) SO.eu.relac = v; if (SO.ed) SO.ed.relac = v; toast(v === "solteiro" ? "Conexões liberadas." : "Conexões ocultas: você não aparece mais lá."); pintar(); } catch (e) { toast(msgErro(e)); } break;
       case "prof-tirar": try { await fb.updateDoc(D("users", eu()), { prof: null }); if (SO.eu) SO.eu.prof = null; window.fecharSheet(); pintar(); } catch (e) { toast(msgErro(e)); } break;
       case "adulto":
         if (SO.eu && SO.eu.menor) { toast("Disponível a partir dos 18 anos."); break; }
@@ -2019,6 +2036,7 @@ body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padd
 .cs-pf-usu{font-size:1.25rem!important;font-weight:800}
 .cs-pf-pag{gap:16px}
 .cs-pfl{display:flex;flex-direction:column;gap:12px;padding:4px 2px 0}
+.cs-seg{display:flex;gap:6px;flex-wrap:wrap}.cs-seg button{flex:1;min-width:120px;padding:10px 12px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:inherit;font:inherit;font-weight:600}.cs-seg button[aria-pressed=true]{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
 .cs-pf-top{display:flex;align-items:center;gap:18px}
 .cs-pf-av{flex:none}.cs-pf-av .cs-fl-anel{margin:0}
 .cs-pf-nums{flex:1;display:grid;grid-template-columns:repeat(3,1fr);text-align:center}

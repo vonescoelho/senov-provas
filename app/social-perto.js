@@ -425,10 +425,11 @@
   const perfilAnt = X.perfilExtra;
   X.perfilExtra = (uid, meu) => {
     const p = meu ? (SO.eu || {}) : P(uid), me = meuLoc(), d = !meu && me && adulto() ? km(me, p.loc) : null, int = p.interesses || [];
-    const h = (d != null || (int.length && adulto()) || (meu && adulto())) ? `<section class="card flat pt-perfil-x">
-      ${d != null ? `<p>${I.pin} ${esc(fmtKm(d))}${p.loc && p.loc.cid ? " · " + esc(p.loc.cid) : ""}</p>` : meu && p.loc ? `<p>${I.pin} ${esc(p.loc.cid || "Local aproximado")}${p.perto === false ? " · oculto" : ""}</p>` : ""}
-      ${int.length ? `<div class="pt-chips">${int.map(t => `<span class="i">${esc(t)}</span>`).join("")}</div>` : ""}
-      ${meu ? `<button class="cs-link" data-s="pt-ajustes">${int.length || p.loc ? "Editar interesses" : "Adicionar interesses"}</button>` : ""}</section>` : "";
+    /* perfil mais limpo: sem cidade; só a distância (de outras pessoas) e os interesses.
+       Editar interesses e localização fica em Editar perfil. */
+    const h = (d != null || (int.length && adulto())) ? `<section class="pt-perfil-x">
+      ${d != null ? `<p>${I.pin} ${esc(fmtKm(d))}</p>` : ""}
+      ${int.length ? `<div class="pt-chips">${int.map(t => `<span class="i">${esc(t)}</span>`).join("")}</div>` : ""}</section>` : "";
     return h + (perfilAnt ? perfilAnt(uid, meu) : "");
   };
   X.configPriv.push(() => !adulto() ? "" : `<button class="cs-linha" data-s="pt-ajustes" style="display:flex;align-items:center;gap:12px;width:100%"><span class="cs-lic">${I.pin}</span><span style="flex:1;text-align:left"><b>Conexões</b></span></button>`);
@@ -478,7 +479,7 @@
 .pt-chips span.i{background:rgba(124,92,255,.32)}
 .pt-chips span.on{background:#E11D48;border-color:#E11D48;color:#fff}
 .pt-perfil-x .pt-chips span{background:var(--primary-soft);border-color:transparent;color:var(--primary)}
-.pt-perfil-x{padding:12px}.pt-perfil-x p{margin:0 0 6px;display:flex;align-items:center;gap:6px}.pt-perfil-x p svg{width:16px;height:16px;color:var(--primary)}
+.pt-perfil-x{padding:0 2px}.pt-perfil-x p{margin:0 0 6px;display:flex;align-items:center;gap:6px}.pt-perfil-x p svg{width:16px;height:16px;color:var(--primary)}
 .pt-perfil{color:#fff!important;text-decoration:underline;margin-top:4px}
 .pt-selo{position:absolute;top:22px;padding:6px 12px;border:3px solid;border-radius:10px;font-weight:900;font-size:1.3rem;letter-spacing:.06em;z-index:2;pointer-events:none}
 .pt-selo-sim{left:18px;color:#16A34A;transform:rotate(-14deg);opacity:var(--sim)}
