@@ -22,11 +22,13 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /* Fica ligado em segundo plano (com uma notificação discreta) ouvindo as chamadas
@@ -34,6 +36,7 @@ import java.util.Set;
 public class ChamadasService extends Service {
     static final String CANAL_CONEXAO = "chatmil_conexao";
     static final String CANAL_CHAMADA = "chatmil_chamadas_v2";
+    static final String CANAL_AVISOS = "flashpapo_avisos";
     static final int ID_CONEXAO = 7001;
     static final String PREFS = "chatmil_chamadas";
 
@@ -42,7 +45,8 @@ public class ChamadasService extends Service {
     static final String APP_ID = "1:707582906445:web:227de759c2b159edd80c04";
     static final String PROJETO = "chatmil-56408";
 
-    private ListenerRegistration reg;
+    private ListenerRegistration reg, regChats, regSeg;
+    private boolean primeiraSeg = true;
     private String uidOuvindo;
     private final Set<String> tocando = new HashSet<>();
     private final Set<String> jaTratadas = new HashSet<>();
@@ -83,6 +87,93 @@ public class ChamadasService extends Service {
         ch.setVibrationPattern(new long[]{0, 900, 600, 900, 600, 900});
         ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         nm.createNotificationChannel(ch);
+        NotificationChannel av = new NotificationChannel(CANAL_AVISOS, "Mensagens e seguidores", NotificationManager.IMPORTANCE_HIGH);
+        av.setDescription("Mensagens novas e quem começou a seguir você");
+        av.enableVibration(true);
+        av.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+        nm.createNotificationChannel(av);
+    }
+
+    static int idAviso(String chave) { return 20000 + (chave.hashCode() & 0x7ffff); }
+
+    /* abre a conversa (ou o perfil) quando a pessoa toca no aviso */
+    private PendingIntent abrirAviso(String tipo, String id) {
+        Intent i = new Intent(this, MainActivity.class).putExtra("aviso_tipo", tipo).putExtra("aviso_id", id)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        return PendingIntent.getActivity(this, idAviso(tipo + id), i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+    }
+
+    private void avisar(String chave, String titulo, String texto, PendingIntent pi, String categoria) {
+        NotificationCompat.Builder b = new NotificationCompat.Builder(this, CANAL_AVISOS)
+            .setSmallIcon(android.R.drawable.stat_notify_chat)
+            .setColor(0xFFB026FF)
+            .setContentTitle(titulo)
+            .setContentText(texto)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(texto))
+            .setCategory(categoria)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setAutoCancel(true)
+            .setContentIntent(pi);
+        try { ((NotificationManager) getSystemService(NOTIFICATION_SERVICE)).notify(idAviso(chave), b.build()); } catch (Exception e) { }
+    }
+
+    static void limparAviso(Context c, String chave) {
+        try { ((NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(idAviso(chave)); } catch (Exception e) { }
+    }
+
+    private interface Nome { void ok(String nome); }
+    private void nomeDe(String uid, Nome cb) {
+        FirebaseFirestore.getInstance(app(this)).collection("users").document(uid).get()
+            .addOnSuccessListener(u -> { String n = u.getString("usuario"); if (n == null || n.isEmpty()) n = u.getString("nome"); cb.ok(n == null || n.isEmpty() ? "FlashPapo" : n); })
+            .addOnFailureListener(e -> cb.ok("FlashPapo"));
+    }
+
+    /* mensagens novas: a conversa mudou e a última mensagem não é minha */
+    private void ouvirMensagens(final String uid) {
+        if (regChats != null) { try { regChats.remove(); } catch (Exception e) { } }
+        regChats = FirebaseFirestore.getInstance(app(this)).collection("chats").whereArrayContains("membros", uid).addSnapshotListener((snap, erro) -> {
+            if (erro != null || snap == null) return;
+            SharedPreferences p = prefs(this);
+            SharedPreferences.Editor ed = p.edit();
+            for (DocumentChange ch : snap.getDocumentChanges()) {
+                DocumentSnapshot d = ch.getDocument();
+                Timestamp t = d.getTimestamp("atualizadoEm");
+                if (t == null) continue;
+                long em = t.toDate().getTime();
+                String k = "av_" + d.getId();
+                long antes = p.getLong(k, -1);
+                if (em > antes) ed.putLong(k, em);
+                if (antes < 0 || em <= antes) continue;
+                Object u = d.get("ultima");
+                if (!(u instanceof Map)) continue;
+                Map<?, ?> ult = (Map<?, ?>) u;
+                Object autor = ult.get("autor");
+                if (!(autor instanceof String) || uid.equals(autor) || ult.get("ch") != null) continue; /* chamada: quem avisa é o toque */
+                if (MainActivity.visivel || System.currentTimeMillis() - em > 6 * 3600 * 1000L) continue;
+                final String chatId = d.getId(), grupo = "grupo".equals(d.getString("tipo")) ? d.getString("nome") : null;
+                Object tx = ult.get("texto");
+                final String texto = ult.get("e2e") != null ? "Nova mensagem" : ult.get("fig") != null ? "Figurinha" : tx instanceof String && !((String) tx).isEmpty() ? (String) tx : "Nova mensagem";
+                nomeDe((String) autor, nome -> avisar("c" + chatId, grupo != null ? grupo : nome, grupo != null ? nome + ": " + texto : texto, abrirAviso("chat", chatId), NotificationCompat.CATEGORY_MESSAGE));
+            }
+            ed.apply();
+        });
+    }
+
+    /* quem começou a seguir */
+    private void ouvirSeguidores(final String uid) {
+        if (regSeg != null) { try { regSeg.remove(); } catch (Exception e) { } }
+        primeiraSeg = true;
+        regSeg = FirebaseFirestore.getInstance(app(this)).collection("users").document(uid).collection("seguidores").addSnapshotListener((snap, erro) -> {
+            if (erro != null || snap == null) return;
+            boolean primeira = primeiraSeg; primeiraSeg = false;
+            if (primeira || MainActivity.visivel) return;
+            for (DocumentChange ch : snap.getDocumentChanges()) {
+                if (ch.getType() != DocumentChange.Type.ADDED || ch.getDocument().getMetadata().hasPendingWrites()) continue;
+                final String quem = ch.getDocument().getId();
+                nomeDe(quem, nome -> avisar("s" + quem, nome, "Começou a seguir você", abrirAviso("perfil", quem), NotificationCompat.CATEGORY_SOCIAL));
+            }
+        });
     }
 
     @Override
@@ -93,7 +184,7 @@ public class ChamadasService extends Service {
         PendingIntent pi = PendingIntent.getActivity(this, 1, abrir, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification n = new NotificationCompat.Builder(this, CANAL_CONEXAO)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call)
-            .setContentTitle("📞 Pronto para chamadas")
+            .setContentTitle("FlashPapo ativo")
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .setContentIntent(pi)
@@ -116,7 +207,7 @@ public class ChamadasService extends Service {
             stopSelf();
             return START_NOT_STICKY;
         }
-        if (reg == null || !u.getUid().equals(uidOuvindo)) ouvir(u.getUid());
+        if (reg == null || !u.getUid().equals(uidOuvindo)) { ouvir(u.getUid()); ouvirMensagens(u.getUid()); ouvirSeguidores(u.getUid()); }
         return START_STICKY;
     }
 
@@ -228,7 +319,9 @@ public class ChamadasService extends Service {
     @Override
     public void onDestroy() {
         if (reg != null) { try { reg.remove(); } catch (Exception e) { } }
-        reg = null;
+        if (regChats != null) { try { regChats.remove(); } catch (Exception e) { } }
+        if (regSeg != null) { try { regSeg.remove(); } catch (Exception e) { } }
+        reg = null; regChats = null; regSeg = null;
         for (String cid : tocando) cancelar(this, cid);
         tocando.clear();
         super.onDestroy();

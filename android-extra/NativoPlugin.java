@@ -63,6 +63,32 @@ public class NativoPlugin extends Plugin {
         if (p != null) p.notifyListeners("chamada", o, true);
     }
 
+    /* aviso (mensagem ou seguidor) tocado na barra de notificações */
+    private static JSObject avisoPend;
+    static void avisoPendente(String tipo, String id) {
+        JSObject o = new JSObject();
+        o.put("tipo", tipo);
+        o.put("id", id);
+        avisoPend = o;
+        NativoPlugin p = atual;
+        if (p != null) p.notifyListeners("aviso", o, true);
+    }
+
+    @PluginMethod
+    public void aviso(PluginCall call) {
+        JSObject r = new JSObject();
+        if (avisoPend != null) { r.put("tipo", avisoPend.getString("tipo")); r.put("id", avisoPend.getString("id")); avisoPend = null; }
+        call.resolve(r);
+    }
+
+    /* conversa aberta: some o aviso dela */
+    @PluginMethod
+    public void limparAviso(PluginCall call) {
+        String id = call.getString("id", "");
+        if (!id.isEmpty()) ChamadasService.limparAviso(getContext(), "c" + id);
+        call.resolve();
+    }
+
     @PluginMethod
     public void pendente(PluginCall call) {
         JSObject r = new JSObject();

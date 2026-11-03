@@ -61,6 +61,8 @@ public class MainActivity extends BridgeActivity {
     private void tratarChamada(Intent i) {
         if (i == null) return;
         if (i.getBooleanExtra("chatmil_atualizar", false)) { i.removeExtra("chatmil_atualizar"); NativoPlugin.pedirAtualizar(); }
+        String avTipo = i.getStringExtra("aviso_tipo"), avId = i.getStringExtra("aviso_id");
+        if (avTipo != null && avId != null) { i.removeExtra("aviso_tipo"); i.removeExtra("aviso_id"); NativoPlugin.avisoPendente(avTipo, avId); }
         String cid = i.getStringExtra("chamada_cid");
         if (cid == null) return;
         String acao = i.getStringExtra("chamada_acao");
