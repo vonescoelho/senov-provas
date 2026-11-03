@@ -2,7 +2,7 @@
   "name": "senov-provas",
   "version": "1.0.0",
   "private": true,
-  "description": "ChatMil — conversas, grupos, mural e provas para professores (PWA + APK Android)",
+  "description": "FlashPapo — conversas, grupos, mural e provas para professores (PWA + APK Android)",
   "scripts": {
     "build": "python3 tools/build.py node_modules",
     "android": "cap sync android"

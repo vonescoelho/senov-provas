@@ -1,4 +1,4 @@
-# ChatMil — versão aplicativo (PWA + APK)
+# FlashPapo — versão aplicativo (PWA + APK)
 
 Rede dos professores, sem anúncios: **cadastro por e-mail com @usuário e foto**, conversas, grupos (ex.: Área de Linguagens) com código de convite, figurinhas educativas e da vida de professor, mural com curtidas e comentários, seguir colegas, configurações e segurança (bloquear, denunciar, privacidade), filtro de palavrões e preconceito — e o **criador de provas** (prova rápida, gabarito equilibrado, perfil AEE, gráficos e PDF no padrão ABNT).
 
@@ -33,7 +33,7 @@ Dois robôs (GitHub Actions) rodam sozinhos a cada envio para a branch `main`:
 
 ## Diferenças em relação à versão do claude.ai
 
-- **Banco de questões fica no próprio aparelho.** Para levar questões de um aparelho para outro, use *Escola → Painel do ChatMil → Exportar banco (JSON)* e *Importar banco (JSON)*. Também dá para importar o JSON exportado da versão do claude.ai.
+- **Banco de questões fica no próprio aparelho.** Para levar questões de um aparelho para outro, use *Escola → Painel do FlashPapo → Exportar banco (JSON)* e *Importar banco (JSON)*. Também dá para importar o JSON exportado da versão do claude.ai.
 - **Revisão por IA é opcional:** em *Escola → Revisão por IA*, cole uma chave da API da Anthropic (console.anthropic.com). A chave fica só no aparelho e cada revisão é cobrada na conta da API. Sem chave, as questões ficam "só para mim".
 - O app já vem com 16 questões de exemplo para testar.
 - O banco compartilhado entre professores virá quando houver um servidor (ex.: Firebase ou Supabase).
@@ -57,7 +57,7 @@ Sem essa configuração, o app funciona só com o criador de provas.
 
 ```
 app/senov-provas.html  o criador de provas (mesmo código da versão do claude.ai)
-app/social.js          ChatMil: cadastro, perfil, conversas, grupos, mural, configurações
+app/social.js          FlashPapo: cadastro, perfil, conversas, grupos, mural, configurações
 app/social-extras.js   figurinhas próprias e filtro de linguagem ofensiva
 app/firebase-config.js configuração pública do projeto Firebase
 firestore.rules        regras de segurança do banco (cole no console do Firebase)
