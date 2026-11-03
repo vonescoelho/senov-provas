@@ -2085,9 +2085,9 @@ body.cs-sem-nav main{padding-bottom:40px}
 body.cs-com-compor main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px) + var(--kb,0px))}
 body.cs-chatbg{background-image:radial-gradient(color-mix(in srgb,var(--primary) 11%,transparent) 1.2px,transparent 1.3px);background-size:22px 22px}
 .cs-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
-.cs-cab h1{font-size:1.55rem}
+.cs-cab h1{font-size:1.12rem;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin:0}
 .cs-marca{display:flex;align-items:center;gap:10px}.cs-marca h1{margin:0;line-height:0}
-.cs-lg{height:30px;width:auto;color:var(--ink);display:block}
+.cs-lg{height:30px;width:auto;color:var(--ink);display:block}.cs-marca .cs-lg{height:17px}
 body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padding:6px 16px}body.cs-on .nav button svg{width:26px;height:26px}
 .cs-aparencia{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .cs-aparencia button{border:2px solid transparent;background:var(--surface);border-radius:18px;padding:10px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font:inherit;font-weight:700;color:var(--ink);box-shadow:0 1px 2px rgba(15,20,40,.06)}
@@ -2098,7 +2098,7 @@ body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padd
 .ap-escuro{background:#0C1120}.ap-escuro b{background:#2A3554}
 .ap-auto{background:linear-gradient(135deg,#F2F4F9 50%,#0C1120 50%);border:1px solid #D8DEEA}.ap-auto b{background:linear-gradient(90deg,#C9D1E3 50%,#2A3554 50%)}
 /* ---------- Perfil (contemporâneo) ---------- */
-.cs-pf-usu{font-size:1.25rem!important;font-weight:800}
+.cs-pf-usu{font-size:1.12rem!important;font-weight:700}
 .cs-pf-pag{gap:16px}
 .cs-pfl{display:flex;flex-direction:column;gap:12px;padding:4px 2px 0}
 .cs-fixa{display:inline-flex;color:var(--primary)}.cs-fixa svg{width:15px;height:15px}.cs-item .cs-av.cs-arq-ic{display:grid;place-items:center;background:var(--primary-soft)!important;color:var(--primary);border-radius:50%;flex:none}.cs-item .cs-arq-ic svg{width:24px;height:24px}.cs-arq-h{display:flex;align-items:center;gap:8px;margin:2px 0 4px}.cs-arq-h b{font-size:1.1rem}.cs-item{-webkit-touch-callout:none;user-select:none}
