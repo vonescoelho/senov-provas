@@ -106,7 +106,7 @@ html = f"""<!doctype html>
 open(os.path.join(WWW, "index.html"), "w", encoding="utf-8").write(html)
 
 # ---------- ícones ----------
-# Logo do FlashPapo: balão de conversa (Papo) com um raio vazado (Flash).
+# Logo do FlashPapo: um "P" que é balão de conversa (Papo), rabinho embaixo, com um brilho vazado (Flash).
 # Funciona em uma cor só (preto ou branco); no ícone fica branco sobre o degradê rosa → roxo.
 from PIL import ImageFilter
 import math
@@ -132,18 +132,20 @@ def gradiente_rapido(S):
     return base.resize((S, S), Image.BICUBIC)
 
 def simbolo(S, escala=1.0, cor=(255, 255, 255, 255)):
-    """Balão de conversa com rabinho (Papo) e um raio vazado (Flash) — coordenadas de 0 a 100"""
+    """"P" em forma de balão de conversa (rabinho embaixo) com um brilho vazado — coordenadas de 0 a 100"""
     im = Image.new("RGBA", (S, S), (0, 0, 0, 0))
     d = ImageDraw.Draw(im)
     k = S / 100 * escala; o = S / 2 - 50 * k
     P = lambda x, y: (o + x * k, o + y * k)
-    r = 42
-    d.ellipse([*P(50 - r, 47 - r), *P(50 + r, 47 + r)], fill=cor)
-    cauda = [P(15.36, 67), P(39.65, 85.64), P(10, 93)]
-    d.polygon(cauda, fill=cor)
-    d.line(cauda + [cauda[0]], fill=cor, width=round(4 * k), joint="curve")
-    raio = [P(58, 14), P(29, 54), P(46, 54), P(41, 81), P(71, 39), P(54, 39)]
-    d.polygon(raio, fill=(0, 0, 0, 0))
+    def quad(a, c, b, n=10):
+        return [((1 - t) ** 2 * a[0] + 2 * (1 - t) * t * c[0] + t * t * b[0], (1 - t) ** 2 * a[1] + 2 * (1 - t) * t * c[1] + t * t * b[1]) for t in [i / n for i in range(n + 1)]]
+    contorno = quad((21, 22), (21, 8), (35, 8)) + [(56, 8)]
+    contorno += [(56 + 30 * math.cos(math.radians(a)), 38 + 30 * math.sin(math.radians(a))) for a in range(-90, 91, 6)]
+    contorno += [(41, 68), (41, 78), (15, 92), (21, 78)]
+    brilho = quad((56, 20), (59, 35), (74, 38)) + quad((74, 38), (59, 41), (56, 56))[1:] + quad((56, 56), (53, 41), (38, 38))[1:] + quad((38, 38), (53, 35), (56, 20))[1:]
+    c = [P(*q) for q in contorno]; b = [P(*q) for q in brilho]
+    d.polygon(c, fill=cor); d.line(c + [c[0]], fill=cor, width=round(4 * k), joint="curve")
+    d.polygon(b, fill=(0, 0, 0, 0)); d.line(b + [b[0]], fill=cor, width=round(4 * k), joint="curve")
     return im
 
 def desenhar(tam, fundo=True, escala=1.0, raio=0.22):
