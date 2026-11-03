@@ -69,6 +69,8 @@
     prova: ic('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/><path d="M8 13h8M8 17h5"/>'),
     enviar: ic('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>'),
     mais2: ic('<path d="M12 5v14M5 12h14"/>'),
+    fixa: ic('<path d="M9 4h6l-1 6 4 4H6l4-4z"/><path d="M12 14v7"/>'),
+    arq: ic('<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>'),
     lixo: ic('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>'),
     repost: ic('<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>'),
     proibido: ic('<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>'),
@@ -84,8 +86,8 @@
     xflesh: ic('<rect x="5" y="2.5" width="14" height="19" rx="4"/><path d="M10.2 8.8v6.4l5.2-3.2z" fill="currentColor"/>'),
     conexoes: ic('<path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.7 0 2.5M12 3.5c-.6.8-.6 1.7 0 2.5"/>'),
     nota: ic('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>')
-  };  /* ===== Marca FlashPapo: o "C" é o balão de conversa e as barras de som formam o "M" (uma cor só, ou degradê) ===== */
-  const LOGO_SIMB = cor => `<path d="M77.5 74.7A37 37 0 1 1 77.5 25.2" fill="none" stroke="COR" stroke-width="13" stroke-linecap="round"/><path d="M21 74L10.5 93 34 84.5z" fill="COR" stroke="COR" stroke-width="5" stroke-linejoin="round"/><path d="M33 39.5a5.5 5.5 0 0 1 11 0v19a5.5 5.5 0 0 1 -11 0zM48 50.5a5.5 5.5 0 0 1 11 0v8a5.5 5.5 0 0 1 -11 0zM63 39.5a5.5 5.5 0 0 1 11 0v19a5.5 5.5 0 0 1 -11 0z" fill="COR"/>`.split("COR").join(cor);
+  };  /* ===== Marca FlashPapo: balão de conversa (Papo) com um raio vazado (Flash) — uma cor só, ou degradê ===== */
+  const LOGO_SIMB = cor => `<path fill-rule="evenodd" fill="COR" stroke="COR" stroke-width="4" stroke-linejoin="round" d="M15.36 67A40 40 0 1 1 39.65 85.64L10 93ZM58 14L29 54H46L41 81L71 39H54Z"/>`.split("COR").join(cor);
   const LOGO_NOME = "M4.1 46.0V0.0H15.7V46.0ZM13.3 28.8V19.0H36.1V28.8ZM13.3 9.8V0.0H37.1V9.8Z M41.0 46.0V-1.3H52.3V46.0Z M70.7 46.6Q66.3 46.6 62.9 44.5Q59.5 42.4 57.5 38.6Q55.6 34.9 55.6 30.2Q55.6 25.4 57.5 21.6Q59.5 17.8 62.9 15.7Q66.3 13.6 70.7 13.6Q73.7 13.6 76.2 14.7Q78.7 15.8 80.3 17.7Q81.8 19.7 82.2 22.1V38.1Q81.8 40.6 80.3 42.5Q78.7 44.4 76.2 45.5Q73.7 46.6 70.7 46.6ZM73.1 36.6Q75.9 36.6 77.7 34.8Q79.4 33.0 79.4 30.1Q79.4 28.2 78.6 26.8Q77.8 25.4 76.4 24.5Q75.0 23.7 73.2 23.7Q71.4 23.7 70.0 24.5Q68.6 25.4 67.8 26.8Q67.0 28.3 67.0 30.1Q67.0 32.0 67.8 33.4Q68.5 34.9 70.0 35.7Q71.4 36.6 73.1 36.6ZM78.9 46.0V37.5L80.5 29.7L78.9 22.1V14.3H90.0V46.0Z M107.3 46.9Q104.4 46.9 101.6 46.1Q98.8 45.4 96.3 44.0Q93.9 42.7 92.2 40.9L98.4 34.6Q99.9 36.3 102.1 37.2Q104.3 38.1 106.7 38.1Q108.2 38.1 108.9 37.7Q109.7 37.3 109.7 36.6Q109.7 35.6 108.6 35.0Q107.5 34.5 105.8 34.0Q104.1 33.6 102.2 33.0Q100.3 32.4 98.6 31.3Q96.8 30.3 95.7 28.4Q94.7 26.5 94.7 23.6Q94.7 20.6 96.3 18.3Q98.0 16.0 101.0 14.6Q104.0 13.3 108.0 13.3Q112.1 13.3 115.8 14.7Q119.5 16.1 121.7 18.9L115.5 25.2Q113.9 23.4 112.1 22.7Q110.2 22.1 108.6 22.1Q107.1 22.1 106.5 22.5Q105.8 22.9 105.8 23.6Q105.8 24.5 106.9 25.0Q108.0 25.5 109.7 25.9Q111.4 26.3 113.3 27.0Q115.1 27.6 116.8 28.8Q118.5 29.9 119.6 31.8Q120.7 33.7 120.7 36.7Q120.7 41.4 117.1 44.2Q113.4 46.9 107.3 46.9Z M145.0 46.0V28.1Q145.0 25.9 143.7 24.6Q142.4 23.4 140.4 23.4Q139.0 23.4 138.0 23.9Q136.9 24.5 136.3 25.6Q135.7 26.6 135.7 28.1L131.3 26.0Q131.3 22.2 132.9 19.4Q134.5 16.7 137.3 15.1Q140.1 13.6 143.8 13.6Q147.6 13.6 150.4 15.1Q153.2 16.7 154.8 19.3Q156.3 22.0 156.3 25.5V46.0ZM124.4 46.0V-1.3H135.7V46.0Z M170.9 29.5V20.9H180.0Q181.6 20.9 183.0 20.2Q184.4 19.5 185.3 18.2Q186.1 16.8 186.1 14.8Q186.1 12.8 185.3 11.4Q184.4 10.0 183.0 9.3Q181.6 8.6 180.0 8.6H170.9V0.0H182.0Q186.4 0.0 189.9 1.8Q193.5 3.6 195.6 6.8Q197.7 10.1 197.7 14.8Q197.7 19.3 195.6 22.7Q193.5 26.0 189.9 27.8Q186.4 29.5 182.0 29.5ZM161.7 46.0V0.0H173.3V46.0Z M214.3 46.6Q209.8 46.6 206.4 44.5Q203.0 42.4 201.0 38.6Q199.1 34.9 199.1 30.2Q199.1 25.4 201.0 21.6Q203.0 17.8 206.4 15.7Q209.8 13.6 214.3 13.6Q217.2 13.6 219.7 14.7Q222.2 15.8 223.8 17.7Q225.4 19.7 225.7 22.1V38.1Q225.4 40.6 223.8 42.5Q222.2 44.4 219.7 45.5Q217.2 46.6 214.3 46.6ZM216.7 36.6Q219.4 36.6 221.2 34.8Q222.9 33.0 222.9 30.1Q222.9 28.2 222.1 26.8Q221.3 25.4 219.9 24.5Q218.5 23.7 216.7 23.7Q214.9 23.7 213.5 24.5Q212.1 25.4 211.3 26.8Q210.5 28.3 210.5 30.1Q210.5 32.0 211.3 33.4Q212.1 34.9 213.5 35.7Q214.9 36.6 216.7 36.6ZM222.4 46.0V37.5L224.1 29.7L222.4 22.1V14.3H233.5V46.0Z M257.6 46.6Q254.6 46.6 252.0 45.5Q249.4 44.4 247.7 42.5Q246.0 40.6 245.6 38.1V22.6Q246.0 20.1 247.8 18.1Q249.5 16.0 252.0 14.8Q254.6 13.6 257.6 13.6Q262.3 13.6 265.8 15.7Q269.3 17.8 271.2 21.6Q273.2 25.4 273.2 30.2Q273.2 34.9 271.2 38.6Q269.3 42.4 265.8 44.5Q262.3 46.6 257.6 46.6ZM238.8 59.4V14.3H250.1V22.3L248.2 29.9L249.8 37.6V59.4ZM255.5 36.6Q257.4 36.6 258.8 35.7Q260.2 34.9 261.0 33.4Q261.8 32.0 261.8 30.1Q261.8 28.2 261.0 26.8Q260.2 25.4 258.8 24.5Q257.4 23.7 255.6 23.7Q253.8 23.7 252.4 24.5Q251.0 25.3 250.2 26.8Q249.4 28.2 249.4 30.1Q249.4 32.0 250.2 33.4Q251.0 34.9 252.4 35.7Q253.8 36.6 255.5 36.6Z M292.1 46.7Q287.0 46.7 283.0 44.5Q279.0 42.4 276.7 38.6Q274.4 34.8 274.4 30.0Q274.4 25.3 276.7 21.6Q279.0 17.8 283.0 15.7Q287.0 13.5 292.1 13.5Q297.1 13.5 301.1 15.7Q305.1 17.8 307.5 21.6Q309.8 25.3 309.8 30.0Q309.8 34.8 307.5 38.6Q305.2 42.4 301.2 44.5Q297.2 46.7 292.1 46.7ZM292.1 36.7Q294.0 36.7 295.4 35.8Q296.8 35.0 297.5 33.5Q298.3 32.1 298.3 30.1Q298.3 28.2 297.5 26.7Q296.7 25.2 295.3 24.4Q294.0 23.6 292.1 23.6Q290.3 23.6 288.8 24.5Q287.4 25.3 286.6 26.8Q285.9 28.2 285.9 30.2Q285.9 32.1 286.6 33.5Q287.4 35.0 288.8 35.8Q290.3 36.7 292.1 36.7Z";
   const GRAD_LOGO = `<defs><linearGradient id="cmlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF3D7F"/><stop offset=".55" stop-color="#B026FF"/><stop offset="1" stop-color="#6D28FF"/></linearGradient></defs>`;
   /* simbolo(cor): só o símbolo; marca(): símbolo em degradê + nome na cor do texto */
@@ -622,29 +624,40 @@
   }
   function vConversas() {
     const f = semAc(SO.filtroChats);
-    const lista = SO.chats.filter(c => (c.tipo === "grupo" || c.ultima || (topo() && topo().id === c.id)) && (!f || semAc(tituloChat(c).nome).includes(f)));
-    const assist = ehProf() && (!f || "assistente de provas".includes(f));
+    const cv = cvPref();
+    const visivel = c => (c.tipo === "grupo" || c.ultima || (topo() && topo().id === c.id)) && (!cv.del[c.id] || ms(c.atualizadoEm) > cv.del[c.id] || (topo() && topo().id === c.id));
+    const todas = SO.chats.filter(c => visivel(c) && (!f || semAc(tituloChat(c).nome).includes(f)));
+    const arquivadas = todas.filter(c => cv.arq.includes(c.id));
+    if (SO.verArq && !arquivadas.length && !f) SO.verArq = false;
+    const verArq = !!SO.verArq && !f;
+    const lista = f ? todas : verArq ? arquivadas : todas.filter(c => !cv.arq.includes(c.id));
+    const assist = !verArq && ehProf() && (!f || "assistente de provas".includes(f));
     return `<div class="cs-cab"><div class="cs-marca"><h1>${logoMarca()}</h1></div><div class="row" style="gap:6px">
         <button class="cs-ico-bt" data-s="novo" aria-label="Contatos e grupos">${K.maisV}</button></div></div>
       ${avisoEmail()}${EXT.avisos.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       <label class="cs-busca">${K.busca}<input id="cs-filtro" placeholder="Buscar conversa ou pessoa" value="${esc(SO.filtroChats)}" aria-label="Buscar conversa ou pessoa"></label>
       ${!f && EXT.conversasTopo ? EXT.conversasTopo() : ""}
+      ${verArq ? `<div class="cs-arq-h"><button class="cs-ico-bt" data-s="cv-sair-arq" aria-label="Voltar">${K.back}</button><b>Arquivadas</b></div>`
+        : !f && arquivadas.length ? `<button class="cs-item cs-arq-l" data-s="cv-ver-arq"><span class="cs-av cs-arq-ic" style="width:52px;height:52px">${K.arq}</span><span class="cs-item-t"><b>Arquivadas</b><span>${arquivadas.length} conversa${arquivadas.length > 1 ? "s" : ""}</span></span><span class="cs-item-m">${arquivadas.some(naoLidas) ? '<i class="cs-dot" aria-label="Não lidas"></i>' : ""}</span></button>` : ""}
       <div class="cs-lista" role="list">
         ${(() => {
           /* tudo na mesma lista, pela última atividade: conversas, Assistente de provas e Anotações (nada fixo no topo) */
           const itens = lista.map(c => { const t = tituloChat(c), nl = naoLidas(c);
-            return { em: ms(c.atualizadoEm), html: `<button class="cs-item ${nl ? "nl" : ""}" data-s="abrir-chat" data-id="${esc(c.id)}" role="listitem">${t.av(52)}
+            const fx = cv.fix.indexOf(c.id);
+            return { em: ms(c.atualizadoEm), fx, html: `<button class="cs-item ${nl ? "nl" : ""} ${fx >= 0 ? "fix" : ""}" data-s="abrir-chat" data-id="${esc(c.id)}" role="listitem">${t.av(52)}
             <span class="cs-item-t"><b>${esc(t.nome)}${t.selo || ""}</b><span>${esc(prevUltima(c))}</span></span>
-            <span class="cs-item-m"><small>${horaCurta(c.atualizadoEm)}</small>${nl ? '<i class="cs-dot" aria-label="Não lida"></i>' : ""}</span></button>` }; });
+            <span class="cs-item-m"><small>${horaCurta(c.atualizadoEm)}</small>${fx >= 0 ? `<i class="cs-fixa" aria-label="Em destaque">${K.fixa}</i>` : ""}${nl ? '<i class="cs-dot" aria-label="Não lida"></i>' : ""}</span></button>` }; });
           if (assist) { const emA = +lerLS("cs.assist.em." + eu(), 0) || 0;
             itens.push({ em: emA || 1, html: `<button class="cs-item" data-s="assistente" role="listitem"><span class="cs-av bot" style="width:52px;height:52px">${K.varinha}</span>
               <span class="cs-item-t"><b>Assistente de provas</b><span>Monte uma prova em poucos toques</span></span>${emA ? `<span class="cs-item-m"><small>${horaCurta(emA)}</small></span>` : ""}</button>` }); }
           EXT.conversasFixos.forEach(fn => { try { const r = fn(f); if (!r) return; itens.push(typeof r === "string" ? { em: 1, html: r } : { em: r.em || 1, html: r.html || "" }); } catch (e) { } });
-          return itens.sort((x, y) => y.em - x.em).map(x => x.html).join("");
+          /* Destaque primeiro (na ordem em que foram destacadas), depois pela última atividade */
+          const pf = x => (x.fx != null && x.fx >= 0 ? x.fx : 1e9);
+          return itens.sort((x, y) => pf(x) - pf(y) || y.em - x.em).map(x => x.html).join("");
         })()}
       </div>
       ${f ? `<h2 class="cs-sec">Pessoas</h2><div id="cs-res">${htmlResultados("ver-perfil")}</div>` : ""}
-      ${!lista.length && !f ? `<div class="empty"><b>Nenhuma conversa</b><button class="btn primary" data-s="buscar-pessoas">Contatos</button></div>` : ""}
+      ${!lista.length && !f && !verArq ? `<div class="empty"><b>Nenhuma conversa</b><button class="btn primary" data-s="buscar-pessoas">Contatos</button></div>` : ""}
       <button class="cs-fab" data-s="novo" aria-label="Nova conversa ou grupo">${K.mais2}</button>`;
   }
   function sheetNovo() {
@@ -705,7 +718,8 @@
   }
   function htmlMsgs(c) {
     const ocultas = ocultasDe();
-    const lista = (SO.msgs[c.id] || []).filter(m => !SO.bloqueados.has(m.autor) && !ocultas.has(c.id + "/" + m.id));
+    const exc = excluidaEm(c.id);
+    const lista = (SO.msgs[c.id] || []).filter(m => !SO.bloqueados.has(m.autor) && !ocultas.has(c.id + "/" + m.id) && (!exc || !m.em || ms(m.em) > exc));
     if (!SO.msgs[c.id]) return `<div class="cs-carr"><div class="spin"></div></div>`;
     if (!lista.length) return `<div class="cs-vazio-chat">${figurinha(c.tipo === "grupo" ? "parabens" : "bomdia", 110)}<p>${c.tipo === "grupo" ? "Grupo criado. Dê as boas-vindas!" : "Mande a primeira mensagem ou uma figurinha."}</p></div>`;
     let h = "", dia = "", ant = null;
@@ -777,6 +791,28 @@
   }
   /* "apagar para mim": some só neste aparelho */
   function ocultasDe() { const k = "cs.ocultas." + eu(); if (!SO.ocultas || SO.ocultas.k !== k) { let a = []; try { a = JSON.parse(localStorage.getItem(k) || "[]"); } catch (e) { } SO.ocultas = { k, s: new Set(a) }; } return SO.ocultas.s; }
+  /* ===== Conversas: Destaque (fixa no topo), Arquivar e Excluir (só para mim).
+     Guardado em users/{uid}/privado/conversas (só a própria pessoa lê) + cópia no aparelho. ===== */
+  function cvPref() {
+    const uid = eu();
+    if (!SO.cv || SO.cv.uid !== uid) {
+      let d = {}; try { d = JSON.parse(localStorage.getItem("cs.cv." + uid) || "{}"); } catch (e) { }
+      SO.cv = { uid, fix: d.fix || [], arq: d.arq || [], del: d.del || {} };
+      if (uid) setTimeout(async () => { try { const x = await fb.getDoc(D("users", uid, "privado", "conversas")); if (x.exists() && SO.cv && SO.cv.uid === uid) { const v = x.data(); SO.cv.fix = v.fix || []; SO.cv.arq = v.arq || []; SO.cv.del = v.del || {}; cvLocal(); pintar(); } } catch (e) { } }, 0);
+    }
+    return SO.cv;
+  }
+  function cvLocal() { try { const c = SO.cv; localStorage.setItem("cs.cv." + c.uid, JSON.stringify({ fix: c.fix, arq: c.arq, del: c.del })); } catch (e) { } }
+  async function cvSalvar() { cvLocal(); const c = SO.cv; try { await fb.setDoc(D("users", c.uid, "privado", "conversas"), { fix: c.fix.slice(0, 50), arq: c.arq.slice(0, 500), del: c.del }); } catch (e) { console.warn(e); } }
+  const excluidaEm = id => +(cvPref().del[id] || 0);
+  function sheetConversa(id) {
+    const c = SO.chats.find(x => x.id === id); if (!c) return;
+    const cv = cvPref(), t = tituloChat(c), fx = cv.fix.includes(id), aq = cv.arq.includes(id);
+    window.abrirSheet(`<div class="sheet-h"><h2>${esc(t.nome)}</h2></div><div class="cs-menu">
+      <button data-s="cv-fixar" data-id="${esc(id)}">${K.fixa}<span><b>${fx ? "Tirar do Destaque" : "Destaque"}</b><small>${fx ? "Volta para a ordem normal" : "Fica sempre no topo da lista"}</small></span></button>
+      <button data-s="cv-arquivar" data-id="${esc(id)}">${K.arq}<span><b>${aq ? "Desarquivar" : "Arquivar"}</b><small>${aq ? "Volta para a lista de conversas" : "Sai da lista; fica em Arquivadas"}</small></span></button>
+      <button class="perigo" data-s="cv-excluir" data-id="${esc(id)}">${K.lixo}<span><b>Excluir conversa</b><small>Apaga as mensagens só para você</small></span></button></div>`);
+  }
   function ocultar(chatId, msgId) { const s = ocultasDe(); s.add(chatId + "/" + msgId); try { localStorage.setItem(SO.ocultas.k, JSON.stringify([...s].slice(-3000))); } catch (e) { } }
   function sheetMsg(chatId, msgId) {
     const m = (SO.msgs[chatId] || []).find(x => x.id === msgId); if (!m) return;
@@ -1688,6 +1724,19 @@
   function ctxFoto() { const t = topo(); return t && t.v === "editar" ? SO.ed : t && t.v === "novo-grupo" ? SO.ng : t && t.v === "editar-grupo" ? SO.eg : SO.cad; }
   const chatAtual = () => { const t = topo(); return t && SO.chats.find(c => c.id === t.id); };
 
+  /* ================= Segurar a conversa na lista abre: Destaque, Arquivar, Excluir ================= */
+  { let cvT = null, cvXY = null, cvFez = false;
+    document.addEventListener("pointerdown", e => {
+      const it = e.target.closest && e.target.closest(".cs-item[data-s=abrir-chat]"); if (!it) return;
+      cvFez = false; cvXY = [e.clientX, e.clientY]; clearTimeout(cvT);
+      cvT = setTimeout(() => { cvT = null; cvFez = true; try { navigator.vibrate && navigator.vibrate(25); } catch (x) { } sheetConversa(it.dataset.id); }, 480);
+    });
+    document.addEventListener("pointermove", e => { if (cvT && cvXY && Math.hypot(e.clientX - cvXY[0], e.clientY - cvXY[1]) > 10) { clearTimeout(cvT); cvT = null; } });
+    ["pointerup", "pointercancel"].forEach(n => document.addEventListener(n, () => { clearTimeout(cvT); cvT = null; }, true));
+    window.addEventListener("scroll", () => { clearTimeout(cvT); cvT = null; }, true);
+    document.addEventListener("click", e => { if (cvFez) { cvFez = false; e.stopPropagation(); e.preventDefault(); } }, true);
+    document.addEventListener("contextmenu", e => { const it = e.target.closest && e.target.closest(".cs-item[data-s=abrir-chat]"); if (it) { e.preventDefault(); clearTimeout(cvT); cvT = null; sheetConversa(it.dataset.id); } });
+  }
   /* ================= Segurar a mensagem abre o menu (como no WhatsApp) ================= */
   { let lpT = null, lpXY = null, lpFez = false;
     document.addEventListener("pointerdown", e => {
@@ -1723,6 +1772,23 @@
       case "foto-tirar": ctxFoto().foto = null; pintar(); break;
       case "assistente": gravarLS("cs.assist.em." + eu(), Date.now()); SO.tab = "provas"; S.tab = "inicio"; lembrarTab(); pintar(); window.scrollTo(0, 0); break;
       case "abrir-chat": abrirChat(id); break;
+      case "cv-ver-arq": SO.verArq = true; pintar(); window.scrollTo(0, 0); break;
+      case "cv-sair-arq": SO.verArq = false; pintar(); break;
+      case "cv-fixar": { const cv = cvPref(); window.fecharSheet();
+        if (cv.fix.includes(id)) { cv.fix = cv.fix.filter(x => x !== id); toast("Saiu do Destaque."); }
+        else { if (cv.fix.length >= 5) { toast("Até 5 conversas em Destaque. Tire uma antes."); break; } cv.fix = [...cv.fix, id]; cv.arq = cv.arq.filter(x => x !== id); toast("Em Destaque: fica sempre no topo."); }
+        pintar(); cvSalvar(); break; }
+      case "cv-arquivar": { const cv = cvPref(); window.fecharSheet();
+        if (cv.arq.includes(id)) { cv.arq = cv.arq.filter(x => x !== id); toast("Conversa desarquivada."); }
+        else { cv.arq = [...cv.arq, id]; cv.fix = cv.fix.filter(x => x !== id); toast("Conversa arquivada."); }
+        pintar(); cvSalvar(); break; }
+      case "cv-excluir": { const c = SO.chats.find(x => x.id === id); if (!c) break;
+        window.abrirSheet(`<div class="sheet-h"><h2>Excluir conversa?</h2></div><p class="small">As mensagens com <b>${esc(tituloChat(c).nome)}</b> somem só para você. A outra pessoa continua vendo tudo. Se chegar mensagem nova, a conversa volta só com as novas.</p>
+          <div class="cs-menu"><button class="perigo" data-s="cv-excluir-ok" data-id="${esc(id)}">${K.lixo}<span><b>Excluir</b></span></button><button data-s="fechar-sheet">${K.x}<span><b>Cancelar</b></span></button></div>`); break; }
+      case "cv-excluir-ok": { const cv = cvPref(); const c = SO.chats.find(x => x.id === id);
+        cv.del = { ...cv.del, [id]: c ? ms(c.atualizadoEm) : Date.now() }; /* hora do servidor: não esconde mensagem nova se o relógio do celular estiver adiantado */ cv.fix = cv.fix.filter(x => x !== id); cv.arq = cv.arq.filter(x => x !== id);
+        window.fecharSheet(); if (topo() && topo().id === id) voltar(); pintar(); toast("Conversa excluída."); cvSalvar(); break; }
+      case "fechar-sheet": window.fecharSheet(); break;
       case "voltar": voltar(); break;
       case "novo": sheetNovo(); break;
       case "buscar-pessoas": window.fecharSheet(); SO.busca = ""; SO.resultados = null; abrirTela({ v: "buscar" }); break;
@@ -2036,6 +2102,7 @@ body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padd
 .cs-pf-usu{font-size:1.25rem!important;font-weight:800}
 .cs-pf-pag{gap:16px}
 .cs-pfl{display:flex;flex-direction:column;gap:12px;padding:4px 2px 0}
+.cs-fixa{display:inline-flex;color:var(--primary)}.cs-fixa svg{width:15px;height:15px}.cs-item .cs-av.cs-arq-ic{display:grid;place-items:center;background:var(--primary-soft)!important;color:var(--primary);border-radius:50%;flex:none}.cs-item .cs-arq-ic svg{width:24px;height:24px}.cs-arq-h{display:flex;align-items:center;gap:8px;margin:2px 0 4px}.cs-arq-h b{font-size:1.1rem}.cs-item{-webkit-touch-callout:none;user-select:none}
 .cs-seg{display:flex;gap:6px;flex-wrap:wrap}.cs-seg button{flex:1;min-width:120px;padding:10px 12px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:inherit;font:inherit;font-weight:600}.cs-seg button[aria-pressed=true]{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
 .cs-pf-top{display:flex;align-items:center;gap:18px}
 .cs-pf-av{flex:none}.cs-pf-av .cs-fl-anel{margin:0}
