@@ -1,10 +1,10 @@
-/* ChatMil — Flash: foto ou vídeo de até 30 segundos que fica 24 horas (como o “status”).
+/* FlashPapo — Flash: foto ou vídeo de até 30 segundos que fica 24 horas (como o “status”).
    - câmera própria com efeitos leves (suavizar pele, iluminar, tom de pele) ou foto/vídeo da galeria;
    - música da galeria ou som do celular;
    - quem vê: todos, só quem eu sigo ou pessoas escolhidas;
    - Destaques: até 5 fotos ou vídeos que ficam no perfil.
    Nada fica “ouvindo” o servidor: os Flashes são buscados quando o Mural abre (poupa bateria e internet).
-   O mesmo criador (câmera, edição, música) publica no XFlesh (destino "xflesh", até 60 s, não vence). */
+   O mesmo criador (câmera, edição, música) publica no MyFlesh (destino "xflesh", até 60 s, não vence). */
 (function () {
   "use strict";
   if (!window.SOCIAL || !window.SOCIAL.ext || !window.SOCIAL.ext.midia) return;
@@ -98,13 +98,29 @@
     /* cartões retangulares como os status do WhatsApp: miniatura meio transparente e a foto do perfil no meio */
     const fundo = l => { const f = l.find(x => !FL.vistos.has(x.id)) || l[l.length - 1]; return f && f.thumb && /^data:image\//.test(f.thumb) ? ` style="background-image:url('${esc(f.thumb)}')"` : ""; };
     const cartao = (s, uid, l, nome, p, extra) => `<button class="cs-fl-card ${l.length && !todosVistos(l) ? "novo" : ""} ${l.length ? "" : "vazio"}" data-s="${s}" ${uid ? `data-id="${esc(uid)}"` : ""} role="listitem" aria-label="${esc(nome)}">
-        <span class="cs-fl-bg"${l.length ? fundo(l) : ""}></span><span class="cs-fl-av">${av(p, 44, uid || eu())}${extra || ""}</span><span class="cs-fl-nm">${esc(nome)}</span></button>`;
+        <span class="cs-fl-bg"${l.length ? fundo(l) : ""}></span><span class="cs-fl-av">${av(p, 60, uid || eu())}${extra || ""}</span><span class="cs-fl-nm">${esc(nome)}</span></button>`;
     return `<div class="cs-fl-faixa cs-fl-cards" role="list" aria-label="Flashes">
       ${cartao("fl-meu", null, FL.meus, FL.meus.length ? "Seu Flash" : "Criar Flash", meu, FL.meus.length ? "" : `<i class="cs-fl-mais">${I.mais}</i>`)}
       ${pessoas.map(([uid, l]) => { const p = P(uid); return cartao("fl-ver", uid, l, (p.nome || "").split(" ")[0], p); }).join("")}
     </div>`;
   };
   X.muralTopo.unshift(cartoesFlash);
+  /* ===== Notificações (no lugar do Mural): Flashes novos; a aba some quando não há nada ===== */
+  const novosFlash = () => [...FL.porUid.entries()].filter(([u, l]) => !todosVistos(l));
+  X.notificacoes.push({ n: () => novosFlash().length });
+  X.depois.push(() => { if (eu()) carregarFlashes(false); });
+  X.tabViews.notif = () => {
+    const l = novosFlash();
+    return `<div class="cs-cab"><h1>Notificações</h1>${l.length ? `<button class="cs-link" data-s="notif-limpar">Limpar tudo</button>` : ""}</div>
+      ${cartoesFlash()}
+      ${l.length ? `<div class="cs-menu card flat cs-notif">${l.map(([u, fs]) => { const p = P(u), f = fs[fs.length - 1];
+        return `<button data-s="fl-ver" data-id="${esc(u)}">${av(p, 44, u)}<span><b>${esc(p.nome)}</b><small>Flash novo · ${haQuanto(f.criado || Date.now())}</small></span>${f.thumb ? `<img class="cs-flm-t" src="${f.thumb}" alt="">` : ""}</button>`; }).join("")}</div>`
+        : `<div class="cs-pf-vazio">${I.flash}<span>Tudo em dia</span></div>`}`;
+  };
+  X.acoes["notif-limpar"] = () => {
+    novosFlash().forEach(([u, l]) => l.forEach(f => FL.vistos.add(f.id)));
+    gravarLS("cs.flv." + eu(), [...FL.vistos].slice(-400)); pintar();
+  };
   X.acoes["fl-meu"] = () => {
     if (!FL.meus.length) return abrirCriador("flash");
     window.abrirSheet(`<div class="sheet-h"><h2>Seu Flash</h2></div><div class="cs-menu">
@@ -373,7 +389,7 @@
   const TONS = [["natural", "Natural", ""], ["quente", "Quente", "sepia(.16) saturate(1.12)"], ["rosado", "Rosado", "hue-rotate(-6deg) saturate(1.16)"],
     ["bronze", "Bronze", "sepia(.28) saturate(1.28) contrast(1.04)"], ["frio", "Frio", "hue-rotate(8deg) saturate(.92) brightness(1.02)"], ["pb", "P&B", "grayscale(1) contrast(1.08)"]];
   const maxDur = () => CR.destino === "xflesh" ? 60 : MAXDUR;
-  const nomeDestino = () => ({ flash: "Novo Flash", destaque: "Novo destaque", xflesh: "Novo XFlesh" })[CR.destino] || "Novo Flash";
+  const nomeDestino = () => ({ flash: "Novo Flash", destaque: "Novo destaque", xflesh: "Novo MyFlesh" })[CR.destino] || "Novo Flash";
   const CR = { el: null, destino: "flash", stream: null, frente: true, modo: "foto", ef: lerLS("cs.flef", { suave: 0.35, luz: 0.2, tom: "natural" }),
     gravando: null, partes: [], tGrav: 0, timer: null, raf: 0, fonte: null, fonteTipo: null, blob: null, musica: null, legenda: "", publico: null, para: [], somOriginal: true, cv: null };
   function filtroDe(ef, extra) {
@@ -416,11 +432,37 @@
     if (CR.el) CR.el.remove(); CR.el = null;
     if (!document.querySelector(".cs-vis,.cs-flv")) document.body.classList.remove("cs-vis-on");
   }
+  /* endereço da música para a câmera do aparelho tocar enquanto grava */
+  async function musicaParaCamera() {
+    const mu = CR.musica || (CR.musicaInicial && { lib: CR.musicaInicial, inicio: CR.musicaInicial.inicio || 0 });
+    if (!mu) return {};
+    try {
+      let uri;
+      if (mu.lib && mu.lib.fonte !== "chatmil" && /^https:\/\//.test(mu.lib.url || "")) uri = mu.lib.url;
+      else {
+        const b = mu.lib ? await (await fetch(await X.urlMusica(mu.lib))).blob() : mu.arq;
+        if (!b || !M.paraCache) return {};
+        uri = await M.paraCache(b, "musica." + ((b.type || "").includes("mp4") ? "m4a" : (b.type || "").includes("ogg") ? "ogg" : "mp3"));
+      }
+      const nome = mu.lib ? mu.lib.titulo + " · " + mu.lib.artista : (mu.nome || "Música");
+      return { musica: uri, musicaNome: nome.slice(0, 60), musicaInicio: Math.round(mu.inicio || 0) };
+    } catch (e) { console.warn("música na câmera", e); return {}; }
+  }
   async function cameraDoCelular(primeira) {
     pararCamera(); cancelAnimationFrame(CR.raf);
-    const n = await X.midia_nativa("camera", { modo: CR.modo === "video" ? "video" : "foto", frente: false, maxSeg: maxDur() });
+    const extra = await musicaParaCamera();
+    const n = await X.midia_nativa("camera", { modo: CR.modo === "video" ? "video" : "foto", frente: false, maxSeg: maxDur(), comMusica: !!X.escolherMusica, ...extra });
     if (!CR.el) return;
     if (n === null) return telaCamera();                       /* sem câmera do aparelho: usa a do navegador */
+    /* "Adicionar som" na câmera: escolhe a música e volta para a câmera com ela */
+    if (n && n.acao === "musica") {
+      if (n.modo) CR.modo = n.modo;
+      const m = await X.escolherMusica({ titulo: "Música", trecho: CR.destino === "xflesh" ? 60 : 30 });
+      if (!CR.el) return;
+      if (m) { CR.musicaInicial = null; usarMusicaLib(m); }
+      return cameraDoCelular(false);
+    }
+    if (n && n.length && n.musica) { CR.musicaInicial = null; CR.somOriginal = false; }
     /* cancelou: volta para a edição (se já tinha foto/vídeo) ou fecha — nunca troca para a câmera do navegador */
     if (!n.length) { if (!primeira && CR.fonte && CR.fonteTipo !== "camera") return telaEditar(); return fecharCriador(); }
     const f = n[0];
@@ -551,7 +593,7 @@
         ${video ? `<button class="cs-flc-linha" data-s="flc-somorig">${CR.somOriginal ? I.som : I.semSom}<span>Som do vídeo: <b>${CR.somOriginal ? "ligado" : "desligado"}</b></span></button>` : ""}
         <input class="in" id="flc-leg" maxlength="200" placeholder="Escreva uma legenda (opcional)" value="${esc(CR.legenda)}">
         ${CR.destino === "flash" ? `<button class="cs-flc-linha" data-s="flc-publico">${I.pessoas}<span>Quem vê: <b>${esc(textoPublico())}</b></span>${I.prox}</button>` : ""}
-        <button class="btn primary cs-grande" data-s="flc-publicar">${CR.destino === "flash" ? `${I.flash} Publicar Flash` : CR.destino === "xflesh" ? `${I.play} Publicar no XFlesh` : `${I.estrela} Salvar nos Destaques`}</button>
+        <button class="btn primary cs-grande" data-s="flc-publicar">${CR.destino === "flash" ? `${I.flash} Publicar Flash` : CR.destino === "xflesh" ? `${I.play} Publicar no MyFlesh` : `${I.estrela} Salvar nos Destaques`}</button>
       </div>`;
     CR.cv = el.querySelector("#flc-cv");
     const src = CR.fonte, [w, h] = dims(src), k = Math.min(1, 1280 / Math.max(w, h));
@@ -692,7 +734,7 @@
     if (CR.prevAud) { CR.prevAud.pause(); }
     const video = CR.fonteTipo === "video";
     if (video) CR.fonte.pause();
-    const barra = M.barraEnvio(CR.destino === "flash" ? "Flash" : CR.destino === "xflesh" ? "XFlesh" : "destaque"), txt = document.querySelector(".cs-up span");
+    const barra = M.barraEnvio(CR.destino === "flash" ? "Flash" : CR.destino === "xflesh" ? "MyFlesh" : "destaque"), txt = document.querySelector(".cs-up span");
     const fase = t => { if (txt) txt.textContent = t; };
     try {
       let midia, mime, dur = CR.dur, thumb = await miniatura(CR.fonte);
@@ -723,7 +765,7 @@
         const f = await gravar("xflesh", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, mus, extra: { nCurt: 0, nComent: 0, nComp: 0 } }, f => barra(0.7 + f * 0.3));
         if (mus && mus.fonte === "chatmil" && X.usoMusica) X.usoMusica(f.id, mus.id);
         if (X.xfleshPublicado) X.xfleshPublicado(f);
-        toast("Publicado no XFlesh!");
+        toast("Publicado no MyFlesh!");
       } else if (CR.destino === "destaque") {
         await gravar("destaques", { midia, mime, tipo: video ? "video" : "foto", dur, legenda: String(CR.legenda || leg).trim(), thumb, som, somMime, semSomOriginal: video && !CR.somOriginal, mus }, f => barra(0.7 + f * 0.3));
         FL.dest.delete(eu()); toast("Salvo nos Destaques do seu perfil.");
@@ -745,6 +787,7 @@
 
   X.flash = { baixar, apagarTudo, abrirCriador, subirPartes };
   X.criarXFlesh = m => abrirCriador("xflesh", m || null);
+  X.criarFlash = () => abrirCriador("flash");
 
   /* ================= Voltar (Android) ================= */
   const voltarAnt = window.SENOV_voltar;
@@ -783,12 +826,15 @@
 .cs-dest h2{display:flex;align-items:center;gap:6px}.cs-dest h2 svg{width:20px;height:20px;color:#E0A11B}
 .cs-dest-ed{margin-left:auto;border:0;background:var(--surface-2);color:var(--primary);font-weight:700;font-size:.85rem;padding:6px 14px;border-radius:999px;cursor:pointer}
 .cs-dest-l{display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;align-items:center}
-.cs-dest-it{flex:none;width:76px;height:116px;border-radius:14px;border:0;padding:0;overflow:hidden;position:relative;background:var(--surface-2);cursor:pointer;display:grid;place-items:center;color:var(--muted)}
+.cs-dest-it{flex:none;width:68px;height:68px;border-radius:50%;border:0;padding:0;overflow:hidden;position:relative;background:var(--surface-2);cursor:pointer;display:grid;place-items:center;color:var(--muted)}
 .cs-dest-it img{width:100%;height:100%;object-fit:cover}
 .cs-dest-it>span svg,.cs-dest-it.novo svg{width:28px;height:28px}
 .cs-dest-it>i{position:absolute;right:6px;bottom:6px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:grid;place-items:center}
 .cs-dest-it>i svg{width:12px;height:12px}
-.cs-dest-it.novo{border:2px dashed var(--line);background:none;display:flex;flex-direction:column;gap:4px;font-weight:700;font-size:.78rem}
+.cs-dest-it.novo{border:2px dashed var(--line);background:none;display:flex;flex-direction:column;gap:0;font-weight:700;font-size:0}
+.cs-dest-it.novo small{display:none}
+.cs-dest-it:not(.novo){box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--line)}
+.cs-dest h2.cs-sec{margin-bottom:8px}
 .cs-flv{position:fixed;inset:0;z-index:92;background:#000;color:#fff;display:flex;flex-direction:column;touch-action:none;user-select:none;-webkit-user-select:none}
 .cs-flv-barras{display:flex;gap:4px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px 4px}
 .cs-flv-barras i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.35);overflow:hidden}
@@ -860,5 +906,18 @@ label.cs-flc-linha{flex-wrap:wrap}label.cs-flc-linha input{width:100%;accent-col
 .cs-flc-p:has(input:checked) i{background:var(--primary);border-color:var(--primary);color:#fff}
 .cs-flc-p:has(input:checked){background:var(--surface-2)}
 `;
+  css.textContent += `
+.cs-fl-cards{gap:14px;padding:2px 2px 6px}
+.cs-fl-card{position:relative;flex:none;width:70px;height:auto;border:0;padding:0;background:none!important;box-shadow:none;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;overflow:visible;border-radius:0}
+.cs-fl-card::before,.cs-fl-card::after,.cs-fl-card.novo::after{display:none}
+.cs-fl-bg{display:none}
+.cs-fl-av{position:relative;left:auto;top:auto;transform:none;padding:3px;border-radius:50%;background:var(--line);box-shadow:none!important}
+.cs-fl-card.novo .cs-fl-av{background:conic-gradient(from 200deg,#FF3D7F,#B026FF,#6D28FF,#FF3D7F)}
+.cs-fl-card.vazio .cs-fl-av{background:none}
+.cs-fl-av>.cs-av{box-shadow:0 0 0 2.5px var(--bg)}
+.cs-fl-nm{position:static;color:var(--ink)!important;text-shadow:none!important;font-size:.74rem;font-weight:600;max-width:70px}
+.cs-fl-mais{right:-2px;bottom:-2px;box-shadow:0 0 0 2.5px var(--bg)}
+`;
   document.head.appendChild(css);
 })();
+

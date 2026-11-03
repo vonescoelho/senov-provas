@@ -1,4 +1,4 @@
-/* ChatMil — Prévia de links (miniatura, título e descrição), como no WhatsApp.
+/* FlashPapo — Prévia de links (miniatura, título e descrição), como no WhatsApp.
    Quem ENVIA gera a prévia uma vez e ela vai junto da mensagem/publicação/anotação (na mensagem, dentro da criptografia).
    No Android: o próprio celular lê a página (NativoPlugin.previaLink, sem limite de CORS) e reduz a imagem.
    Na versão web: serviço público microlink.io + images.weserv.nl para a miniatura. */

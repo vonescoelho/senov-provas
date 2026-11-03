@@ -1,4 +1,4 @@
-/* ChatMil — Conexões (só para maiores de 18 com idade confirmada): pessoas da região em cartões
+/* FlashPapo — Conexões (só para maiores de 18 com idade confirmada): pessoas da região em cartões
    (pular / seguir / dizer oi), quem frequenta a mesma região nos mesmos dias da semana, alcance das
    publicações e distância aproximada na lista de Amigos. Depende de social.js.
    Privacidade: a posição é arredondada (~2 km); os lugares frequentes são células de ~5 km
@@ -12,7 +12,8 @@
   const I = {
     pin: ic('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>'),
     x: ic('<path d="M6 6l12 12M18 6 6 18"/>'),
-    coracao: ic('<path d="M12 20s-7.5-4.6-9.3-9.2A5 5 0 0 1 12 6a5 5 0 0 1 9.3 4.8C19.5 15.4 12 20 12 20z"/>'),
+    /* café: troca de experiência, colegas — nada romântico */
+    coracao: ic('<path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.7 0 2.5M12 3.5c-.6.8-.6 1.7 0 2.5"/>'),
     oi: ic('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>'),
     filtro: ic('<path d="M4 6h16M7 12h10M10 18h4"/>'),
     alvo: ic('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>'),
@@ -158,7 +159,7 @@
       s.docs.forEach(d => {
         if (d.id === eu()) return;
         const p = A.pub(d.id, d.data()); SO.perfis[d.id] = { ...(SO.perfis[d.id] || {}), ...p };
-        if (p.perto !== true || p.adulto !== true || SO.bloqueados.has(d.id) || p.removido) return;
+        if (p.perto !== true || p.adulto !== true || p.relac !== "solteiro" || SO.bloqueados.has(d.id) || p.removido) return;
         const dist = loc ? km(loc, p.loc) : null;
         if (loc && r && (dist == null || dist > r)) return;
         l.push({ uid: d.id, dist });
@@ -334,8 +335,8 @@
       ST.primeiro = id; abrirTela({ v: "pt-descobrir" });
     },
     "pt-convidar": async () => {
-      const url = "https://vonescoelho.github.io/senov-provas/", t = "Estou no ChatMil: vídeos, amigos e conversas, sem anúncios. Entre também: " + url;
-      try { if (navigator.share) { await navigator.share({ title: "ChatMil", text: t }); return; } } catch (e) { return; }
+      const url = "https://vonescoelho.github.io/senov-provas/", t = "Estou no FlashPapo: vídeos, amigos e conversas, sem anúncios. Entre também: " + url;
+      try { if (navigator.share) { await navigator.share({ title: "FlashPapo", text: t }); return; } } catch (e) { return; }
       A.copiar(t); toast("Convite copiado. Cole no WhatsApp.");
     },
     "pt-pular": el => pular(el.dataset.id),
@@ -424,7 +425,7 @@
   const perfilAnt = X.perfilExtra;
   X.perfilExtra = (uid, meu) => {
     const p = meu ? (SO.eu || {}) : P(uid), me = meuLoc(), d = !meu && me && adulto() ? km(me, p.loc) : null, int = p.interesses || [];
-    const h = (d != null || int.length || meu) ? `<section class="card flat pt-perfil-x">
+    const h = (d != null || (int.length && adulto()) || (meu && adulto())) ? `<section class="card flat pt-perfil-x">
       ${d != null ? `<p>${I.pin} ${esc(fmtKm(d))}${p.loc && p.loc.cid ? " · " + esc(p.loc.cid) : ""}</p>` : meu && p.loc ? `<p>${I.pin} ${esc(p.loc.cid || "Local aproximado")}${p.perto === false ? " · oculto" : ""}</p>` : ""}
       ${int.length ? `<div class="pt-chips">${int.map(t => `<span class="i">${esc(t)}</span>`).join("")}</div>` : ""}
       ${meu ? `<button class="cs-link" data-s="pt-ajustes">${int.length || p.loc ? "Editar interesses" : "Adicionar interesses"}</button>` : ""}</section>` : "";
@@ -487,15 +488,14 @@
 .pt-b:active{transform:scale(.9)}
 .pt-b svg{width:30px;height:30px}
 .pt-b-nao{color:#E11D48}.pt-b-oi{width:52px;height:52px;color:var(--primary)}.pt-b-oi svg{width:24px;height:24px}
-.pt-b-sim{color:#fff;background:linear-gradient(135deg,#E11D48,#F97316)}
-.pt-b-sim svg{fill:currentColor}
+.pt-b-sim{color:#fff;background:linear-gradient(135deg,#0E7490,#2447C6)}
 .pt-dica{margin:0;text-align:center}
 .pt-alcs{display:flex;flex-wrap:wrap;gap:6px}
 .pt-alcs button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:7px 12px;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer}
 .pt-alcs button[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:var(--primary-ink)}
 .cs-novo-post+.cs-seg,#cs-f-post .pt-alcs{margin-top:2px}
 .pt-match{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:8px 0}
-.pt-match h2{margin:6px 0 0;font-size:1.8rem;background:linear-gradient(90deg,#E11D48,#7C5CFF);-webkit-background-clip:text;background-clip:text;color:transparent}
+.pt-match h2{margin:6px 0 0;font-size:1.8rem;background:linear-gradient(90deg,#0E7490,#2447C6);-webkit-background-clip:text;background-clip:text;color:transparent}
 .pt-match p{margin:0}
 .pt-match .btn{width:100%;max-width:320px}
 .pt-match-av{display:flex}.pt-match-av .cs-av{border:4px solid var(--surface);box-shadow:0 6px 16px rgba(0,0,0,.2)}.pt-match-av .cs-av+.cs-av{margin-left:-18px}

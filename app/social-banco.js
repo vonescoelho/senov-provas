@@ -1,4 +1,4 @@
-/* ChatMil — Banco de questões compartilhado (nuvem).
+/* FlashPapo — Banco de questões compartilhado (nuvem).
    Quem autorizou o compartilhamento (termo) envia as questões do banco deste aparelho para a coleção
    "banco" do Firebase; todos recebem as questões dos colegas (inclusive as criadas pela IA).
    As provas salvas também vão para "bancoProvas" (só o dono e a administração leem).

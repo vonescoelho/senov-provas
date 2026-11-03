@@ -1,4 +1,4 @@
-/* ChatMil — rede social dos professores: cadastro, perfil, conversas, grupos, mural e configurações.
+/* FlashPapo — rede social dos professores: cadastro, perfil, conversas, grupos, mural e configurações.
    Usa o Firebase (login por e-mail e banco em tempo real). Só entra em ação quando
    app/firebase-config.js tem a configuração do projeto; sem ela, o app funciona como antes. */
 (function () {
@@ -78,13 +78,24 @@
     megafone: ic('<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/>'),
     check: ic('<path d="M20 6 9 17l-5-5"/>'),
     pen: ic('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
+    sino: ic('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/>'),
+    cafe: ic('<path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.7 0 2.5M12 3.5c-.6.8-.6 1.7 0 2.5"/>'),
+    grade: ic('<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>'),
     xflesh: ic('<rect x="5" y="2.5" width="14" height="19" rx="4"/><path d="M10.2 8.8v6.4l5.2-3.2z" fill="currentColor"/>'),
-    conexoes: ic('<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><path d="M12 12.8s-2.7-1.6-2.7-3.4a1.45 1.45 0 0 1 2.7-.8 1.45 1.45 0 0 1 2.7.8c0 1.8-2.7 3.4-2.7 3.4z"/>'),
+    conexoes: ic('<path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M16 10h1.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8 3.5c-.6.8-.6 1.7 0 2.5M12 3.5c-.6.8-.6 1.7 0 2.5"/>'),
     nota: ic('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>')
-  };
+  };  /* ===== Marca FlashPapo: o "C" é o balão de conversa e as barras de som formam o "M" (uma cor só, ou degradê) ===== */
+  const LOGO_SIMB = cor => `<path d="M77.5 74.7A37 37 0 1 1 77.5 25.2" fill="none" stroke="COR" stroke-width="13" stroke-linecap="round"/><path d="M21 74L10.5 93 34 84.5z" fill="COR" stroke="COR" stroke-width="5" stroke-linejoin="round"/><path d="M33 39.5a5.5 5.5 0 0 1 11 0v19a5.5 5.5 0 0 1 -11 0zM48 50.5a5.5 5.5 0 0 1 11 0v8a5.5 5.5 0 0 1 -11 0zM63 39.5a5.5 5.5 0 0 1 11 0v19a5.5 5.5 0 0 1 -11 0z" fill="COR"/>`.split("COR").join(cor);
+  const LOGO_NOME = "M4.1 46.0V0.0H15.7V46.0ZM13.3 28.8V19.0H36.1V28.8ZM13.3 9.8V0.0H37.1V9.8Z M41.0 46.0V-1.3H52.3V46.0Z M70.7 46.6Q66.3 46.6 62.9 44.5Q59.5 42.4 57.5 38.6Q55.6 34.9 55.6 30.2Q55.6 25.4 57.5 21.6Q59.5 17.8 62.9 15.7Q66.3 13.6 70.7 13.6Q73.7 13.6 76.2 14.7Q78.7 15.8 80.3 17.7Q81.8 19.7 82.2 22.1V38.1Q81.8 40.6 80.3 42.5Q78.7 44.4 76.2 45.5Q73.7 46.6 70.7 46.6ZM73.1 36.6Q75.9 36.6 77.7 34.8Q79.4 33.0 79.4 30.1Q79.4 28.2 78.6 26.8Q77.8 25.4 76.4 24.5Q75.0 23.7 73.2 23.7Q71.4 23.7 70.0 24.5Q68.6 25.4 67.8 26.8Q67.0 28.3 67.0 30.1Q67.0 32.0 67.8 33.4Q68.5 34.9 70.0 35.7Q71.4 36.6 73.1 36.6ZM78.9 46.0V37.5L80.5 29.7L78.9 22.1V14.3H90.0V46.0Z M107.3 46.9Q104.4 46.9 101.6 46.1Q98.8 45.4 96.3 44.0Q93.9 42.7 92.2 40.9L98.4 34.6Q99.9 36.3 102.1 37.2Q104.3 38.1 106.7 38.1Q108.2 38.1 108.9 37.7Q109.7 37.3 109.7 36.6Q109.7 35.6 108.6 35.0Q107.5 34.5 105.8 34.0Q104.1 33.6 102.2 33.0Q100.3 32.4 98.6 31.3Q96.8 30.3 95.7 28.4Q94.7 26.5 94.7 23.6Q94.7 20.6 96.3 18.3Q98.0 16.0 101.0 14.6Q104.0 13.3 108.0 13.3Q112.1 13.3 115.8 14.7Q119.5 16.1 121.7 18.9L115.5 25.2Q113.9 23.4 112.1 22.7Q110.2 22.1 108.6 22.1Q107.1 22.1 106.5 22.5Q105.8 22.9 105.8 23.6Q105.8 24.5 106.9 25.0Q108.0 25.5 109.7 25.9Q111.4 26.3 113.3 27.0Q115.1 27.6 116.8 28.8Q118.5 29.9 119.6 31.8Q120.7 33.7 120.7 36.7Q120.7 41.4 117.1 44.2Q113.4 46.9 107.3 46.9Z M145.0 46.0V28.1Q145.0 25.9 143.7 24.6Q142.4 23.4 140.4 23.4Q139.0 23.4 138.0 23.9Q136.9 24.5 136.3 25.6Q135.7 26.6 135.7 28.1L131.3 26.0Q131.3 22.2 132.9 19.4Q134.5 16.7 137.3 15.1Q140.1 13.6 143.8 13.6Q147.6 13.6 150.4 15.1Q153.2 16.7 154.8 19.3Q156.3 22.0 156.3 25.5V46.0ZM124.4 46.0V-1.3H135.7V46.0Z M170.9 29.5V20.9H180.0Q181.6 20.9 183.0 20.2Q184.4 19.5 185.3 18.2Q186.1 16.8 186.1 14.8Q186.1 12.8 185.3 11.4Q184.4 10.0 183.0 9.3Q181.6 8.6 180.0 8.6H170.9V0.0H182.0Q186.4 0.0 189.9 1.8Q193.5 3.6 195.6 6.8Q197.7 10.1 197.7 14.8Q197.7 19.3 195.6 22.7Q193.5 26.0 189.9 27.8Q186.4 29.5 182.0 29.5ZM161.7 46.0V0.0H173.3V46.0Z M214.3 46.6Q209.8 46.6 206.4 44.5Q203.0 42.4 201.0 38.6Q199.1 34.9 199.1 30.2Q199.1 25.4 201.0 21.6Q203.0 17.8 206.4 15.7Q209.8 13.6 214.3 13.6Q217.2 13.6 219.7 14.7Q222.2 15.8 223.8 17.7Q225.4 19.7 225.7 22.1V38.1Q225.4 40.6 223.8 42.5Q222.2 44.4 219.7 45.5Q217.2 46.6 214.3 46.6ZM216.7 36.6Q219.4 36.6 221.2 34.8Q222.9 33.0 222.9 30.1Q222.9 28.2 222.1 26.8Q221.3 25.4 219.9 24.5Q218.5 23.7 216.7 23.7Q214.9 23.7 213.5 24.5Q212.1 25.4 211.3 26.8Q210.5 28.3 210.5 30.1Q210.5 32.0 211.3 33.4Q212.1 34.9 213.5 35.7Q214.9 36.6 216.7 36.6ZM222.4 46.0V37.5L224.1 29.7L222.4 22.1V14.3H233.5V46.0Z M257.6 46.6Q254.6 46.6 252.0 45.5Q249.4 44.4 247.7 42.5Q246.0 40.6 245.6 38.1V22.6Q246.0 20.1 247.8 18.1Q249.5 16.0 252.0 14.8Q254.6 13.6 257.6 13.6Q262.3 13.6 265.8 15.7Q269.3 17.8 271.2 21.6Q273.2 25.4 273.2 30.2Q273.2 34.9 271.2 38.6Q269.3 42.4 265.8 44.5Q262.3 46.6 257.6 46.6ZM238.8 59.4V14.3H250.1V22.3L248.2 29.9L249.8 37.6V59.4ZM255.5 36.6Q257.4 36.6 258.8 35.7Q260.2 34.9 261.0 33.4Q261.8 32.0 261.8 30.1Q261.8 28.2 261.0 26.8Q260.2 25.4 258.8 24.5Q257.4 23.7 255.6 23.7Q253.8 23.7 252.4 24.5Q251.0 25.3 250.2 26.8Q249.4 28.2 249.4 30.1Q249.4 32.0 250.2 33.4Q251.0 34.9 252.4 35.7Q253.8 36.6 255.5 36.6Z M292.1 46.7Q287.0 46.7 283.0 44.5Q279.0 42.4 276.7 38.6Q274.4 34.8 274.4 30.0Q274.4 25.3 276.7 21.6Q279.0 17.8 283.0 15.7Q287.0 13.5 292.1 13.5Q297.1 13.5 301.1 15.7Q305.1 17.8 307.5 21.6Q309.8 25.3 309.8 30.0Q309.8 34.8 307.5 38.6Q305.2 42.4 301.2 44.5Q297.2 46.7 292.1 46.7ZM292.1 36.7Q294.0 36.7 295.4 35.8Q296.8 35.0 297.5 33.5Q298.3 32.1 298.3 30.1Q298.3 28.2 297.5 26.7Q296.7 25.2 295.3 24.4Q294.0 23.6 292.1 23.6Q290.3 23.6 288.8 24.5Q287.4 25.3 286.6 26.8Q285.9 28.2 285.9 30.2Q285.9 32.1 286.6 33.5Q287.4 35.0 288.8 35.8Q290.3 36.7 292.1 36.7Z";
+  const GRAD_LOGO = `<defs><linearGradient id="cmlg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF3D7F"/><stop offset=".55" stop-color="#B026FF"/><stop offset="1" stop-color="#6D28FF"/></linearGradient></defs>`;
+  /* simbolo(cor): só o símbolo; marca(): símbolo em degradê + nome na cor do texto */
+  const logoSimbolo = (cor, cls) => `<svg class="${cls || "cs-lg-s"}" viewBox="0 0 100 100" aria-hidden="true">${cor === "grad" ? GRAD_LOGO : ""}${LOGO_SIMB(cor === "grad" ? "url(#cmlg)" : cor || "currentColor")}</svg>`;
+  const logoNome = cls => `<svg class="${cls || "cs-lg"}" viewBox="0 -2 314 63" role="img" aria-label="FlashPapo"><path fill="currentColor" d="${LOGO_NOME}"/></svg>`;
+  const logoMarca = cls => `<svg class="${cls || "cs-lg"}" viewBox="0 0 428 100" role="img" aria-label="FlashPapo">${GRAD_LOGO}${LOGO_SIMB("url(#cmlg)")}<path transform="translate(112,27)" fill="currentColor" d="${LOGO_NOME}"/></svg>`;
+
 
   /* Extensões (social-mais.js): telas, abas, ações e tipos de mensagem extras */
-  const EXT = { views: {}, tabViews: {}, acoes: {}, tabs: [], provasSub: [], perfilCanto: [], msg: null, chatBotoes: null, composerBotoes: null, composerFim: null,
+  const EXT = { views: {}, tabViews: {}, acoes: {}, tabs: [], provasSub: [], perfilCanto: [], perfilAbas: [], notificacoes: [], msg: null, chatBotoes: null, composerBotoes: null, composerFim: null,
     conversasTopo: null, depois: [], avisos: [], muralTopo: [], muralSeg: [], muralFiltro: [], muralCab: [], compositorBotoes: [], compositorPainel: [], compositorAbrir: [], postDados: [], postMeta: [], perfilExtra: null, perfilAv: null, configPriv: [], configExtra: [], aoTrocarUsuario: [], portao: null, postCorpo: [], fotosExtra: [], conversasFixos: [] };
 
   /* ================= Estado ================= */
@@ -97,7 +108,7 @@
     cad: { nome: "", email: "", senha: "", usuario: "", escola: "", disciplinas: [], foto: null, ok: null, verSenha: false },
     un: {}
   };
-  try { const t = localStorage.getItem("cs.tab"); if (["xflesh", "mural", "conversas", "provas", "conexoes", "perfil"].includes(t)) SO.tab = t; } catch (e) { }
+  try { const t = localStorage.getItem("cs.tab"); if (["xflesh", "notif", "conversas", "provas", "conexoes", "perfil"].includes(t)) SO.tab = t; } catch (e) { }
   const $ = s => document.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const eu = () => SO.user && SO.user.uid;
@@ -503,9 +514,9 @@
     if (c.nome.length < 3) return erro("Digite o seu nome.");
     const id = idadeDe(c.nasc);
     if (id == null) return erro("Informe a data de nascimento.");
-    if (id < 13) return erro("O ChatMil é para maiores de 13 anos.");
+    if (id < 13) return erro("O FlashPapo é para maiores de 13 anos.");
     ocupar("Salvando…");
-    try { await salvarPerfil(c); SO.tab = "xflesh"; lembrarTab(); toast("Bem-vindo(a) ao ChatMil!"); pintar(); }
+    try { await salvarPerfil(c); SO.tab = "xflesh"; lembrarTab(); toast("Bem-vindo(a) ao FlashPapo!"); pintar(); }
     catch (e) { erro(e.msg || msgErro(e)); }
   }
 
@@ -525,9 +536,8 @@
   function ocupar(txt) { SO.erro = ""; const el = $("#cs-erro"); if (el) el.innerHTML = ""; botao(true, txt); }
   function vBoasVindas() {
     return `<section class="cs-auth cs-bv">
-      <div class="cs-figs" aria-hidden="true"><span class="f1">${figurinha("nota10", 92)}</span><span class="f2">${figurinha("cafe", 84)}</span><span class="f3">${figurinha("estudar", 88)}</span></div>
-      <div class="cs-logo">${K.chat}</div>
-      <h1>ChatMil</h1>
+      <div class="cs-logo cs-logo-bv">${logoSimbolo("#fff")}</div>
+      <h1 class="cs-bv-marca">${logoNome("cs-lg cs-lg-bv")}</h1>
       <p class="cs-lema">Vídeos, amigos e conversas. Sem anúncios.</p>
       <div class="cs-auth-bt">
         <button class="btn primary cs-grande" data-s="ir" data-v="criar">Criar minha conta</button>
@@ -555,7 +565,7 @@
   function vEntrar() {
     return `<section class="cs-auth">
       <button class="cs-voltar-t" data-s="ir" data-v="boas-vindas" aria-label="Voltar">${K.back}</button>
-      <div class="cs-logo sm">${K.chat}</div>
+      <div class="cs-logo sm">${logoSimbolo("#fff")}</div>
       <h1>Entrar</h1><p class="muted">Use o e-mail e a senha da sua conta.</p>
       <form class="stack" id="cs-f-entrar" novalidate>
         <label class="f" for="cs-email">E-mail<input class="in" id="cs-email" type="email" inputmode="email" autocomplete="email" value="${esc(SO.cad.email)}"></label>
@@ -588,7 +598,7 @@
         ${campoFoto(c.foto, c.nome)}
         <label class="f" for="cs-nome">Nome<input class="in" id="cs-nome" value="${esc(c.nome)}"></label>
         <label class="f" for="cs-nasc">Data de nascimento<input class="in" id="cs-nasc" type="date" max="${new Date().toISOString().slice(0, 10)}" value="${esc(c.nasc || "")}"></label>
-        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(c.usuario)}" placeholder="seu.nome"></span></label><small class="muted">É o nome que os outros veem em tudo no ChatMil.</small>
+        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(c.usuario)}" placeholder="seu.nome"></span></label><small class="muted">É o nome que os outros veem em tudo no FlashPapo.</small>
         <span id="cs-usu-ok" class="cs-ok" aria-live="polite"></span>
         ${sug.length ? `<div class="chips cs-sug">${sug.map(s => `<button type="button" class="chip" data-s="sug" data-v="${s}">@${s}</button>`).join("")}</div>` : ""}
         ${erroHtml()}
@@ -613,8 +623,8 @@
   function vConversas() {
     const f = semAc(SO.filtroChats);
     const lista = SO.chats.filter(c => (c.tipo === "grupo" || c.ultima || (topo() && topo().id === c.id)) && (!f || semAc(tituloChat(c).nome).includes(f)));
-    const assist = !f || "assistente de provas".includes(f);
-    return `<div class="cs-cab"><div class="cs-marca"><h1>ChatMil</h1></div><div class="row" style="gap:6px">
+    const assist = ehProf() && (!f || "assistente de provas".includes(f));
+    return `<div class="cs-cab"><div class="cs-marca"><h1>${logoMarca()}</h1></div><div class="row" style="gap:6px">
         <button class="cs-ico-bt" data-s="novo" aria-label="Contatos e grupos">${K.maisV}</button></div></div>
       ${avisoEmail()}${EXT.avisos.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       <label class="cs-busca">${K.busca}<input id="cs-filtro" placeholder="Buscar conversa ou pessoa" value="${esc(SO.filtroChats)}" aria-label="Buscar conversa ou pessoa"></label>
@@ -686,9 +696,9 @@
         return sem.length ? `<button class="cs-e2e-chat" data-s="e2e-info">🔓 ${esc(sem.map(u => P(u).nome).join(", "))} ainda não ativou a criptografia (precisa atualizar o app)</button>`
           : CS_E2E.pronto() ? `<button class="cs-e2e-chat" data-s="${g ? "e2e-info" : "e2e-codigo"}" data-id="${esc(g ? "" : t.outro)}">${K.lock} Protegida de ponta a ponta</button>` : ""; })() : ""}
       <div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
-      ${podeEscrever ? `${SO.figAberta ? painelFig("fig-msg") : ""}
+      ${podeEscrever ? `${SO.figAberta ? (EXT.painelEmoji ? EXT.painelEmoji() : painelFig("fig-msg")) : ""}
       <form class="cs-compor ${EXT.composerFim && !(SO.rascunho[id] || "").trim() ? "vazio" : ""}" id="cs-f-msg" data-id="${esc(id)}">
-        <button type="button" class="cs-ico-bt ${SO.figAberta ? "on" : ""}" data-s="fig-toggle" aria-label="Figurinhas" aria-pressed="${SO.figAberta}">${K.smile}</button>${EXT.composerBotoes ? EXT.composerBotoes(c) : ""}
+        <button type="button" class="cs-ico-bt ${SO.figAberta ? "on" : ""}" data-s="fig-toggle" aria-label="Emojis" aria-pressed="${SO.figAberta}">${K.smile}</button>${EXT.composerBotoes ? EXT.composerBotoes(c) : ""}
         <textarea id="cs-txt" class="in" rows="1" maxlength="2000" placeholder="Mensagem" aria-label="Mensagem" enterkeyhint="send">${esc(SO.rascunho[id] || "")}</textarea>
         ${EXT.composerFim ? EXT.composerFim(c) : ""}<button class="btn primary cs-env" aria-label="Enviar">${K.enviar}</button>
       </form>` : `<div class="cs-compor cs-aviso-comp">${bloq ? `Você bloqueou esta pessoa. <button class="cs-link" data-s="desbloquear" data-id="${esc(t.outro)}">Desbloquear</button>` : "Só administradores enviam mensagens neste grupo."}</div>`}`;
@@ -708,6 +718,7 @@
       if (m.cifrada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-id="${esc(m.id)}"><div class="cs-b cs-tb cs-trancada">${nome}<span class="cs-tx">${m.cifrada === "pin" ? "🔒 Digite seu PIN para abrir" : m.cifrada === "abrindo" ? "🔒 Abrindo…" : "🔒 Mensagem protegida que este celular não consegue abrir"}</span><span class="cs-h">${hr}</span></div></div>`; ant = m; return; }
       if (EXT.msg && (m.arquivo || m.chamada || m.audio || m.unica)) { h += EXT.msg(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
       if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
+      else if (EXT.emojiGrande && EXT.emojiGrande(m.texto)) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb cs-emo-msg">${nome}<span class="cs-tx">${[...new Intl.Segmenter("pt", { granularity: "grapheme" }).segment(m.texto.trim())].map(x => x.segment.trim() ? EXT.emojiAnimado(x.segment) : "").join("")}</span><span class="cs-h">${hr}</span></div></div>`;
       else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb ${m.link ? "cs-com-lk" : ""}">${nome}${m.link && window.CS_LINK ? CS_LINK.card(m.link) : ""}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
       ant = m;
     });
@@ -776,7 +787,7 @@
       ${m.texto && !m.apagada ? `<button data-s="copiar" data-v="${esc(m.texto)}">${K.copiar}<span><b>Copiar texto</b></span></button>` : ""}
       ${paraTodos ? `<button data-s="apagar-msg" data-chat="${esc(chatId)}" data-id="${esc(msgId)}" class="perigo">${K.lixo}<span><b>Apagar para todos</b>${!meu ? "<small>Como administrador do grupo</small>" : ""}</span></button>` : ""}
       <button data-s="apagar-mim" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.lixo}<span><b>Apagar para mim</b><small>Some só neste celular</small></span></button>
-      ${meu || m.apagada ? "" : `<button data-s="denunciar" data-tipo="mensagem" data-uid="${esc(m.autor)}" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.flag}<span><b>Denunciar</b><small>A equipe do ChatMil vai analisar</small></span></button>
+      ${meu || m.apagada ? "" : `<button data-s="denunciar" data-tipo="mensagem" data-uid="${esc(m.autor)}" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.flag}<span><b>Denunciar</b><small>A equipe do FlashPapo vai analisar</small></span></button>
            <button data-s="ver-perfil" data-id="${esc(m.autor)}">${K.user}<span><b>Ver perfil de ${esc(P(m.autor).nome)}</b></span></button>`}
     </div>`);
   }
@@ -837,9 +848,9 @@
   }
   async function compartilharGrupo(c) {
     const url = location.origin + location.pathname.replace(/index\.html$/, "") + "?g=" + c.codigo;
-    const texto = `Entre no grupo “${c.nome}” no ChatMil. Código: ${c.codigo}`;
+    const texto = `Entre no grupo “${c.nome}” no FlashPapo. Código: ${c.codigo}`;
     const web = /^https?:/.test(location.origin) && !/localhost/.test(location.host);
-    try { if (navigator.share) { await navigator.share({ title: "ChatMil", text: texto, url: web ? url : undefined }); return; } } catch (e) { if (e.name === "AbortError") return; }
+    try { if (navigator.share) { await navigator.share({ title: "FlashPapo", text: texto, url: web ? url : undefined }); return; } } catch (e) { if (e.name === "AbortError") return; }
     copiar(texto + (web ? " " + url : ""));
   }
   function copiar(t) { try { navigator.clipboard.writeText(t).then(() => toast("Copiado!"), () => toast(t)); } catch (e) { toast(t); } }
@@ -968,7 +979,7 @@
       ${avisoEmail()}
       ${h(EXT.muralTopo)}
       <button class="card cs-novo-post" data-s="novo-post">${av(eup, 40, eu())}<span>Nova publicação</span><i class="cs-np-foto" data-s="novo-post-foto" role="button" aria-label="Foto: câmera ou galeria">${K.foto}</i></button>
-      <div class="seg cs-seg">${segs.map(([k, n]) => `<button data-s="feed" data-v="${k}" aria-pressed="${SO.feed === k}">${n}</button>`).join("")}</div>
+      <div class="seg cs-seg cs-tabs-l">${segs.map(([k, n]) => `<button data-s="feed" data-v="${k}" aria-pressed="${SO.feed === k}">${n}</button>`).join("")}</div>
       ${lista.length ? `<div class="stack">${lista.map(p => htmlPost(p)).join("")}</div>` :
         `<div class="empty">${figurinha("eureca", 96)}<b>Nada por aqui</b>
         <button class="btn primary" data-s="${SO.feed === "seguindo" ? "buscar-pessoas" : "novo-post"}">${SO.feed === "seguindo" ? "Encontrar colegas" : "Publicar"}</button></div>`}
@@ -1304,27 +1315,35 @@
   function vPerfil(uid, aba) {
     const meu = uid === eu(), p = meu ? (SO.eu || {}) : P(uid), n = contar(uid), seg = SO.seguindo.has(uid);
     const posts = SO.posts.filter(x => x.autor === uid);
-    return `${aba ? `<div class="cs-cab"><h1>Perfil</h1><button class="cs-ico-bt" data-s="config" aria-label="Configurações">${K.gear}</button></div>`
-      : `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>${esc(p.nome)}</b>${meu ? "" : `<button class="cs-ico-bt" data-s="menu-pessoa" data-id="${esc(uid)}" aria-label="Opções">${K.mais}</button>`}</header>`}
-      <div class="${aba ? "" : "cs-pag "}stack">
-      <section class="card cs-perfil">
-        <div class="cs-perfil-capa" style="--c:${corDe(uid)}"></div>
-        <div class="cs-perfil-av">${EXT.perfilAv ? EXT.perfilAv(uid, av(p, 96, uid)) : av(p, 96, uid)}</div>
-        <h1>${esc(p.nome)}${seloHtml(p)}</h1>
-        ${meu ? `<span class="muted">@${esc(p.usuario || "")}</span>` : ""}
-        ${p.inst ? `<span class="pill d1">${K.check} Professor(a) com e-mail institucional</span>` : ""}
-        ${p.escola ? `<span class="cs-escola">${K.escola} ${esc(p.escola)}</span>` : ""}
-        ${(p.disciplinas || []).length ? `<div class="chips cs-centro-chips">${p.disciplinas.map(d => `<span class="pill">${esc(d)}</span>`).join("")}</div>` : ""}
-        ${p.bio ? `<p class="cs-bio">${esc(p.bio)}</p>` : ""}
-        ${(() => { const r = numerosRede(uid, p, n); return `<div class="cs-nums"><div><b>${n.posts}</b><span>publicações</span></div><div><b>${r.seguidores}</b><span>seguidores</span></div><div><b>${r.seguindo}</b><span>seguindo</span></div></div>`; })()}
-        ${meu ? `<div class="row cs-perfil-bt"><button class="btn" data-s="editar-perfil">${K.pen} Editar perfil</button><button class="btn" data-s="config">${K.gear} Configurações</button></div>`
-          : p.removido ? "" : `<div class="row cs-perfil-bt"><button class="btn ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(uid)}">${seg ? ((SO.segOculto || new Set()).has(uid) ? K.lock + " Em segredo" : K.check + " Seguindo") : K.addUser + " Seguir"}</button><button class="btn" data-s="abrir-direto" data-id="${esc(uid)}">${K.chat} Mensagem</button></div>`}
-      ${meu && aba ? perfilCanto() : ""}
+    const r = numerosRede(uid, p, n), usu = p.usuario || "";
+    const pfAba = (EXT.perfilAbas.length && SO.pfAba && SO.pfAba[uid]) || "posts";
+    const abas = [["posts", K.grade, "Publicações"], ...EXT.perfilAbas.map(x => [x.k, x.i, x.n])];
+    const corpoAba = pfAba !== "posts" && EXT.perfilAbas.find(x => x.k === pfAba);
+    return `${aba ? `<div class="cs-cab"><h1 class="cs-pf-usu">${usu ? "@" + esc(usu) : "Perfil"}</h1><button class="cs-ico-bt" data-s="config" aria-label="Configurações">${K.gear}</button></div>`
+      : `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>${usu ? "@" + esc(usu) : esc(p.nome)}</b>${meu ? "" : `<button class="cs-ico-bt" data-s="menu-pessoa" data-id="${esc(uid)}" aria-label="Opções">${K.mais}</button>`}</header>`}
+      <div class="${aba ? "" : "cs-pag "}stack cs-pf-pag">
+      <section class="cs-pfl">
+        <div class="cs-pf-top">
+          <div class="cs-pf-av">${EXT.perfilAv ? EXT.perfilAv(uid, av(p, 88, uid)) : av(p, 88, uid)}</div>
+          <div class="cs-pf-nums">
+            <div title="Publicações" aria-label="${n.posts} publicações"><b>${n.posts}</b><i>${K.grade}</i></div>
+
+          </div>
+        </div>
+        <div class="cs-pf-info">
+          <h2>${esc(p.nomeReal || p.nome)}${seloHtml(p)}</h2>
+          ${p.inst ? `<span class="cs-pf-tag">${K.check} E-mail institucional</span>` : ""}
+          ${p.escola ? `<span class="cs-pf-esc">${K.escola} ${esc(p.escola)}</span>` : ""}
+          ${p.bio ? `<p class="cs-bio">${esc(p.bio)}</p>` : ""}
+        </div>
+        ${meu ? `<div class="cs-pf-bts"><button class="btn" data-s="editar-perfil">Editar perfil</button><button class="btn" data-s="compartilhar-perfil">Compartilhar</button></div>`
+          : p.removido ? "" : `<div class="cs-pf-bts"><button class="btn ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(uid)}">${seg ? ((SO.segOculto || new Set()).has(uid) ? K.lock + " Em segredo" : "Seguindo") : "Seguir"}</button><button class="btn" data-s="abrir-direto" data-id="${esc(uid)}">Mensagem</button></div>`}
+        ${meu && aba ? perfilCanto() : ""}
       </section>
       ${EXT.perfilExtra ? EXT.perfilExtra(uid, meu) : ""}
       ${meu && aba ? avisoEmail() : ""}
-      <h2 class="cs-sec">Publicações</h2>
-      ${posts.length ? posts.map(x => htmlPost(x)).join("") : `<p class="muted small">${meu ? "Você ainda não publicou no mural." : "Nenhuma publicação ainda."}</p>`}
+      <div class="cs-pf-abas" role="tablist">${abas.map(([k, i, nm]) => `<button role="tab" data-s="pf-aba" data-id="${esc(uid)}" data-v="${k}" aria-selected="${pfAba === k}" aria-label="${nm}">${i}</button>`).join("")}</div>
+      ${corpoAba ? corpoAba.view(uid, meu) : posts.length ? posts.map(x => htmlPost(x)).join("") : `<div class="cs-pf-vazio">${K.grade}<span>${meu ? "Nenhuma publicação ainda" : "Nada por aqui ainda"}</span></div>`}
       </div>`;
   }
   /* cantinho do perfil: Professor (libera Provas), +18 (libera Conexões) e extras (Central do Artista) */
@@ -1333,7 +1352,7 @@
     return `<div class="cs-canto">
       ${EXT.perfilCanto.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       <button class="cs-canto-b ${ehProf() ? "on" : ""}" data-s="sou-prof">${K.escola}<span>${ehProf() ? "Professor(a)" : "Sou professor"}</span></button>
-      ${menor ? "" : `<button class="cs-canto-b ${ad ? "on" : ""}" data-s="adulto">${ad ? K.conexoes : K.shield}<span>${ad ? "Conexões" : "+18"}</span></button>`}</div>`;
+      ${menor ? "" : `<button class="cs-canto-b ${ad && ehSolteiro() ? "on" : ""}" data-s="adulto">${ad ? K.conexoes : K.shield}<span>${ad ? "Conexões" : "+18"}</span></button>`}</div>`;
   }
   function sheetProf() {
     const pr = (SO.eu && SO.eu.prof) || {};
@@ -1387,7 +1406,7 @@
       const mm = d.tipo === "mensagem" && d.chat ? (SO.msgs[d.chat] || []).find(x => x.id === d.id) : null;
       const conteudo = mm ? (mm.texto || (mm.arquivo && "[arquivo] " + mm.arquivo.nome) || (mm.fig && "[figurinha]") || "").slice(0, 2000) : "";
       await fb.addDoc(C("denuncias"), { autor: eu(), tipo: d.tipo || "", alvo: d.uid || "", id: d.id || "", chat: d.chat || "", post: d.post || "", motivo: MOTIVOS[i], detalhes: $("#cs-den-tx").value.trim().slice(0, 500), ...(conteudo ? { conteudo } : {}), em: TS() });
-      window.fecharSheet(); toast("Denúncia enviada. Obrigado por ajudar a manter o ChatMil seguro.");
+      window.fecharSheet(); toast("Denúncia enviada. Obrigado por ajudar a manter o FlashPapo seguro.");
     } catch (e) { toast(msgErro(e)); }
   }
 
@@ -1399,7 +1418,7 @@
       <form class="cs-pag stack" id="cs-f-editar" novalidate>
         ${campoFoto(e.foto, e.nome)}
         <label class="f" for="cs-nome"><span>Nome completo <small class="muted">(só você vê; vai no cabeçalho das provas)</small></span><input class="in" id="cs-nome" maxlength="60" value="${esc(e.nome)}"></label>
-        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(SO.cad.usuario)}"></span></label><small class="muted">É o nome que os outros veem em tudo no ChatMil.</small>
+        <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(SO.cad.usuario)}"></span></label><small class="muted">É o nome que os outros veem em tudo no FlashPapo.</small>
         <span id="cs-usu-ok" class="cs-ok" aria-live="polite"></span>
         <label class="f" for="cs-escola">Escola<input class="in" id="cs-escola" maxlength="100" value="${esc(e.escola || "")}"></label>
         <div class="f"><span>Disciplinas</span>${chipsDisciplinas(e.disciplinas, "ed")}</div>
@@ -1451,6 +1470,7 @@
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Configurações</b></header>
       <div class="cs-pag stack cs-cfg">
         <button class="card cs-conta" data-s="editar-perfil">${av(p, 56, eu())}<span><b>${esc(p.nome)}</b><small>@${esc(p.usuario)}</small></span>${K.dir}</button>
+        <div class="cs-aparencia" role="radiogroup" aria-label="Aparência">${[["auto", "Automático"], ["claro", "Claro"], ["escuro", "Escuro"]].map(([v, t]) => `<button data-s="tema" data-v="${v}" aria-pressed="${tm === v}" role="radio" aria-checked="${tm === v}"><i class="ap-${v}"><b></b><b></b><b></b></i><span>${t}</span></button>`).join("")}</div>
         <h2 class="cs-sec">Conta</h2>
         <div class="cs-menu card flat">
           ${lin("editar-perfil", K.user, "Editar perfil", "")}
@@ -1477,8 +1497,6 @@
         <div class="cs-menu card flat">
           <div class="cs-linha"><span class="cs-lic">${K.texto}</span><span><b>Tamanho do texto</b>
             <span class="seg cs-seg-mini">${[[1, "Normal"], [1.1, "Grande"], [1.2, "Maior"]].map(([v, t]) => `<button data-a="zoom" data-v="${v}" aria-pressed="${z === v}">${t}</button>`).join("")}</span></span></div>
-          <div class="cs-linha"><span class="cs-lic">${K.lua}</span><span><b>Tema</b>
-            <span class="seg cs-seg-mini">${[["auto", "Automático"], ["claro", "Claro"], ["escuro", "Escuro"]].map(([v, t]) => `<button data-s="tema" data-v="${v}" aria-pressed="${tm === v}">${t}</button>`).join("")}</span></span></div>
         </div>
         <h2 class="cs-sec">Provas</h2>
         <div class="cs-menu card flat">${lin("dados-escola", K.escola, "Dados da escola", "")}</div>
@@ -1493,7 +1511,7 @@
     const u = SO.user;
     window.abrirSheet(`<div class="sheet-h"><h2>${u.emailVerified ? "E-mail confirmado" : "Confirme o seu e-mail"}</h2></div>
       ${titulo ? `<p>${esc(titulo)}</p>` : ""}
-      <p class="cs-just">${u.emailVerified ? `O e-mail <b>${esc(u.email)}</b> está confirmado.` : `Confirmar é <b>opcional</b>: você já pode usar tudo no ChatMil. Quem confirma um e-mail institucional (.gov.br ou .edu.br) ganha o selo de professor(a).</p><p class="cs-just">O link vai para <b>${esc(u.email)}</b>, enviado por <b>noreply@chatmil-56408.firebaseapp.com</b>. Pode demorar alguns minutos e cair em <b>Spam</b>, <b>Lixo eletrônico</b> ou <b>Promoções</b>. E-mails de escola às vezes bloqueiam mensagens automáticas.`}</p>
+      <p class="cs-just">${u.emailVerified ? `O e-mail <b>${esc(u.email)}</b> está confirmado.` : `Confirmar é <b>opcional</b>: você já pode usar tudo no FlashPapo. Quem confirma um e-mail institucional (.gov.br ou .edu.br) ganha o selo de professor(a).</p><p class="cs-just">O link vai para <b>${esc(u.email)}</b>, enviado por <b>noreply@chatmil-56408.firebaseapp.com</b>. Pode demorar alguns minutos e cair em <b>Spam</b>, <b>Lixo eletrônico</b> ou <b>Promoções</b>. E-mails de escola às vezes bloqueiam mensagens automáticas.`}</p>
       ${u.emailVerified ? "" : `<div class="stack"><button class="btn primary cs-grande" data-s="ja-confirmei">Já confirmei</button><button class="btn" data-s="reenviar">Enviar o link de novo</button></div>`}`);
   }
   function sheetSenha() {
@@ -1518,15 +1536,15 @@
       <div class="cs-pag stack">${l.length ? `<div class="cs-lista">${l.map(u => { const p = P(u); return `<div class="cs-item">${av(p, 44, u)}<span class="cs-item-t"><b>${esc(p.nome)}</b><span>${esc(p.escola || "")}</span></span><button class="btn sm" data-s="desbloquear" data-id="${esc(u)}">Desbloquear</button></div>`; }).join("")}</div>`
         : `<div class="empty"><b>Ninguém bloqueado</b><span>Quando você bloqueia alguém, a pessoa não consegue mais mandar mensagens para você.</span></div>`}</div>`;
   }
-  const TXT_DICAS = `<ul class="cs-ul"><li>Nunca informe a sua senha a ninguém. A equipe do ChatMil não pede senha.</li>
+  const TXT_DICAS = `<ul class="cs-ul"><li>Nunca informe a sua senha a ninguém. A equipe do FlashPapo não pede senha.</li>
     <li>Desconfie de links e pedidos de dinheiro, mesmo de colegas. Confirme por outro meio.</li>
     <li>Não publique dados pessoais de estudantes (nomes completos, fotos, laudos, notas).</li>
     <li>Use <b>Denunciar</b> para mensagens ofensivas, assédio ou golpes, e <b>Bloquear</b> para parar de receber mensagens de alguém.</li>
     <li>Em “Quem pode me mandar mensagem”, escolha “Só quem eu sigo” para mais privacidade.</li></ul>`;
-  const TXT_TERMOS = `<p class="cs-just">O ChatMil é uma rede social brasileira, sem anúncios, para todas as idades a partir de 13 anos. Ao usar, você concorda em:</p>
+  const TXT_TERMOS = `<p class="cs-just">O FlashPapo é uma rede social brasileira, sem anúncios, para todas as idades a partir de 13 anos. Ao usar, você concorda em:</p>
     <ul class="cs-ul"><li>Tratar as pessoas com respeito. Xingamentos e qualquer forma de preconceito (racismo, LGBTfobia, capacitismo, machismo, xenofobia, intolerância religiosa) são proibidos e bloqueados automaticamente.</li>
     <li>Não publicar dados pessoais de outras pessoas, conteúdo impróprio, golpes, apostas ou links falsos (são bloqueados antes do envio).</li>
-    <li>Publicar no XFlesh, no Mural e na Central do Artista só o que é seu ou o que você tem direito de usar.</li>
+    <li>Publicar no MyFlesh, no Mural e na Central do Artista só o que é seu ou o que você tem direito de usar.</li>
     <li>Contas com várias denúncias são suspensas automaticamente e podem pedir revisão ao Suporte.</li></ul>
     <p class="cs-just"><b>Menores de 18 anos.</b> Contas de 13 a 17 anos ficam protegidas: só recebem mensagens de quem seguem e não acessam Conexões. Conexões exige confirmação de maioridade, feita no próprio celular.</p>
     <p class="cs-just"><b>Privacidade.</b> Guardamos o seu nome, @usuário, foto, publicações e mensagens, só para o funcionamento do app. Do nascimento, guardamos apenas dia e mês (aniversário) e se a conta é de menor. Selfie e documento da verificação são conferidos no celular e não são enviados. Não vendemos dados. Você pode excluir a sua conta a qualquer momento em Configurações. Tratamento de dados conforme a LGPD (Lei 13.709/2018) e o ECA Digital.</p>
@@ -1589,7 +1607,7 @@
     }
     return EXT.views[t.v] ? EXT.views[t.v](t) : "";
   }
-  const splash = () => `<div class="cs-splash"><div class="stack" style="align-items:center"><div class="cs-logo">${K.chat}</div><div class="spin"></div></div></div>`;
+  const splash = () => `<div class="cs-splash"><div class="stack" style="align-items:center"><div class="cs-logo">${logoSimbolo("#fff")}</div><div class="spin"></div></div></div>`;
   function renderSocial() {
     const ae = document.activeElement, fid = ae && ae.id;
     let sel = null; try { if (fid && ae.selectionStart != null) sel = [ae.selectionStart, ae.selectionEnd]; } catch (e) { }
@@ -1610,7 +1628,7 @@
     const nl = SO.chats.filter(naoLidas).length;
     const tabs = abas(nl);
     b.classList.toggle("cs-5abas", tabs.length > 4); b.classList.toggle("cs-6abas", tabs.length > 5); b.style.setProperty("--nabas", tabs.length);
-    $("#nav").innerHTML = semNav || full ? "" : tabs.map(([k, n, i, c]) => `<button data-st="${k}" ${SO.tab === k ? 'aria-current="page"' : ""}><span class="ico">${i}${c ? `<i class="cs-badge">${c > 99 ? "99+" : c}</i>` : ""}</span>${n}</button>`).join("");
+    $("#nav").innerHTML = semNav || full ? "" : tabs.map(([k, n, i, c]) => `<button data-st="${k}" aria-label="${n}" title="${n}" ${SO.tab === k ? 'aria-current="page"' : ""}><span class="ico">${i}${c ? `<i class="cs-badge">${c > 99 ? "99+" : c}</i>` : ""}</span></button>`).join("");
     $("#who").innerHTML = "";
     /* telas de entrar/criar conta: o que já foi digitado não se perde se a tela for redesenhada */
     const digitado = !SO.user ? [...$("#main").querySelectorAll("input[id],textarea[id]")].filter(i => i.type !== "file").map(i => [i.id, i.type, i.type === "checkbox" ? i.checked : i.value]) : null;
@@ -1623,24 +1641,31 @@
     { const cAt = full && t && t.v === "chat" && SO.chats.find(c => c.id === t.id); seguroTela("chat", !!(cAt && cAt.tipo !== "grupo")); }
     observarFotos();
     EXT.depois.forEach(f => { try { f(t); } catch (e) { console.warn(e); } });
-    try { document.title = nl ? `(${nl}) ChatMil` : "ChatMil"; } catch (e) { }
+    try { document.title = nl ? `(${nl}) FlashPapo` : "FlashPapo"; } catch (e) { }
     return true;
   }
-  /* abas: XFlesh · Mural · Conversas · Perfil; Provas (professor) e Conexões (+18 verificado) aparecem quando liberadas */
+  /* abas: MyFlesh · Mural · Conversas · Perfil; Provas (professor) e Conexões (+18 verificado) aparecem quando liberadas */
   const ehProf = () => !!(SO.eu && SO.eu.prof && SO.eu.prof.inep);
   const ehAdulto = () => !!(window.CS_IDADE && window.CS_IDADE.liberado());
+  const ehSolteiro = () => !!(SO.eu && SO.eu.relac === "solteiro");
+  const contarNotif = () => EXT.notificacoes.reduce((t, f) => { try { return t + (f.n() || 0); } catch (e) { return t; } }, 0);
   const adultoIndefinido = () => !!(window.CS_IDADE && window.CS_IDADE.estado().doc === undefined);
   function abas(nl) {
-    const l = [["xflesh", "XFlesh", K.xflesh, 0], ["mural", "Mural", K.mural, 0], ["conversas", "Conversas", K.chat, nl || 0]];
+    const nn = contarNotif();
+    const l = [["xflesh", "MyFlesh", K.xflesh, 0]];
+    if (nn || SO.tab === "notif") l.push(["notif", "Notificações", K.sino, nn]);
+    l.push(["conversas", "Conversas", K.chat, nl || 0]);
     if (ehProf()) l.push(["provas", "Provas", K.prova, 0]);
-    if (ehAdulto()) l.push(["conexoes", "Conexões", K.conexoes, 0]);
+    if (ehAdulto() && ehSolteiro()) l.push(["conexoes", "Conexões", K.conexoes, 0]);
     l.push(["perfil", "Perfil", K.user, 0]);
     EXT.tabs.filter(x => !x.se || x.se()).forEach(x => l.splice(Math.min(x.pos, l.length - 1), 0, [x.k, x.n, x.i, 0]));
     return l;
   }
   function abaValida() {
+    /* professores abrem o app nas Conversas */
+    if (!SO.abaInicial && SO.eu) { SO.abaInicial = true; if (ehProf() && SO.tab !== "conversas") { SO.tab = "conversas"; lembrarTab(); } }
     if (SO.tab === "conexoes" && adultoIndefinido()) return;
-    if (!abas().some(x => x[0] === SO.tab)) { SO.tab = "xflesh"; lembrarTab(); }
+    if (!abas().some(x => x[0] === SO.tab)) { SO.tab = ehProf() ? "conversas" : "xflesh"; lembrarTab(); }
   }
   function autosize(ta) { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight + 2, 140) + "px"; }
   function limparPilha() { const n = SO.pilha.length; SO.pilha = []; if (n) { try { history.go(-n); } catch (e) { } } }
@@ -1687,10 +1712,20 @@
       case "buscar-pessoas": window.fecharSheet(); SO.busca = ""; SO.resultados = null; abrirTela({ v: "buscar" }); break;
       case "amigos": window.fecharSheet(); SO.busca = ""; SO.resultados = null; abrirTela({ v: "buscar", titulo: "Amigos" }); break;
       case "sou-prof": sheetProf(); break;
+      case "relac": try { await fb.updateDoc(D("users", eu()), { relac: v }); if (SO.eu) SO.eu.relac = v; window.fecharSheet(); if (v === "solteiro") { SO.tab = "conexoes"; lembrarTab(); } pintar(); } catch (e) { toast(msgErro(e)); } break;
+      case "pf-aba": SO.pfAba = { ...(SO.pfAba || {}), [el.dataset.id]: el.dataset.v }; pintar(); break;
+      case "compartilhar-perfil": {
+        const u = (SO.eu && SO.eu.usuario) || "", t = `Me siga no FlashPapo: @${u} · https://vonescoelho.github.io/senov-provas/`;
+        try { if (navigator.share) { await navigator.share({ title: "FlashPapo", text: t }); break; } } catch (e) { break; }
+        copiar(t); toast("Copiado."); break;
+      }
       case "prof-tirar": try { await fb.updateDoc(D("users", eu()), { prof: null }); if (SO.eu) SO.eu.prof = null; window.fecharSheet(); pintar(); } catch (e) { toast(msgErro(e)); } break;
       case "adulto":
         if (SO.eu && SO.eu.menor) { toast("Disponível a partir dos 18 anos."); break; }
-        if (ehAdulto()) { SO.tab = "conexoes"; lembrarTab(); pintar(); window.scrollTo(0, 0); break; }
+        if (ehAdulto()) {
+          if (!ehSolteiro()) { window.abrirSheet(`<div class="sheet-h"><h2>Conexões</h2></div><div class="cs-menu"><button data-s="relac" data-v="solteiro">${K.cafe}<span><b>Estou solteiro(a)</b></span></button><button data-s="relac" data-v="relacionamento">${K.lock}<span><b>Estou num relacionamento</b></span></button></div>`); break; }
+          SO.tab = "conexoes"; lembrarTab(); pintar(); window.scrollTo(0, 0); break;
+        }
         if (window.CS_IDADE && window.CS_IDADE.verificar) window.CS_IDADE.verificar(); else toast("Tente de novo em instantes.");
         break;
       case "novo-grupo": window.fecharSheet(); SO.ng = null; SO.busca = ""; SO.resultados = null; SO.erro = ""; abrirTela({ v: "novo-grupo" }); break;
@@ -1700,9 +1735,9 @@
       case "ver-perfil": window.fecharSheet(); abrirTela({ v: "perfil", id }); break;
       case "menu-pessoa": sheetPessoa(id); break;
       case "abrir-direto": window.fecharSheet(); abrirDireto(id); break;
-      case "fig-toggle": SO.figAberta = !SO.figAberta; pintar(); if (SO.figAberta) setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 30); break;
+      case "fig-toggle": SO.figAberta = !SO.figAberta; document.body.classList.toggle("cs-com-emo", SO.figAberta); pintar(); if (SO.figAberta) setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 30); break;
       case "pacote": { SO.pacote = +v; const p = el.closest(".cs-figp"); if (p) p.outerHTML = painelFig(p.closest("#layer") ? "fig-post" : "fig-msg"); break; }
-      case "fig-msg": { usarFig(v); const t = topo(); SO.figAberta = false; pintar(); if (t) enviarMsg(t.id, { fig: v }); break; }
+      case "fig-msg": { usarFig(v); const t = topo(); SO.figAberta = false; document.body.classList.remove("cs-com-emo"); pintar(); if (t) enviarMsg(t.id, { fig: v }); break; }
       case "fig-post": { usarFig(v); SO.postFig = v; const o = $("#cs-post-figsel"); if (o) o.innerHTML = `<div class="cs-figsel">${figurinha(v, 96)}<button type="button" class="btn ghost sm" data-s="fig-post-tirar">Tirar figurinha</button></div>`; const d = el.closest("details"); if (d) d.open = false; break; }
       case "fig-post-tirar": SO.postFig = null; $("#cs-post-figsel").innerHTML = ""; break;
       case "msg": { const t = topo(); if (t) sheetMsg(t.id, id); break; }
@@ -1969,7 +2004,52 @@ body.cs-com-compor main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0p
 body.cs-chatbg{background-image:radial-gradient(color-mix(in srgb,var(--primary) 11%,transparent) 1.2px,transparent 1.3px);background-size:22px 22px}
 .cs-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
 .cs-cab h1{font-size:1.55rem}
-.cs-marca{display:flex;align-items:center;gap:10px}
+.cs-marca{display:flex;align-items:center;gap:10px}.cs-marca h1{margin:0;line-height:0}
+.cs-lg{height:30px;width:auto;color:var(--ink);display:block}
+body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padding:6px 16px}body.cs-on .nav button svg{width:26px;height:26px}
+.cs-aparencia{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.cs-aparencia button{border:2px solid transparent;background:var(--surface);border-radius:18px;padding:10px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;font:inherit;font-weight:700;color:var(--ink);box-shadow:0 1px 2px rgba(15,20,40,.06)}
+.cs-aparencia button[aria-pressed="true"]{border-color:var(--primary)}
+.cs-aparencia i{width:100%;aspect-ratio:1.25;border-radius:12px;display:flex;flex-direction:column;gap:5px;padding:9px;box-sizing:border-box;overflow:hidden}
+.cs-aparencia i b{display:block;height:8px;border-radius:4px}.cs-aparencia i b:first-child{width:55%}.cs-aparencia i b:nth-child(2){width:85%}.cs-aparencia i b:last-child{width:70%}
+.ap-claro{background:#F2F4F9;border:1px solid #D8DEEA}.ap-claro b{background:#C9D1E3}
+.ap-escuro{background:#0C1120}.ap-escuro b{background:#2A3554}
+.ap-auto{background:linear-gradient(135deg,#F2F4F9 50%,#0C1120 50%);border:1px solid #D8DEEA}.ap-auto b{background:linear-gradient(90deg,#C9D1E3 50%,#2A3554 50%)}
+/* ---------- Perfil (contemporâneo) ---------- */
+.cs-pf-usu{font-size:1.25rem!important;font-weight:800}
+.cs-pf-pag{gap:16px}
+.cs-pfl{display:flex;flex-direction:column;gap:12px;padding:4px 2px 0}
+.cs-pf-top{display:flex;align-items:center;gap:18px}
+.cs-pf-av{flex:none}.cs-pf-av .cs-fl-anel{margin:0}
+.cs-pf-nums{flex:1;display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
+.cs-pf-nums>div{display:flex;flex-direction:column;align-items:center;gap:3px}
+.cs-pf-nums b{font-family:var(--display);font-size:1.35rem;line-height:1.1;font-variant-numeric:tabular-nums;display:flex;align-items:center}
+.cs-pf-nums b svg{width:18px;height:18px;opacity:.6}
+.cs-pf-nums i{color:var(--muted);display:grid}.cs-pf-nums i svg{width:17px;height:17px}
+.cs-pf-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cs-pf-info h2{margin:0;font-size:1.08rem;font-weight:800;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cs-pf-info .cs-selo{width:18px;height:18px}
+.cs-pf-tag,.cs-pf-esc{display:inline-flex;align-items:center;gap:5px;font-size:.84rem;color:var(--muted)}
+.cs-pf-tag svg,.cs-pf-esc svg{width:15px;height:15px}
+.cs-pf-info .cs-bio{margin:2px 0 0;text-align:left;white-space:pre-wrap;line-height:1.4}
+.cs-pf-bts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cs-pf-bts .btn{min-height:40px;padding:0 10px;font-size:.92rem;border-radius:12px;background:var(--surface-2);border-color:transparent;color:var(--ink)}
+.cs-pf-bts .btn.primary{background:var(--primary);color:var(--primary-ink,#fff)}
+.cs-pfl .cs-canto{justify-content:flex-start;margin-top:0}
+.cs-pf-abas{display:flex;border-bottom:1px solid var(--line);margin:0 -2px}
+.cs-pf-abas button{flex:1;border:0;background:none;color:var(--muted);padding:12px 0 10px;display:grid;place-items:center;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.cs-pf-abas button svg{width:22px;height:22px}
+.cs-pf-abas button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+.cs-pf-vazio{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);padding:36px 0}.cs-pf-vazio svg{width:34px;height:34px;opacity:.6}
+/* ---------- Mural mais limpo ---------- */
+.cs-seg.cs-tabs-l{display:flex;gap:24px;background:none;border-radius:0;padding:0;border-bottom:1px solid var(--line);box-shadow:none}
+.cs-seg.cs-tabs-l button{flex:none;background:none!important;box-shadow:none!important;border-radius:0;padding:10px 2px;min-height:0;color:var(--muted);font-weight:700;border-bottom:2.5px solid transparent;margin-bottom:-1px}
+.cs-seg.cs-tabs-l button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--primary)}
+.cs-post.card{border:0;box-shadow:0 1px 2px rgba(15,20,40,.06),0 6px 18px rgba(15,20,40,.04);border-radius:20px}
+.cs-post-a{border-top:0;padding-top:0;margin:0 -6px}
+.cs-novo-post.card{border:0;box-shadow:0 1px 2px rgba(15,20,40,.06);border-radius:18px;padding:10px 12px}
+.cs-novo-post>span:not(.cs-av){background:var(--surface-2);border-radius:999px;padding:10px 16px;font-size:.95rem}.cs-lg-bv{height:34px;margin:8px auto 0}
+.cs-logo-bv{width:112px;height:112px;border-radius:34px}.cs-logo-bv svg{width:76px;height:76px}.cs-bv-marca{line-height:0;margin:6px 0 0}
 @media (max-width:899px){body.cs-on #nav{grid-template-columns:repeat(var(--nabas,4),1fr);max-width:680px}}
 body.cs-6abas .nav button{font-size:.62rem;padding-inline:0;letter-spacing:-.01em}body.cs-6abas .nav .ico{padding:3px 8px}
 .cs-canto{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:12px}
@@ -2203,10 +2283,10 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-auth label.f,.cs-pag label.f{font-size:.98rem}
 .cs-grande{min-height:58px;font-size:1.1rem;border-radius:16px;width:100%}
 .cs-bv{align-items:center;text-align:center;justify-content:center;min-height:calc(100vh - 80px);gap:16px}
-.cs-logo{width:88px;height:88px;border-radius:28px;background:linear-gradient(135deg,#7C3AED,#DB2777 55%,#F97316);color:#fff;display:grid;place-items:center;box-shadow:0 18px 40px color-mix(in srgb,var(--primary) 35%,transparent);flex:none}
-.cs-logo svg{width:46px;height:46px}
+.cs-logo{width:88px;height:88px;border-radius:28px;background:linear-gradient(135deg,#FF3D7F,#B026FF 55%,#6D28FF);color:#fff;display:grid;place-items:center;box-shadow:0 18px 40px color-mix(in srgb,var(--primary) 35%,transparent);flex:none}
+.cs-logo svg{width:58px;height:58px}
 .cs-logo.sm{width:60px;height:60px;border-radius:19px}
-.cs-logo.sm svg{width:30px;height:30px}
+.cs-logo.sm svg{width:38px;height:38px}
 .cs-lema{font-size:1.15rem;color:var(--muted);max-width:28ch;line-height:1.45}
 .cs-auth-bt{display:flex;flex-direction:column;gap:10px;width:100%;margin-top:8px}
 .cs-figs{position:relative;height:118px;width:270px}

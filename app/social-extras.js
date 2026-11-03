@@ -1,4 +1,4 @@
-/* ChatMil — figurinhas próprias (desenhos originais, sem legenda) e filtro de linguagem ofensiva. */
+/* FlashPapo — figurinhas próprias (desenhos originais, sem legenda) e filtro de linguagem ofensiva. */
 (function () {
   "use strict";
 

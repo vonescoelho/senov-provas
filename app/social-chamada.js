@@ -1,4 +1,4 @@
-/* ChatMil — chamadas de vídeo e de voz dentro do app (WebRTC, direto entre os aparelhos, sem servidor de mídia).
+/* FlashPapo — chamadas de vídeo e de voz dentro do app (WebRTC, direto entre os aparelhos, sem servidor de mídia).
    Até 6 pessoas por chamada. Para turmas maiores, oferece uma sala do Jitsi Meet.
    A sinalização usa o Firestore: chamadas/{id} e chamadas/{id}/sinais. Depende de social.js. */
 (function () {
@@ -73,14 +73,39 @@
   /* ---------- câmera e microfone ---------- */
   async function pegarMidia(tipo, frente) {
     const n = 2;
-    const video = tipo === "video" ? { facingMode: frente === false ? "environment" : "user", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 24 } } : false;
-    try { return await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video }); }
+    const video = tipo === "video" ? { facingMode: frente === false ? "environment" : "user", width: { ideal: 960 }, height: { ideal: 540 }, frameRate: { ideal: 24, max: 24 } } : false;
+    if (tipo === "video" && typeof NV !== "undefined" && NV && NV.pip) NV.pip({ ligar: true }).catch(() => { });
+    /* Android: modo "comunicação" ANTES de abrir o microfone — liga o cancelamento de eco e de ruído do próprio
+       celular (sem isso, um lado pode ouvir chiado/eco que o outro não ouve) */
+    try { if (typeof NV !== "undefined" && NV) await NV.altoFalante({ ligar: tipo === "video" }); } catch (e) { }
+    try { const st = await navigator.mediaDevices.getUserMedia({ audio: AUDIO_LIMPO, video }); melhorarNoite(st); return st; }
     catch (e) {
-      if (tipo === "video") { try { const s = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); toast("Câmera indisponível: a chamada segue só com voz."); return s; } catch (e2) { } }
+      if (tipo === "video") { try { const s = await navigator.mediaDevices.getUserMedia({ audio: AUDIO_LIMPO, video: false }); toast("Câmera indisponível: a chamada segue só com voz."); return s; } catch (e2) { } }
       toast("Permita o uso do microfone" + (tipo === "video" ? " e da câmera" : "") + " para fazer chamadas."); return null;
     }
   }
 
+  /* áudio limpo: cancelamento de eco, redução de ruído e ganho automático; a prévia da minha câmera
+     usa só o vídeo (sem o meu próprio som, que causava chiado/eco só do meu lado) */
+  const AUDIO_LIMPO = { echoCancellation: { ideal: true }, noiseSuppression: { ideal: true }, autoGainControl: { ideal: true }, channelCount: { ideal: 1 } };
+  /* noite: exposição, foco e balanço de branco automáticos contínuos (quando a câmera do celular permite) */
+  async function melhorarNoite(st) {
+    const t = st && st.getVideoTracks()[0]; if (!t || !t.getCapabilities) return;
+    try {
+      const c = t.getCapabilities(), adv = [];
+      ["exposureMode", "whiteBalanceMode", "focusMode"].forEach(k => { if ((c[k] || []).includes("continuous")) adv.push({ [k]: "continuous" }); });
+      if (c.exposureCompensation && c.exposureCompensation.max > 0) adv.push({ exposureCompensation: Math.min(c.exposureCompensation.max, (c.exposureCompensation.step || 0.33) * 2) });
+      if (adv.length) await t.applyConstraints({ advanced: adv });
+    } catch (e) { }
+    try { t.contentHint = "motion"; } catch (e) { }
+  }
+  /* janela flutuante (Android): ao sair do app a chamada vira um quadrinho; economiza bateria baixando os quadros */
+  window.SENOV_pip = on => {
+    document.body.classList.toggle("cs-pip", !!on);
+    const t = CH.local && CH.local.getVideoTracks()[0];
+    if (t) t.applyConstraints({ frameRate: { ideal: on ? 12 : 24, max: on ? 15 : 24 } }).catch(() => { });
+  };
+  const soVideo = st => { try { return st ? new MediaStream(st.getVideoTracks()) : st; } catch (e) { return st; } };
   /* ---------- iniciar, atender, sair ---------- */
   async function iniciar(chatId, tipo, urgente) {
     if (CH.id) return toast("Você já está em uma chamada.");
@@ -141,6 +166,8 @@
     if (CH.el) CH.el.remove(); CH.el = null; document.body.classList.remove("cs-ch-on");
     Object.assign(CH, { id: null, d: null, local: null, chat: null });
     if (NV) NV.fimChamada().catch(() => { });
+    if (NV && NV.pip) NV.pip({ ligar: false }).catch(() => { });
+    document.body.classList.remove("cs-pip");
     if (remoto) return;
     try {
       const resto = ((d && d.dentro) || []).filter(x => x !== eu());
@@ -223,7 +250,7 @@
         ${CH.tipo === "video" ? `<button class="cs-ch-bt" data-s="ch-cam" id="ch-cam" aria-label="Desligar câmera">${I.video}</button><button class="cs-ch-bt" data-s="ch-virar" aria-label="Trocar câmera">${I.virar}</button>` : ""}
         <button class="cs-ch-bt fim" data-s="ch-sair" aria-label="Encerrar chamada">${I.desligar}</button></div>`;
     document.body.appendChild(el); CH.el = el; CH.aviso = null; document.body.classList.add("cs-ch-on");
-    const v = el.querySelector("#ch-eu"); v.srcObject = CH.local;
+    const v = el.querySelector("#ch-eu"); v.muted = true; v.volume = 0; v.srcObject = soVideo(CH.local);
     atualizarUI();
   }
   function mostrarUI() { if (CH.el) CH.el.scrollIntoView(); }
@@ -278,7 +305,7 @@
       CH.pcs.forEach(p => { const s = p.pc.getSenders().find(x => x.track && x.track.kind === "video"); if (s) s.replaceTrack(nt); });
       if (velha) { CH.local.removeTrack(velha); velha.stop(); }
       CH.local.addTrack(nt); nt.enabled = CH.cam; CH.frente = !CH.frente;
-      const v = CH.el.querySelector("#ch-eu"); v.srcObject = null; v.srcObject = CH.local;
+      const v = CH.el.querySelector("#ch-eu"); v.srcObject = null; v.muted = true; v.volume = 0; v.srcObject = soVideo(CH.local);
       v.classList.toggle("traseira", !CH.frente);
     } catch (e) { toast("Não foi possível trocar a câmera."); }
   };
@@ -303,9 +330,14 @@
     const titulo = chat && chat.tipo === "grupo" ? chat.nome : quem.nome;
     const el = document.createElement("div"); el.className = "cs-ch cs-ch-entra"; el.setAttribute("role", "alertdialog"); el.setAttribute("aria-label", "Chamada recebida");
     const auto = !!c.urgente && podeAtenderSozinho(c.de);
-    el.innerHTML = `<div class="cs-ch-esp">${c.urgente ? `<i class="cs-ch-urg">URGENTE</i>` : ""}${av(quem, 120, c.de)}<b>${esc(titulo || "")}</b><span>${c.tipo === "voz" ? "Chamada de voz" : "Chamada de vídeo"}${chat && chat.tipo === "grupo" ? " · " + esc(quem.nome || "") : ""}</span>${auto ? `<span>Atendendo automaticamente…</span>` : ""}</div>
-      <div class="cs-ch-ctl"><button class="cs-ch-bt fim" data-s="ch-recusar" aria-label="Recusar">${I.desligar}</button>
-      <button class="cs-ch-bt ok" data-s="ch-atender" aria-label="Atender">${c.tipo === "voz" ? I.fone : I.video}</button></div>`;
+    const vid = c.tipo !== "voz";
+    el.classList.toggle("urg", !!c.urgente);
+    el.innerHTML = `<div class="cs-ch-fundo" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="cs-ch-esp">${c.urgente ? `<i class="cs-ch-urg">LIGAÇÃO URGENTE</i>` : `<i class="cs-ch-tipo">${vid ? I.video : I.fone}${vid ? "Vídeo" : "Voz"}</i>`}
+        <div class="cs-ch-ondas"><span></span><span></span><span></span>${av(quem, 132, c.de)}</div>
+        <b>${esc(titulo || "")}</b><span>${chat && chat.tipo === "grupo" ? esc(quem.nome) + " está chamando" : "está te chamando"}${auto ? " · atendendo…" : ""}</span></div>
+      <div class="cs-ch-ctl"><div class="cs-ch-op"><button class="cs-ch-bt fim" data-s="ch-recusar" aria-label="Recusar">${I.desligar}</button><small>Recusar</small></div>
+      <div class="cs-ch-op"><button class="cs-ch-bt ok" data-s="ch-atender" aria-label="Atender">${vid ? I.video : I.fone}</button><small>Atender</small></div></div>`;
     document.body.appendChild(el); Object.assign(EN, { el, id: c.id, d: c });
     tocar();
     EN.timer = setTimeout(fecharEntrada, 45000);
@@ -336,7 +368,7 @@
   const NV = (() => { try { const c = window.Capacitor; return c && c.isNativePlatform && c.isNativePlatform() && c.Plugins && c.Plugins.Nativo && c.Plugins.Nativo.chamadasEstado ? c.Plugins.Nativo : null; } catch (e) { return null; } })();
   const NE = { estado: null };
   const chaveAuto = () => "cs.auto." + eu();
-  function cfgAuto() { try { return JSON.parse(localStorage.getItem(chaveAuto()) || "null") || { modo: "ninguem", uids: [] }; } catch (e) { return { modo: "ninguem", uids: [] }; } }
+  function cfgAuto() { try { return JSON.parse(localStorage.getItem(chaveAuto()) || "null") || { modo: "seguindo", uids: [] }; } catch (e) { return { modo: "ninguem", uids: [] }; } }
   function listaAuto(c) { c = c || cfgAuto(); return c.modo === "seguindo" ? [...(SO.seguindo || [])] : c.modo === "escolhidos" ? (c.uids || []) : []; }
   function podeAtenderSozinho(uid) { const c = cfgAuto(); return c.modo !== "ninguem" && listaAuto(c).includes(uid); }
   function salvarAuto(c) {
@@ -374,13 +406,13 @@
   X.avisos.push(() => {
     if (!NV || !SO.user || !NE.estado || ativoNativo()) return "";
     try { if (localStorage.getItem("cs.avisoCh." + eu()) === "nao") return ""; } catch (e) { }
-    return `<div class="aviso cs-aviso-mail">${I.sino}<span>Ative para o celular <b>tocar com o ChatMil fechado</b> quando alguém ligar.</span><button class="btn sm primary" data-s="chn-ativar">Ativar</button><button class="btn sm ghost" data-s="chn-aviso-nao" aria-label="Agora não">Agora não</button></div>`;
+    return `<div class="aviso cs-aviso-mail">${I.sino}<span>Ative para o celular <b>tocar com o FlashPapo fechado</b> quando alguém ligar.</span><button class="btn sm primary" data-s="chn-ativar">Ativar</button><button class="btn sm ghost" data-s="chn-aviso-nao" aria-label="Agora não">Agora não</button></div>`;
   });
   X.acoes["chn-aviso-nao"] = () => { try { localStorage.setItem("cs.avisoCh." + eu(), "nao"); } catch (e) { } A.pintar(); };
   X.acoes["chn-ativar"] = () => {
     window.abrirSheet(`<div class="sheet-h"><h2>Tocar com o app fechado</h2></div>
-      <p class="cs-just">Para o celular tocar mesmo com o ChatMil fechado, confirme sua senha <b>uma única vez</b>. Ela não fica guardada: o Android só mantém a conexão de chamadas ativa.</p>
-      <form class="stack" id="chn-f"><input class="in" id="chn-senha" type="password" autocomplete="current-password" placeholder="Sua senha do ChatMil" aria-label="Senha">
+      <p class="cs-just">Para o celular tocar mesmo com o FlashPapo fechado, confirme sua senha <b>uma única vez</b>. Ela não fica guardada: o Android só mantém a conexão de chamadas ativa.</p>
+      <form class="stack" id="chn-f"><input class="in" id="chn-senha" type="password" autocomplete="current-password" placeholder="Sua senha do FlashPapo" aria-label="Senha">
       <button class="btn primary cs-grande">Ativar</button></form>`);
     setTimeout(() => { const i = $("#chn-senha"); if (i) i.focus(); }, 100);
   };
@@ -468,6 +500,31 @@ body.cs-ch-on{overflow:hidden}
 .cs-ch-entra .cs-ch-ctl{gap:70px;padding-bottom:calc(50px + env(safe-area-inset-bottom,0px))}
 .cs-ch-entra .cs-ch-bt{width:72px;height:72px}
 @keyframes csToque{50%{transform:scale(1.08)}}
+body.cs-pip .cs-ch-top,body.cs-pip .cs-ch-ctl,body.cs-pip .cs-ch-aviso,body.cs-pip .cs-ch-nome,body.cs-pip .cs-ch-con{display:none!important}
+body.cs-pip .cs-ch-grade{padding:0;gap:2px}body.cs-pip .cs-ch-tile{border-radius:0}
+body.cs-pip .cs-ch-eu{width:28%;height:auto;aspect-ratio:3/4;top:6px;right:6px;border-width:1px}
+/* chamada recebendo: degradê vivo, ondas em volta da foto, botões de vidro */
+.cs-ch-entra{background:#0b0716;overflow:hidden}
+.cs-ch-fundo{position:absolute;inset:0;overflow:hidden;z-index:0}
+.cs-ch-fundo i{position:absolute;width:70vmax;height:70vmax;border-radius:50%;filter:blur(60px);opacity:.75;animation:chBolha 9s ease-in-out infinite alternate}
+.cs-ch-fundo i:nth-child(1){background:#FF3D7F;left:-25vmax;top:-20vmax}
+.cs-ch-fundo i:nth-child(2){background:#7C3AED;right:-30vmax;top:10vmax;animation-delay:-3s}
+.cs-ch-fundo i:nth-child(3){background:#2447C6;left:-10vmax;bottom:-35vmax;animation-delay:-6s}
+.cs-ch-entra.urg .cs-ch-fundo i:nth-child(1){background:#E5484D}.cs-ch-entra.urg .cs-ch-fundo i:nth-child(3){background:#F97316}
+@keyframes chBolha{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+.cs-ch-entra .cs-ch-esp,.cs-ch-entra .cs-ch-ctl{position:relative;z-index:1}
+.cs-ch-entra .cs-ch-esp b{font-size:1.9rem;font-weight:800;letter-spacing:-.01em;margin-top:18px}
+.cs-ch-tipo{font-style:normal;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:6px 14px;border-radius:999px;font-weight:700;font-size:.85rem}
+.cs-ch-tipo svg{width:16px;height:16px}
+.cs-ch-ondas{position:relative;display:grid;place-items:center;margin-top:26px}
+.cs-ch-ondas .cs-av{position:relative;z-index:1;box-shadow:0 0 0 4px rgba(255,255,255,.85),0 20px 50px rgba(0,0,0,.45)}
+.cs-ch-ondas span{position:absolute;inset:0;border-radius:50%;border:2px solid rgba(255,255,255,.55);animation:chOnda 2.4s ease-out infinite}
+.cs-ch-ondas span:nth-child(2){animation-delay:.8s}.cs-ch-ondas span:nth-child(3){animation-delay:1.6s}
+@keyframes chOnda{0%{transform:scale(1);opacity:.8}100%{transform:scale(2.1);opacity:0}}
+.cs-ch-op{display:flex;flex-direction:column;align-items:center;gap:8px}.cs-ch-op small{font-weight:700;opacity:.9}
+.cs-ch-entra .cs-ch-bt{width:76px;height:76px;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.cs-ch-entra .cs-ch-bt.ok{background:linear-gradient(135deg,#22C55E,#15803D)}
+.cs-ch-entra .cs-ch-bt.fim{background:linear-gradient(135deg,#F43F5E,#BE123C)}
 .cs-ch-urg{font-style:normal;background:#E5484D;color:#fff;font-weight:800;letter-spacing:.08em;padding:4px 14px;border-radius:999px;font-size:.8rem}
 .cs-ch-seg{margin:4px 10px 10px}
 .cs-lic.cs-ok{background:#DCFCE7;color:#15803D}.cs-lic.cs-pend{background:#FEF3C7;color:#B45309}

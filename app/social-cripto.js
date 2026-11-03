@@ -1,4 +1,4 @@
-/* ChatMil — criptografia de ponta a ponta das conversas (individuais e grupos).
+/* FlashPapo — criptografia de ponta a ponta das conversas (individuais e grupos).
    - Cada aparelho tem um par de chaves ECDH P-256; a chave secreta fica só no aparelho (IndexedDB, não exportável).
    - Cada mensagem é cifrada com uma chave nova (AES-256-GCM); essa chave vai "embrulhada" para cada participante
      com uma chave de par (ECDH + HKDF-SHA-256 → AES-256-GCM). O servidor só guarda texto embaralhado.
@@ -249,7 +249,7 @@
     }
     function sheetInfo() {
       window.abrirSheet(`<div class="sheet-h"><h2>${cad} Criptografia</h2></div>
-        <p class="small">Suas conversas, fotos, áudios e arquivos são trancados no seu celular antes de sair. Só quem participa da conversa consegue abrir — nem o ChatMil lê.</p>
+        <p class="small">Suas conversas, fotos, áudios e arquivos são trancados no seu celular antes de sair. Só quem participa da conversa consegue abrir — nem o FlashPapo lê.</p>
         <div class="cs-menu card flat"><button data-s="e2e-trocar">${K.chave || cad}<span><b>Trocar PIN</b></span></button></div>
         <p class="small muted">Sua chave: ${esc((E.fp || "").replace(/(.{4})/g, "$1 ").trim())}</p>`);
     }

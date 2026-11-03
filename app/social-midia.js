@@ -1,4 +1,4 @@
-/* ChatMil — mídia nas conversas.
+/* FlashPapo — mídia nas conversas.
    - envio de qualquer arquivo (fotos, vídeos, PDF, Word, ZIP, aplicativos…), com miniatura leve na mensagem;
    - visualizadores próprios: foto, vídeo (compartilhar, abrir com, projetar na TV) e PDF (impressão personalizada);
    - mensagens de áudio (um toque para gravar, outro para enviar) com transcrição feita no próprio aparelho;
@@ -91,7 +91,7 @@
       const u = URL.createObjectURL(new Blob([blob], { type: tipo || blob.type })); window.open(u, "_blank"); setTimeout(() => URL.revokeObjectURL(u), 300000);
     },
     async salvar(blob, nome, tipo) {
-      if (FSP && NTP) { try { await NTP.salvar({ uri: await paraCache(blob, nome), nome, tipo: tipo || tipoPorNome(nome) }); toast("Salvo em Downloads › ChatMil"); return; } catch (e) { console.warn(e); } }
+      if (FSP && NTP) { try { await NTP.salvar({ uri: await paraCache(blob, nome), nome, tipo: tipo || tipoPorNome(nome) }); toast("Salvo em Downloads › FlashPapo"); return; } catch (e) { console.warn(e); } }
       if (FSP) return NAT.compartilhar(blob, nome, tipo);
       baixarWeb(blob, nome);
     },
@@ -343,7 +343,7 @@
   /* ---------- enviar um arquivo para contatos (quem mais conversa comigo aparece primeiro) ---------- */
   const ENV = { file: null, mais: null, feitos: new Set() };
   X.enviarParaContatos = (file, mais, titulo) => {
-    if (!A.SO.user) return toast("Entre no ChatMil para enviar.");
+    if (!A.SO.user) return toast("Entre no FlashPapo para enviar.");
     ENV.file = file; ENV.mais = mais || null; ENV.feitos = new Set();
     const pessoas = A.contatosOrdenados().slice(0, 300);
     const grupos = A.SO.chats.filter(c => c.tipo === "grupo").sort((a, b) => A.ms(b.atualizadoEm) - A.ms(a.atualizadoEm)).slice(0, 50);
@@ -476,7 +476,9 @@
     try { sub = await MDP.addListener("progresso", e => { if (el) el.hidden = false; barra(Math.min(0.98, ((e.i || 0) + (e.f || 0)) / (e.n || 1))); }); } catch (e) { }
     try {
       const r = await MDP[acao]({ ...(op || {}), qualidade: qualidadeRede(), hevc: usarHevc() });
+      if (r && r.acao) return { acao: r.acao, modo: r.modo };
       const l = r && r.arquivos ? r.arquivos : r && r.caminho ? [r] : [], fs = [];
+      fs.musica = l.some(x => x.musica); fs.dupla = l.some(x => x.dupla);
       for (const x of l) {
         if (x.erro) { toast(x.erro); continue; }
         try { const b = await (await fetch(Cap.convertFileSrc(x.caminho))).blob(); fs.push(new File([b], x.nome || "arquivo", { type: x.tipo || b.type })); }
@@ -562,7 +564,7 @@
       ${g === "docx" ? `<button data-s="md-ler" data-v="${esc(a.id)}">${I.tela}<span><b>Ler aqui ou apresentar</b><small>Tela cheia, letra grande, TV e projetor</small></span></button>` : ""}
       <button data-s="md-abrircom" data-v="${esc(a.id)}">${I.abrir}<span><b>Abrir com outro aplicativo</b><small>${g === "apk" ? "Salve e instale pelo app Arquivos do celular" : g === "zip" ? "Gerenciador de arquivos, WinZip, RAR…" : "Word, Excel, leitor de arquivos…"}</small></span></button>
       <button data-s="md-partilhar" data-v="${esc(a.id)}">${I.partilhar}<span><b>Compartilhar</b><small>WhatsApp, e-mail, Drive…</small></span></button>
-      <button data-s="md-salvar" data-v="${esc(a.id)}">${I.baixar}<span><b>Salvar no aparelho</b><small>Pasta Downloads › ChatMil</small></span></button></div>
+      <button data-s="md-salvar" data-v="${esc(a.id)}">${I.baixar}<span><b>Salvar no aparelho</b><small>Pasta Downloads › FlashPapo</small></span></button></div>
       ${g === "apk" ? `<p class="small muted">Só instale aplicativos de quem você confia.</p>` : ""}`);
   }
   const acaoArq = fn => el => { const a = ACH[el.dataset.v] || VIS.a; if (!a) return; window.fecharSheet(); comBlob(a, b => fn(b, a.nome, a.tipo)); };
@@ -1092,7 +1094,7 @@
       X._tr = { id, tipo };
       return window.abrirSheet(`<div class="sheet-h"><h2>Transcrever áudios</h2></div>
         <p class="cs-just">O áudio vira texto <b>no seu próprio aparelho</b>: nada é enviado para outras empresas.</p>
-        <p class="cs-just">Na primeira vez o ChatMil baixa o reconhecimento de voz (cerca de <b>80 MB</b>, uma vez só). Prefira o Wi-Fi.</p>
+        <p class="cs-just">Na primeira vez o FlashPapo baixa o reconhecimento de voz (cerca de <b>80 MB</b>, uma vez só). Prefira o Wi-Fi.</p>
         <button class="btn primary cs-grande" data-s="au-transc-ok">${I.texto} Baixar e transcrever</button><button class="btn ghost" data-s="fechar">Agora não</button>`);
     }
     transcrever(id, tipo);
@@ -1267,7 +1269,7 @@
     if (extra.thumb && extra.thumb.length > 95000) delete extra.thumb;
     return { blob, nome, tipo, g, extra };
   }
-  X.midia = { prepararArquivo, abrirArquivo, genero, ROTULO, COR, enviarArquivo, NAT, subir, obter, apagarArquivo, comprimirImg, carregarImg, miniVideo, recodificar, escolher, barraEnvio, urlDe, guardar, mmss, tamanho, ajudaTV, I };
+  X.midia = { paraCache: (b, n) => FSP ? paraCache(b, n) : Promise.reject(new Error("sem arquivos")), prepararArquivo, abrirArquivo, genero, ROTULO, COR, enviarArquivo, NAT, subir, obter, apagarArquivo, comprimirImg, carregarImg, miniVideo, recodificar, escolher, barraEnvio, urlDe, guardar, mmss, tamanho, ajudaTV, I };
 
   /* ================= Estilos ================= */
   const css = document.createElement("style");

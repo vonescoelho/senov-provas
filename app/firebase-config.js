@@ -1,4 +1,4 @@
-/* Configuração pública do projeto Firebase do ChatMil (não é senha: fica visível em qualquer app web).
+/* Configuração pública do projeto Firebase do FlashPapo (não é senha: fica visível em qualquer app web).
    A segurança dos dados fica nas regras do Firestore (firestore.rules). */
 window.CHATMIL_FIREBASE = {
   apiKey: "AIzaSyAoqw5ygld3gR_qyBpb17qJTRHO_-98Yow",

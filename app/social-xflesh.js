@@ -1,8 +1,8 @@
-/* ChatMil — XFlesh: vídeos curtos em tela cheia, um por vez, puxando para cima (como o TikTok).
+/* FlashPapo — MyFlesh: vídeos curtos em tela cheia, um por vez, puxando para cima (como o TikTok).
    - "Para você": mais recentes misturados com os mais curtidos/comentados/compartilhados;
      "Seguindo": só de quem você segue;
    - curtir (toque duplo ou coração), comentar, compartilhar; disco da música → página da faixa;
-   - música do ChatMil com letra mostra o karaokê por cima do vídeo;
+   - música do FlashPapo com letra mostra o karaokê por cima do vídeo;
    - cartão "Artista em destaque" entre os vídeos (faixas com nível Destaque ou mais).
    O feed fica num painel fixo FORA do #main: o app redesenha o #main o tempo todo e isso
    não pode reiniciar o vídeo. Depende de social.js, social-midia.js, social-flash.js e social-artista.js. */
@@ -85,7 +85,7 @@
         <div class="xf-modos"><button data-s="xf-modo" data-v="pv">Para você</button><button data-s="xf-modo" data-v="seg">Seguindo</button></div>
         <button class="xf-tbt" data-s="xf-mudo" aria-label="Som" id="xf-mudo">${I.som}</button></div>
       <div class="xf-feed" id="xf-feed"></div>
-      <button class="xf-criar" data-s="xf-criar" aria-label="Criar XFlesh">${I.mais}</button>`;
+      <button class="xf-criar" data-s="xf-criar" aria-label="Criar MyFlesh">${I.mais}</button>`;
     document.body.appendChild(el); XF.el = el;
     XF.obs = new IntersectionObserver(es => {
       es.forEach(e => { if (e.isIntersecting && e.intersectionRatio >= 0.6) ativar(e.target.dataset.id); });
@@ -152,7 +152,7 @@
     if (l == null) { feed.innerHTML = `<div class="xf-vazio"><div class="spin"></div></div>`; return; }
     if (!l.length) {
       pararAtual();
-      feed.innerHTML = `<div class="xf-vazio">${I.camera}<b>${XF.modo === "seg" ? "Ninguém que você segue publicou ainda" : "Seja o primeiro"}</b><button class="btn primary" data-s="xf-criar">Criar XFlesh</button></div>`; return;
+      feed.innerHTML = `<div class="xf-vazio">${I.camera}<b>${XF.modo === "seg" ? "Ninguém que você segue publicou ainda" : "Seja o primeiro"}</b><button class="btn primary" data-s="xf-criar">Criar MyFlesh</button></div>`; return;
     }
     /* mantém os itens já desenhados (o vídeo não reinicia); só acrescenta os novos */
     const ja = new Map([...feed.querySelectorAll(".xf-it")].map(n => [n.dataset.id, n]));
@@ -268,7 +268,7 @@
   });
   document.addEventListener("visibilitychange", () => { if (document.hidden) pararAtual(); else if (XF.visivel) { const f = XF.el.querySelector("#xf-feed"), n = [...f.querySelectorAll(".xf-it")].find(n => Math.abs(n.offsetTop - f.scrollTop) < 40); if (n) ativar(n.dataset.id); } });
   A.fecharXFlesh = () => pararAtual();
-  /* tocar de novo na aba XFlesh: volta ao topo e atualiza */
+  /* tocar de novo na aba MyFlesh: volta ao topo e atualiza */
   document.addEventListener("click", e => {
     const b = e.target.closest && e.target.closest('[data-st="xflesh"]');
     if (!b || SO.tab !== "xflesh" || !XF.visivel || topo()) return;
@@ -336,7 +336,7 @@
     m[id] = 1; const ks = Object.keys(m); if (ks.length > 500) delete m[ks[0]]; gravarLS(k, m);
     if (x && x.mus && x.mus.fonte === "chatmil" && X.contarCompartMusica) X.contarCompartMusica(x.mus.id);
   }
-  const textoXF = x => `🎬 XFlesh de @${(P(x.dono).usuario || P(x.dono).nome || "")}${x.legenda ? ": " + x.legenda.slice(0, 80) : ""} — no ChatMil`;
+  const textoXF = x => `🎬 MyFlesh de @${(P(x.dono).usuario || P(x.dono).nome || "")}${x.legenda ? ": " + x.legenda.slice(0, 80) : ""} — no FlashPapo`;
 
   Object.assign(X.acoes, {
     "xf-modo": el => { if (XF.modo === el.dataset.v) return; XF.modo = el.dataset.v; pararAtual(); if (XF[XF.modo] == null) { desenhar(true); carregar(false); } else desenhar(true); setTimeout(() => { const n = XF.el.querySelector(".xf-it"); if (n) ativar(n.dataset.id); }, 60); },
@@ -346,7 +346,11 @@
       if (XF.aud) { XF.aud.muted = XF.mudo; if (!XF.mudo) XF.aud.play().catch(() => { }); }
       desenharMudo();
     },
-    "xf-criar": () => { if (X.criarXFlesh) X.criarXFlesh(); },
+    "xf-criar": () => window.abrirSheet(`<div class="sheet-h"><h2>Criar</h2></div><div class="cs-menu">
+      <button data-s="xf-criar-xf">${K.xflesh}<span><b>MyFlesh</b><small>Vídeo ou foto no feed</small></span></button>
+      <button data-s="xf-criar-fl">${I.camera}<span><b>Flash</b><small>Some em 24 horas</small></span></button></div>`),
+    "xf-criar-xf": () => { window.fecharSheet(); if (X.criarXFlesh) X.criarXFlesh(); },
+    "xf-criar-fl": () => { window.fecharSheet(); if (X.criarFlash) X.criarFlash(); },
     "xf-curtir": el => curtir(el.dataset.id),
     "xf-coment": el => sheetComent(el.dataset.id),
     "xf-com-apagar": async el => {
@@ -364,7 +368,7 @@
     "xf-c-fora": async el => {
       const x = itemPorId(el.dataset.id); window.fecharSheet(); if (!x) return;
       const t = textoXF(x) + " · https://vonescoelho.github.io/senov-provas/";
-      try { if (navigator.share) { await navigator.share({ title: "XFlesh", text: t }); contarCompart(x.id); return; } } catch (e) { return; }
+      try { if (navigator.share) { await navigator.share({ title: "MyFlesh", text: t }); contarCompart(x.id); return; } } catch (e) { return; }
       A.copiar(t); contarCompart(x.id); toast("Copiado.");
     },
     "xf-seguir": async (el, ev) => { if (ev) { ev.stopPropagation(); } const uid = el.dataset.id; if (SO.seguindo.has(uid)) return; await A.seguir(uid); SO.seguindo.add(uid); el.remove(); toast("Seguindo " + (P(uid).nome || "")); },
@@ -380,7 +384,7 @@
     "fx-usar-id": el => { if (X.criarXFlesh && X.musicasChatMil) X.musicasChatMil("").then(l => { const m = l.find(z => z.id === el.dataset.id); X.criarXFlesh(m || null); }); },
     "xf-menu": el => {
       const x = itemPorId(el.dataset.id); if (!x || x.dono !== eu()) return;
-      window.abrirSheet(`<div class="sheet-h"><h2>Seu XFlesh</h2></div><div class="cs-menu">
+      window.abrirSheet(`<div class="sheet-h"><h2>Seu MyFlesh</h2></div><div class="cs-menu">
         <button class="perigo" data-s="xf-apagar" data-id="${esc(x.id)}">${K.lixo}<span><b>Apagar</b></span></button></div>`);
     },
     "xf-apagar": async el => {
@@ -403,6 +407,28 @@
     },
     "xf-sair-fixo": () => { XF.fixo = null; pararAtual(); desenhar(true); XF.visivel = false; pintar(); }
   });
+  /* aba MyFlesh no perfil: grade 3 colunas com as miniaturas */
+  const DOPERFIL = new Map();
+  function xfDoPerfil(uid) {
+    if (DOPERFIL.has(uid)) return DOPERFIL.get(uid);
+    DOPERFIL.set(uid, null);
+    fb.getDocs(fb.query(C("xflesh"), fb.where("dono", "==", uid), fb.limit(60))).then(s => { DOPERFIL.set(uid, s.docs.map(doc2x).sort((a, b) => (b.criado || 0) - (a.criado || 0))); pintar(); })
+      .catch(() => DOPERFIL.set(uid, []));
+    return null;
+  }
+  X.perfilAbas.push({ k: "xf", n: "MyFlesh", i: K.xflesh, view: (uid, meu) => {
+    const l = xfDoPerfil(uid);
+    if (l == null) return `<div class="cs-carr"><div class="spin"></div></div>`;
+    if (!l.length) return `<div class="cs-pf-vazio">${K.xflesh}<span>${meu ? "Nenhum MyFlesh ainda" : "Nada por aqui ainda"}</span>${meu ? `<button class="btn primary" data-s="xf-criar">Criar MyFlesh</button>` : ""}</div>`;
+    return `<div class="xf-grade">${l.map(x => `<button class="xf-gi" data-s="xf-abrir-perfil" data-id="${esc(x.id)}" data-v="${esc(uid)}">${x.thumb ? `<img src="${esc(x.thumb)}" alt="" loading="lazy">` : ""}<small>${I.coracao} ${fmt(x.nCurt || 0)}</small></button>`).join("")}</div>`;
+  } });
+  X.acoes["xf-abrir-perfil"] = el => {
+    const l = DOPERFIL.get(el.dataset.v) || []; if (!l.length) return;
+    XF.fixo = { lista: l.slice(), id: el.dataset.id };
+    const n = SO.pilha.length; SO.tab = "xflesh"; A.lembrarTab && A.lembrarTab();
+    XF.visivel = false; if (n) { try { history.go(-n); } catch (e) { SO.pilha = []; pintar(); } } else pintar();
+    desenhar(true);
+  };
   /* publicado agora: entra no topo do "Para você" e a aba abre nele */
   X.xfleshPublicado = f => {
     XF.pv = [f, ...(XF.pv || []).filter(x => x.id !== f.id)]; XF.modo = "pv"; XF.fixo = null;
@@ -474,6 +500,11 @@ body.cs-xf main{visibility:hidden}
 .xf-art-in h2{margin:4px 0 0;font-size:1.5rem}.xf-art-in p{margin:0;opacity:.85}
 .xf-art-bt{background:#fff!important;color:#111!important;border:0!important;width:100%}.xf-art-bt svg{width:20px;height:20px;vertical-align:-4px;margin-right:6px}
 .xf-art-ver{color:#fff!important}
+.xf-grade{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin:0 -2px}
+.xf-gi{position:relative;aspect-ratio:9/16;border:0;padding:0;background:var(--surface-2);overflow:hidden;cursor:pointer;border-radius:6px}
+.xf-gi img{width:100%;height:100%;object-fit:cover}
+.xf-gi small{position:absolute;left:6px;bottom:6px;color:#fff;font-weight:800;font-size:.74rem;display:flex;align-items:center;gap:3px;text-shadow:0 1px 3px #000}
+.xf-gi small svg{width:13px;height:13px;fill:currentColor}
 .xf-cl{display:flex;flex-direction:column;gap:12px;max-height:50vh;overflow:auto}
 .xf-c{display:flex;gap:10px;align-items:flex-start}.xf-c>div{flex:1;min-width:0}.xf-c b{font-size:.84rem}.xf-c p{margin:2px 0 0;word-wrap:break-word}
 .xf-cf{display:flex;gap:8px}.xf-cf .in{flex:1}.xf-cf .btn svg{width:18px;height:18px}

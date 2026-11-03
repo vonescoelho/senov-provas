@@ -1,4 +1,4 @@
-/* ChatMil — Confirmação de maioridade (ECA Digital) para liberar Conexões.
+/* FlashPapo — Confirmação de maioridade (ECA Digital) para liberar Conexões.
    1) Selfie com prova de vida (virar o rosto, abrir a boca) e estimativa de idade pelo rosto.
       Se o rosto aparenta 25 anos ou mais (margem de segurança), libera na hora.
    2) Só se a estimativa não bastar: foto do documento (RG, CIN ou CNH) — o app lê a data de
@@ -334,7 +334,7 @@
     const el = $("#cs-idade-cam"); if (!el) return;
     CAM.rodando = false; CAM.capturar = null; pararStream();
     const M = {
-      camera: ["Câmera bloqueada", "Permita a câmera para o ChatMil."],
+      camera: ["Câmera bloqueada", "Permita a câmera para o FlashPapo."],
       motor: ["Sem conexão", "Confira a internet."],
       doc_rosto: ["Foto do documento não encontrada", "Documento inteiro, sem reflexo."],
       doc_data: ["Data de nascimento ilegível", "Lugar claro, sem reflexo."],
@@ -408,7 +408,7 @@
     "idade-adm": () => abrirTela({ v: "idade-adm" }),
     "idade-conversar": el => A.abrirDireto(el.dataset.id),
     "idade-aprovar": el => decidirAdm(el.dataset.id, true).catch(e => toast(msgErro(e))),
-    "idade-recusar": el => window.abrirSheet(`<div class="sheet-h"><h2>Recusar acesso?</h2></div><p class="small">A pessoa não poderá usar o ChatMil com esta conta.</p>
+    "idade-recusar": el => window.abrirSheet(`<div class="sheet-h"><h2>Recusar acesso?</h2></div><p class="small">A pessoa não poderá usar o FlashPapo com esta conta.</p>
       <button class="btn perigo cs-grande" data-s="idade-recusar-ok" data-id="${esc(el.dataset.id)}">Recusar</button><button class="btn ghost" data-s="fechar">Cancelar</button>`),
     "idade-recusar-ok": el => { window.fecharSheet(); decidirAdm(el.dataset.id, false).catch(e => toast(msgErro(e))); }
   });

@@ -1,4 +1,4 @@
-/* ChatMil — músicas e vídeos por conteúdo (para a aula ou a avaliação) e Vitrine educativa. Depende de social.js. */
+/* FlashPapo — músicas e vídeos por conteúdo (para a aula ou a avaliação) e Vitrine educativa. Depende de social.js. */
 (function () {
   "use strict";
   if (!window.SOCIAL || !window.SOCIAL.ext) return;
@@ -33,7 +33,7 @@
   const tamanho = n => n < 1024 * 1024 ? Math.max(1, Math.round(n / 1024)) + " KB" : (n / 1048576).toFixed(1).replace(".", ",") + " MB";
 
   /* ================= Músicas e vídeos por conteúdo =================
-     Busca oficial do YouTube (chave restrita ao ChatMil). Resultados ficam guardados
+     Busca oficial do YouTube (chave restrita ao FlashPapo). Resultados ficam guardados
      no aparelho e no Firestore (ytcache) para não gastar a cota com buscas repetidas. */
   const YT_KEY = "AIzaSyAPAKt1Lq_xI6cZsQ5M2c33CbLD_gbf8dA";
   const R = (() => { try { return JSON.parse(localStorage.getItem("cs.rec") || "{}"); } catch (e) { return {}; } })();
@@ -217,7 +217,7 @@
   });
   X.configExtra.push(() => `<h2 class="cs-sec">Vitrine</h2><div class="cs-menu card flat"><label class="cs-linha" for="vit-pers" style="display:flex;align-items:center;gap:12px"><span class="cs-lic">${KI.loja}</span><span style="flex:1"><b>Sugestões para mim</b></span><input type="checkbox" class="cs-sw" id="vit-pers" ${(SO.eu || {}).vitPers !== false ? "checked" : ""}></label></div>`);
   X.configExtra.push(() => V.admin ? `<h2 class="cs-sec">IA gratuita para todos (administração)</h2><form class="card flat stack" id="ia-adm-f" style="padding:12px">
-      <p class="small muted">Cole a chave do Gemini criada em <b>aistudio.google.com</b> › Chaves de API. Ela liga a IA grátis (revisão de questões e provas inéditas) para todos no ChatMil. ${window.CS_IA_GEMINI ? "<b>Já está ligada.</b>" : ""}</p>
+      <p class="small muted">Cole a chave do Gemini criada em <b>aistudio.google.com</b> › Chaves de API. Ela liga a IA grátis (revisão de questões e provas inéditas) para todos no FlashPapo. ${window.CS_IA_GEMINI ? "<b>Já está ligada.</b>" : ""}</p>
       <input class="in" id="ia-adm" type="password" autocomplete="off" placeholder="${window.CS_IA_GEMINI ? "Chave salva · cole outra para trocar" : "AIza..."}">
       <div class="row"><button class="btn primary" style="flex:1">Salvar para todos</button>${window.CS_IA_GEMINI ? `<button type="button" class="btn" data-s="ia-adm-tirar">Desligar</button>` : ""}</div></form>` : "");
   document.addEventListener("submit", async e => {

@@ -1,4 +1,4 @@
-/* ChatMil — Atualização do aplicativo pelas Configurações.
+/* FlashPapo — Atualização do aplicativo pelas Configurações.
    No Android: confere a última versão publicada (GitHub, apk-vN), mostra um aviso pequeno e
    baixa/instala pelo próprio app (o Android pede só a confirmação "Atualizar").
    Na versão web (PWA) o app já se atualiza sozinho; aqui só aparece a versão e o botão de recarregar. */
@@ -66,7 +66,7 @@
 
   X.avisos.push(() => {
     if (!temNova() || lerLS("cs.app.dispensou", 0) >= AT.nova.versao) return "";
-    return `<div class="aviso cs-at-av">${I.seta}<span>Nova versão do ChatMil disponível.</span><button class="btn sm primary" data-s="at-abrir">Atualizar</button><button class="cs-at-x" data-s="at-dispensar" aria-label="Agora não">${I.x}</button></div>`;
+    return `<div class="aviso cs-at-av">${I.seta}<span>Nova versão do FlashPapo disponível.</span><button class="btn sm primary" data-s="at-abrir">Atualizar</button><button class="cs-at-x" data-s="at-dispensar" aria-label="Agora não">${I.x}</button></div>`;
   });
 
   /* ---------- Configurações › Aplicativo ---------- */
@@ -83,7 +83,7 @@
   function sheetAtualizar() {
     if (!NTP) return;
     if (!temNova()) { conferir(true).then(() => { if (temNova()) sheetAtualizar(); else toast("Você já está com a versão mais nova."); }); return; }
-    window.abrirSheet(`<div class="sheet-h"><h2>Atualizar o ChatMil</h2></div>
+    window.abrirSheet(`<div class="sheet-h"><h2>Atualizar o FlashPapo</h2></div>
       <p class="small">Versão nova: <b>1.0.${AT.nova.versao}</b>${AT.nova.tamanho ? ` (${mb(AT.nova.tamanho)})` : ""}. Suas conversas e provas continuam no app.</p>
       <div id="at-corpo">${AT.baixando ? corpoBaixando() : `<button class="btn primary cs-grande" data-s="at-baixar">${I.seta} Baixar e instalar</button><button class="btn ghost" data-s="fechar">Depois</button>`}</div>`);
   }
@@ -94,8 +94,8 @@
       const pode = await NTP.podeInstalar();
       if (!pode.ok) {
         window.abrirSheet(`<div class="sheet-h"><h2>Permitir atualizações</h2></div>
-          <p class="small">Só desta vez: o Android pede para você permitir que o <b>ChatMil instale atualizações</b>.</p>
-          <ol class="small cs-at-passos"><li>Toque em <b>Abrir permissão</b>.</li><li>Ligue <b>Permitir desta fonte</b>.</li><li>Volte para o ChatMil e toque em <b>Atualizar</b> de novo.</li></ol>
+          <p class="small">Só desta vez: o Android pede para você permitir que o <b>FlashPapo instale atualizações</b>.</p>
+          <ol class="small cs-at-passos"><li>Toque em <b>Abrir permissão</b>.</li><li>Ligue <b>Permitir desta fonte</b>.</li><li>Volte para o FlashPapo e toque em <b>Atualizar</b> de novo.</li></ol>
           <button class="btn primary cs-grande" data-s="at-permitir">Abrir permissão</button>`);
         return;
       }
@@ -124,7 +124,7 @@
     "at-abrir": () => sheetAtualizar(),
     "at-conferir": () => conferir(true),
     "at-baixar": () => baixar(),
-    "at-permitir": async () => { esperandoPermissao = true; try { await NTP.permitirInstalar(); } catch (e) { esperandoPermissao = false; toast("Abra Configurações do Android › Apps › ChatMil › Instalar apps desconhecidos."); } },
+    "at-permitir": async () => { esperandoPermissao = true; try { await NTP.permitirInstalar(); } catch (e) { esperandoPermissao = false; toast("Abra Configurações do Android › Apps › FlashPapo › Instalar apps desconhecidos."); } },
     "at-navegador": () => { if (AT.nova && A.abrirLink) A.abrirLink(AT.nova.url); },
     "at-dispensar": () => { if (AT.nova) gravarLS("cs.app.dispensou", AT.nova.versao); pintar(); },
     "at-recarregar": () => { try { navigator.serviceWorker && navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.update())); } catch (e) { } setTimeout(() => location.reload(), 300); }

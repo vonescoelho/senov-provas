@@ -1,4 +1,4 @@
-/* ChatMil — Música nas publicações de foto (como no Facebook).
+/* FlashPapo — Música nas publicações de foto (como no Facebook).
    Biblioteca gratuita e sempre atualizada: Openverse (api.openverse.org), músicas com licença Creative Commons
    (Jamendo, Wikimedia e outras). Só licenças que permitem usar a música junto com a foto (sem "ND").
    A publicação guarda o link da música, o trecho escolhido e os créditos; nada é copiado para o servidor. */
@@ -11,7 +11,7 @@
   const API = "https://api.openverse.org/v1/audio/";
   const LICENCAS = "by,by-sa,cc0,by-nc,by-nc-sa,pdm";
   let TRECHO = 30;
-  const CATS = [["ChatMil", null], ["Em alta", "happy upbeat"], ["Alegre", "happy"], ["Calma", "calm relaxing"], ["Romântica", "romantic love"], ["Inspiradora", "inspiring"],
+  const CATS = [["FlashPapo", null], ["Em alta", "happy upbeat"], ["Alegre", "happy"], ["Calma", "calm relaxing"], ["Romântica", "romantic love"], ["Inspiradora", "inspiring"],
     ["Acústico", "acoustic guitar"], ["Piano", "piano"], ["Pop", "pop"], ["Infantil", "kids children"], ["Lo-fi", "lofi"], ["Festa", "dance party"], ["Brasil", "brazil samba bossa"]];
   const I = {
     nota: ic('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
@@ -108,7 +108,7 @@
       <div class="cs-mus-cats">${CATS.map(([n, q], i) => q === null && !temChatMil() ? "" : `<button type="button" data-s="mus-cat" data-v="${i}" aria-pressed="${!MU.busca && MU.cat === i}">${esc(n)}</button>`).join("")}</div>
       <div class="cs-mus-lista" id="mus-lista"></div>
       <div class="cs-mus-trecho" id="mus-trecho" hidden></div>
-      <p class="cs-mus-cred">ChatMil: faixas de artistas independentes · Livres: Creative Commons (Openverse)</p>`;
+      <p class="cs-mus-cred">FlashPapo: faixas de artistas independentes · Livres: Creative Commons (Openverse)</p>`;
     document.body.appendChild(el); document.body.classList.add("cs-mus-aberta");
     try { history.pushState({ mus: 1 }, ""); } catch (e) { }
     buscar();
@@ -128,12 +128,12 @@
     el.innerHTML = (MU.erro ? `<p class="small cs-mus-erro">${esc(MU.erro)} <button type="button" class="cs-link" data-s="mus-cat" data-v="${MU.cat}">Tentar de novo</button></p>` : "")
       + (l.length ? l.map((m, i) => `<div class="cs-mus-item ${MU.escolhida && MU.escolhida.id === m.id ? "sel" : ""}" data-mus-id="l${esc(m.id)}">
         <button type="button" class="cs-mus-bt cs-mus-capa" data-s="mus-prev" data-v="${i}" aria-label="Ouvir ${esc(m.titulo)}">${capa(m)}<i>${MU.tocandoId === "l" + m.id ? I.pausa : I.play}</i></button>
-        <button type="button" class="cs-mus-esc" data-s="mus-escolher" data-v="${i}"><b>${esc(m.titulo)}</b><small>${m.fonte === "chatmil" ? `<span class="cs-mus-cm">ChatMil</span>` : ""}${esc(m.artista)} · ${mmss(m.dur)}</small></button></div>`).join("")
+        <button type="button" class="cs-mus-esc" data-s="mus-escolher" data-v="${i}"><b>${esc(m.titulo)}</b><small>${m.fonte === "chatmil" ? `<span class="cs-mus-cm">FlashPapo</span>` : ""}${esc(m.artista)} · ${mmss(m.dur)}</small></button></div>`).join("")
         : (MU.erro ? "" : `<div class="cs-mus-vazio"><b>Nenhuma música encontrada</b><span class="small muted">Tente outra palavra.</span></div>`));
   }
   const capa = m => m.fonte === "chatmil" && X.capaMusica ? X.capaMusica(m, "cs-mus-img")
     : m.capa && /^https:\/\//.test(m.capa) ? `<img class="cs-mus-img" src="${esc(m.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : "";
-  /* faixa do ChatMil: o áudio vem em partes; resolve o endereço antes de tocar */
+  /* faixa do FlashPapo: o áudio vem em partes; resolve o endereço antes de tocar */
   async function urlDe(m) { if (m.fonte !== "chatmil") return m.url; try { return await X.urlMusica(m); } catch (e) { toast("Não deu para tocar agora."); return null; } }
   function pintarTrecho() {
     const el = $("#mus-trecho"), m = MU.escolhida; if (!el) return;
@@ -157,7 +157,7 @@
   });
   const pintarCompositor = () => { try { const pc = $("#cs-pc-fotos"); if (pc) { const f = X.fotosExtra; /* repinta só o pedaço da música */ const velho = pc.querySelector(".cs-pc-mus"); const html = f.map(g => g() || "").join(""); const tmp = document.createElement("div"); tmp.innerHTML = html; const novo = tmp.querySelector(".cs-pc-mus"); if (velho && novo) velho.replaceWith(novo); else if (velho) velho.remove(); else if (novo) pc.appendChild(novo); } } catch (e) { } };
 
-  /* escolher música para XFlesh / Flash: devolve {id, fonte, titulo, artista, capa, dur, url?, inicio} ou null */
+  /* escolher música para MyFlesh / Flash: devolve {id, fonte, titulo, artista, capa, dur, url?, inicio} ou null */
   X.escolherMusica = op => new Promise(res => abrir({ ...(op || {}), cb: res }));
   Object.assign(X.acoes, {
     "mus-abrir": () => abrir(),

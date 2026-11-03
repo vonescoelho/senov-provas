@@ -1,4 +1,4 @@
-/* ChatMil — Anotações: um lugar só seu (como mandar mensagem para si mesmo), fixo nas Conversas,
+/* FlashPapo — Anotações: um lugar só seu (como mandar mensagem para si mesmo), fixo nas Conversas,
    logo abaixo do Assistente de provas. Guarda textos, links, fotos e arquivos, com prioridade
    (Alta, Média, Baixa) e categoria (Trabalho, Casa, Pessoal, Amigos). Só o dono lê (users/{uid}/notas). */
 (function () {

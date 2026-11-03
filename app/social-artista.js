@@ -1,10 +1,10 @@
-/* ChatMil — Central do Artista: músicos independentes sobem faixas autorais para o próprio Álbum.
-   Em troca, a música entra na biblioteca do XFlesh e dos Flashes. Quanto mais a faixa é USADA em
+/* FlashPapo — Central do Artista: músicos independentes sobem faixas autorais para o próprio Álbum.
+   Em troca, a música entra na biblioteca do MyFlesh e dos Flashes. Quanto mais a faixa é USADA em
    vídeos (5 pontos), COMPARTILHADA (3) e CURTIDA (1), mais alcance ela ganha:
-     Novo → Subindo (50) → Em alta (250) → Destaque (1.000) → Top ChatMil (5.000)
-   - a biblioteca "ChatMil" é ordenada por esses pontos (faixas novas ganham vitrine nos 7 primeiros dias);
+     Novo → Subindo (50) → Em alta (250) → Destaque (1.000) → Top FlashPapo (5.000)
+   - a biblioteca "FlashPapo" é ordenada por esses pontos (faixas novas ganham vitrine nos 7 primeiros dias);
    - "Em alta" ou mais: aparece no topo da busca de músicas;
-   - "Destaque" ou mais: entra como cartão de artista no meio do XFlesh;
+   - "Destaque" ou mais: entra como cartão de artista no meio do MyFlesh;
    - cada vídeo com a música mostra o disco girando → toque abre a faixa com "Usar esta música".
    O áudio fica no Firestore em partes de 700 KB (como os Flashes). Depende de social.js e social-midia.js. */
 (function () {
@@ -29,7 +29,7 @@
   };
   const PARTE = 700 * 1024, MAXARQ = 14e6;
   const GENEROS = ["Pop", "Funk", "Sertanejo", "Forró", "Piseiro", "Pagode", "Samba", "MPB", "Rap", "Trap", "Rock", "Gospel", "Reggae", "Eletrônica", "Brega", "Lo-fi", "Instrumental", "Infantil", "Outro"];
-  const NIVEIS = [[0, "Novo"], [50, "Subindo"], [250, "Em alta"], [1000, "Destaque"], [5000, "Top ChatMil"]];
+  const NIVEIS = [[0, "Novo"], [50, "Subindo"], [250, "Em alta"], [1000, "Destaque"], [5000, "Top FlashPapo"]];
   const CORES = ["#94A3B8", "#22C55E", "#F59E0B", "#EC4899", "#8B5CF6"];
   const pontos = m => (m.nUsos || 0) * 5 + (m.nComp || 0) * 3 + (m.nCurt || 0);
   const nivel = m => { const p = pontos(m); let i = 0; NIVEIS.forEach((n, k) => { if (p >= n[0]) i = k; }); return i; };
@@ -55,7 +55,7 @@
     } finally { MS.carregando = false; }
     return MS.top;
   }
-  const paraLista = m => ({ id: m.id, fonte: "chatmil", titulo: m.titulo, artista: m.artista, capa: m.capa || "", dur: m.dur || 0, lic: "ChatMil", link: "", nivel: nivel(m), dono: m.dono });
+  const paraLista = m => ({ id: m.id, fonte: "chatmil", titulo: m.titulo, artista: m.artista, capa: m.capa || "", dur: m.dur || 0, lic: "FlashPapo", link: "", nivel: nivel(m), dono: m.dono });
   /* usada pela tela de escolher música (social-musica.js) */
   X.musicasChatMil = async q => {
     const l = await carregarTop(false) || [];
@@ -98,7 +98,7 @@
     const fim = l[i + 1] ? l[i + 1].t : l[i].t + 4;
     return { a: l[i].txt, b: l[i + 1] ? l[i + 1].txt : "", f: Math.max(0, Math.min(1, (t - l[i].t) / Math.max(0.5, fim - l[i].t))) };
   };
-  /* um XFlesh usou a faixa: +1 uso (as regras exigem o XFlesh apontando para ela) */
+  /* um MyFlesh usou a faixa: +1 uso (as regras exigem o MyFlesh apontando para ela) */
   X.usoMusica = async (xid, mid) => {
     try {
       const b = fb.writeBatch(A.db);
@@ -156,7 +156,7 @@
     const a = (SO.eu && SO.eu.artista) || null;
     const cab = `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Central do Artista</b></header>`;
     if (!a) return cab + `<div class="cs-pag stack fx-pag">
-      <section class="fx-hero"><div class="fx-hero-ic">${I.mic}</div><h2>Seu Álbum no ChatMil</h2><p>Quanto mais usam, curtem e compartilham, mais longe sua música vai.</p></section>
+      <section class="fx-hero"><div class="fx-hero-ic">${I.mic}</div><h2>Seu Álbum no FlashPapo</h2><p>Quanto mais usam, curtem e compartilham, mais longe sua música vai.</p></section>
       <form class="stack" id="fx-f-artista" novalidate>
         <label class="f" for="fx-nome">Nome artístico<input class="in" id="fx-nome" maxlength="80" value="${esc((SO.eu && SO.eu.nome) || "")}"></label>
         <div class="f"><span>Gênero</span><div class="chips">${GENEROS.map(g => `<button type="button" class="chip" data-s="fx-gen" data-v="${esc(g)}" aria-pressed="false">${esc(g)}</button>`).join("")}</div></div>
@@ -339,7 +339,7 @@
       <button data-s="fx-c-conversa" data-id="${esc(id)}">${K.chat}<span><b>Enviar em uma conversa</b></span></button>
       <button data-s="fx-c-fora" data-id="${esc(id)}">${K.share}<span><b>Outros apps</b></span></button></div>`);
   }
-  const textoFaixa = m => `🎵 "${m.titulo}" — ${m.artista}, no ChatMil`;
+  const textoFaixa = m => `🎵 "${m.titulo}" — ${m.artista}, no FlashPapo`;
   /* cartão da faixa nas publicações do Mural */
   X.postCorpo.push(p => {
     const f = p.faixa; if (!f || !f.id) return "";
