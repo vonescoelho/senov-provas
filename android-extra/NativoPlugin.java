@@ -240,6 +240,27 @@ public class NativoPlugin extends Plugin {
         call.resolve();
     }
 
+    /* Ícones da barra de status (hora, bateria, notificações) e da barra de navegação:
+       escuros quando o app está no tema claro, claros no tema escuro. */
+    @PluginMethod
+    public void barras(PluginCall call) {
+        final boolean escuro = Boolean.TRUE.equals(call.getBoolean("escuro", false));
+        final String fundo = call.getString("fundo", null);
+        getActivity().runOnUiThread(() -> {
+            try {
+                android.view.Window w = getActivity().getWindow();
+                androidx.core.view.WindowInsetsControllerCompat c = new androidx.core.view.WindowInsetsControllerCompat(w, w.getDecorView());
+                c.setAppearanceLightStatusBars(!escuro);
+                c.setAppearanceLightNavigationBars(!escuro);
+                if (fundo != null && Build.VERSION.SDK_INT < 35) {
+                    int cor = android.graphics.Color.parseColor(fundo);
+                    w.setStatusBarColor(cor); w.setNavigationBarColor(cor);
+                }
+            } catch (Throwable t) { }
+            call.resolve();
+        });
+    }
+
     @PluginMethod
     public void seguro(final PluginCall call) {
         final boolean ligar = Boolean.TRUE.equals(call.getBoolean("ligar", false));

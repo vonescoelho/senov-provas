@@ -93,7 +93,7 @@ public class ChamadasService extends Service {
         PendingIntent pi = PendingIntent.getActivity(this, 1, abrir, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification n = new NotificationCompat.Builder(this, CANAL_CONEXAO)
             .setSmallIcon(android.R.drawable.stat_sys_phone_call)
-            .setContentTitle("📞 Seus amigos já podem te ligar")
+            .setContentTitle("📞 Pronto para chamadas")
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .setContentIntent(pi)
