@@ -19,15 +19,19 @@ window.CS_EMOJIS = [["Carinhas", "😀", "😀 😃 😄 😁 😆 😅 🤣 �
   const animado = e => `https://fonts.gstatic.com/s/e/notoemoji/latest/${cod(e)}/512.webp`;
 
   function grade() {
-    if (EM.aba === -1) return `<div class="cs-emo-figs">${(window.SOC_EXTRAS.PACOTES[0].ids || []).map(id => `<button type="button" data-s="fig-msg" data-v="${id}">${figurinha(id, 64)}</button>`).join("")}</div>`;
+    if (EM.aba === -1) {
+      const minhas = window.CS_FIG ? CS_FIG.lista() : [];
+      return `<div class="cs-emo-figs">${(window.SOC_EXTRAS.TEXTOS || []).map(id => `<button type="button" data-s="fig-msg" data-v="${id}">${figurinha(id, 64)}</button>`).join("")}${minhas.map(f => `<button type="button" class="cs-figc-b" data-s="figc-msg" data-v="${esc(f.id)}"><img src="${f.src}" width="64" height="64" alt="Figurinha"></button>`).join("")}<button type="button" class="cs-emo-mais" data-s="figc-criar" aria-label="Criar figurinha">+</button></div>`;
+    }
     const l = EM.aba === 0 ? recentes() : CATS[EM.aba - 1].l;
     return `<div class="cs-emo-g">${l.map(e => `<button type="button" class="cs-emo" data-e="${esc(e)}">${e}</button>`).join("")}</div>`;
   }
+  X.painelEmojiGrade = () => grade();
   X.painelEmoji = () => `<div class="cs-emop" role="dialog" aria-label="Emojis">
     <div class="cs-emo-abas" role="tablist">
       <button type="button" data-s="emo-aba" data-v="0" aria-selected="${EM.aba === 0}" aria-label="Recentes">🕘</button>
       ${CATS.map((c, k) => `<button type="button" data-s="emo-aba" data-v="${k + 1}" aria-selected="${EM.aba === k + 1}" aria-label="${esc(c.n)}">${c.i}</button>`).join("")}
-      <button type="button" data-s="emo-aba" data-v="-1" aria-selected="${EM.aba === -1}" aria-label="Figurinhas" class="cs-emo-fg">${figurinha("bomdia", 26)}</button>
+      <button type="button" data-s="emo-aba" data-v="-1" aria-selected="${EM.aba === -1}" aria-label="Figurinhas" class="cs-emo-fg">${figurinha("t_ok", 26)}</button>
     </div>
     <div class="cs-emo-corpo" id="cs-emo-corpo">${grade()}</div></div>`;
   X.acoes["emo-aba"] = el => {
@@ -58,6 +62,10 @@ window.CS_EMOJIS = [["Carinhas", "😀", "😀 😃 😄 😁 😆 😅 🤣 �
   /* toque = insere; segurar = prévia grande animada */
   let seg = null, segurou = false, sxy = null;
   document.addEventListener("pointermove", ev => { if (seg && sxy && Math.hypot(ev.clientX - sxy[0], ev.clientY - sxy[1]) > 10) { clearTimeout(seg); seg = null; } });
+  let segF = null;
+  document.addEventListener("pointerdown", ev => { const f = ev.target.closest && ev.target.closest(".cs-figc-b"); clearTimeout(segF); if (f) segF = setTimeout(() => { segF = "feito"; if (X.acoes["figc-menu"]) X.acoes["figc-menu"](f); }, 520); });
+  ["pointerup", "pointercancel"].forEach(n => document.addEventListener(n, () => { if (segF !== "feito") clearTimeout(segF); }, true));
+  document.addEventListener("click", ev => { if (segF === "feito" && ev.target.closest && ev.target.closest(".cs-figc-b")) { segF = null; ev.stopPropagation(); ev.preventDefault(); } }, true);
   document.addEventListener("pointerdown", ev => {
     const b = ev.target.closest && ev.target.closest(".cs-emo"); if (!b) return;
     segurou = false; clearTimeout(seg); sxy = [ev.clientX, ev.clientY];

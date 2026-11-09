@@ -36,7 +36,9 @@
     voltar10: ic('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><text x="12" y="15.5" text-anchor="middle" font-size="7" font-weight="800" fill="currentColor" stroke="none">10</text>'),
     avancar10: ic('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/><text x="12" y="15.5" text-anchor="middle" font-size="7" font-weight="800" fill="currentColor" stroke="none">10</text>'),
     texto: ic('<path d="M4 6h16M4 12h16M4 18h10"/>'),
+    local: ic('<path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6"/>'),
     um: ic('<circle cx="12" cy="12" r="9" stroke-dasharray="3 2.2"/><path d="M10.5 9.5 12.5 8v8"/>'),
+    olhoX: ic('<path d="M3 3l18 18"/><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 10 6 10 6a17 17 0 0 1-3 3.6M6.6 6.6A17 17 0 0 0 2 12s4 6 10 6c1.5 0 2.9-.4 4.1-1"/>'),
     cadeado: ic('<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>'),
     olho: ic('<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
     check: ic('<path d="m5 12 5 5 9-10"/>')
@@ -186,12 +188,12 @@
   function canvasMini(fonte, w, h, lado, q) {
     const k = Math.min(1, lado / Math.max(w, h)), cv = document.createElement("canvas");
     cv.width = Math.max(1, Math.round(w * k)); cv.height = Math.max(1, Math.round(h * k));
-    cv.getContext("2d").drawImage(fonte, 0, 0, cv.width, cv.height);
+    const cx = cv.getContext("2d"); cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = "high"; cx.drawImage(fonte, 0, 0, cv.width, cv.height);
     const u = cv.toDataURL("image/jpeg", q || 0.6); cv.width = cv.height = 0; return u;
   }
   async function miniImg(blob) {
     const url = URL.createObjectURL(blob);
-    try { const i = await carregarImg(url); return { thumb: canvasMini(i, i.naturalWidth, i.naturalHeight, 360, 0.55), w: i.naturalWidth, h: i.naturalHeight }; } finally { URL.revokeObjectURL(url); }
+    try { const i = await carregarImg(url); return { thumb: canvasMini(i, i.naturalWidth, i.naturalHeight, 520, 0.8), w: i.naturalWidth, h: i.naturalHeight }; } finally { URL.revokeObjectURL(url); }
   }
   /* vídeos gravados no navegador (webm) chegam com duração "Infinity": força o cálculo da duração real */
   async function duracaoReal(v) {
@@ -208,7 +210,7 @@
       await new Promise((res, rej) => { v.onloadeddata = res; v.onerror = rej; setTimeout(rej, 8000); });
       const total = await duracaoReal(v);
       v.currentTime = Math.min(1, (total || 2) / 3); await new Promise(r => { v.onseeked = r; setTimeout(r, 3000); });
-      return { thumb: canvasMini(v, v.videoWidth, v.videoHeight, 360, 0.55), w: v.videoWidth, h: v.videoHeight, dur: Math.round(total) };
+      return { thumb: canvasMini(v, v.videoWidth, v.videoHeight, 520, 0.78), w: v.videoWidth, h: v.videoHeight, dur: Math.round(total) };
     } finally { v.removeAttribute("src"); v.load(); URL.revokeObjectURL(url); }
   }
   async function duracaoAudio(blob) {
@@ -446,16 +448,11 @@
   X.acoes["md-clipe"] = el => {
     const id = el.dataset.id;
     window.abrirSheet(`<div class="sheet-h"><h2>Enviar</h2></div>
-      <div class="cs-clip-g">
+      <div class="cs-clip-g cs-clip-4">
         <button data-s="md-galeria" data-id="${esc(id)}"><span style="--c:#15803D">${I.img}</span>Galeria</button>
         <button data-s="md-camera" data-id="${esc(id)}"><span style="--c:#E11D48">${I.camera}</span>Câmera</button>
-        <button data-s="md-documento" data-id="${esc(id)}"><span style="--c:#2447C6">${I.arq}</span>Documento ou arquivo</button>
-      </div>
-      <h3 class="cs-clip-h">${I.um} Visualização única <small>abre uma vez e some; sem print no app</small></h3>
-      <div class="cs-clip-g">
-        <button data-s="un-foto" data-id="${esc(id)}"><span style="--c:#7C3AED">${I.img}</span>Foto</button>
-        <button data-s="un-texto" data-id="${esc(id)}"><span style="--c:#7C3AED">${I.texto}</span>Mensagem</button>
-        <button data-s="un-audio" data-id="${esc(id)}"><span style="--c:#7C3AED">${I.mic}</span>Áudio</button>
+        <button data-s="md-documento" data-id="${esc(id)}"><span style="--c:#2447C6">${I.arq}</span>Documento</button>
+        <button data-s="loc-enviar" data-id="${esc(id)}"><span style="--c:#0E9F6E">${I.local}</span>Localização</button>
       </div>`);
   };
   const enviarVarios = async (id, fs) => { for (const f of fs) await enviarArquivo(id, f); };
@@ -503,8 +500,20 @@
   }, true);
   X.configExtra.push(() => MDP ? `<h2 class="cs-sec">Vídeos</h2><div class="cs-menu card flat"><label class="cs-linha" for="cfg-hevc" style="display:flex;align-items:center;gap:12px"><span class="cs-lic">${I.video || I.tela}</span><span style="flex:1"><b>Vídeos mais leves (H.265)</b></span><input type="checkbox" class="cs-sw" id="cfg-hevc" ${usarHevc() ? "checked" : ""}></label></div>` : "");
   document.addEventListener("change", e => { if (e.target.id === "cfg-hevc") { gravarLS("cs.hevc", e.target.checked); toast(e.target.checked ? "Vídeos em H.265 (mais leves)." : "Vídeos em H.264 (tocam em qualquer aparelho)."); } });
-  X.acoes["md-galeria"] = async el => { window.fecharSheet(); const n = await midiaNativa("escolher", { multiplo: true }); enviarVarios(el.dataset.id, n || await escolher("image/*,video/*", true)); };
-  X.acoes["md-camera"] = async el => { window.fecharSheet(); const n = await midiaNativa("camera", { modo: "foto" }); enviarVarios(el.dataset.id, n || await escolher("image/*,video/*", false, "environment")); };
+  /* uma foto escolhida: Enviar normal ou em visualização única */
+  const PEND = { id: null, fs: null, url: null };
+  function confirmarMidia(id, fs) {
+    if (!fs || !fs.length) return;
+    if (fs.length !== 1 || !/^image\//.test(fs[0].type || "") || fs.musica || fs.dupla) return enviarVarios(id, fs);
+    if (PEND.url) URL.revokeObjectURL(PEND.url);
+    Object.assign(PEND, { id, fs, url: URL.createObjectURL(fs[0]) });
+    window.abrirSheet(`<div class="cs-md-prev"><img src="${PEND.url}" alt=""></div>
+      <div class="row"><button class="btn cs-md-un" data-s="md-env-unica" aria-label="Visualização única">${I.um}</button><button class="btn primary" data-s="md-env-normal" style="flex:1">${I.enviar} Enviar</button></div>`);
+  }
+  X.acoes["md-env-normal"] = () => { window.fecharSheet(); const { id, fs } = PEND; PEND.fs = null; if (fs) enviarVarios(id, fs); };
+  X.acoes["md-env-unica"] = () => { window.fecharSheet(); const { id, fs } = PEND; PEND.fs = null; if (fs) enviarUnicaFoto(id, fs[0]); };
+  X.acoes["md-galeria"] = async el => { window.fecharSheet(); const n = await midiaNativa("escolher", { multiplo: true }); confirmarMidia(el.dataset.id, n || await escolher("image/*,video/*", true)); };
+  X.acoes["md-camera"] = async el => { window.fecharSheet(); const n = await midiaNativa("camera", { modo: "foto" }); confirmarMidia(el.dataset.id, n || await escolher("image/*,video/*", false, "environment")); };
   X.acoes["md-documento"] = async el => { window.fecharSheet(); enviarVarios(el.dataset.id, await escolher("*/*", true)); };
 
   /* ================= Mensagens na conversa ================= */
@@ -932,8 +941,8 @@
     el.innerHTML = `<button class="cs-grav-bt" data-s="au-cancelar" aria-label="Apagar gravação">${I.lixo}</button>
       <div class="cs-grav-m"><i class="cs-grav-dot"></i><b id="gr-t">0:00</b><span class="cs-grav-onda" id="gr-onda"></span></div>
       <button class="cs-grav-bt" data-s="au-pausar" id="gr-p" aria-label="Pausar">${I.pausa}</button>
+      <button class="cs-grav-bt cs-grav-1 ${GR.unica ? "on" : ""}" data-s="au-unica" aria-pressed="${GR.unica}" aria-label="Visualização única">${I.um}</button>
       <button class="cs-grav-bt env" data-s="au-enviar" aria-label="Enviar áudio">${I.enviar}</button>
-      ${GR.unica ? `<span class="cs-grav-un">${I.um} Visualização única</span>` : ""}
       <span class="cs-grav-dica" aria-hidden="true"><span class="cs-grav-seta">${I.lixo}</span><b>Arraste para cima para apagar</b><small>Solte para enviar</small></span>`;
     if (SEG.ativo) el.classList.add("segura");
     document.body.appendChild(el); GR.el = el;
@@ -991,6 +1000,7 @@
   document.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest(".cs-mic")) e.preventDefault(); });
   /* teclado (Enter/Espaço no botão): grava no modo de toque */
   X.acoes["au-mic"] = (el, ev) => { if (ev && ev.detail === 0) iniciarGravacao(el.dataset.id, false); };
+  X.acoes["au-unica"] = el => { GR.unica = !GR.unica; el.classList.toggle("on", GR.unica); el.setAttribute("aria-pressed", String(GR.unica)); toast(GR.unica ? "Visualização única." : "Áudio normal."); };
   X.acoes["un-audio"] = el => { window.fecharSheet(); iniciarGravacao(el.dataset.id, true); };
   X.acoes["au-cancelar"] = () => { if (GR.rec) { GR.rec.onstop = null; try { GR.rec.stop(); } catch (e) { } } GR.rec = null; encerrarGravacao(); };
   X.acoes["au-pausar"] = el => {
@@ -1049,8 +1059,8 @@
         <span class="cs-aud-onda" data-s="au-seek" data-v="${esc(au.id)}">${[...ondaTxt].map((c, i, arr) => `<i class="${i < prog * arr.length ? "on" : ""}" style="height:${18 + (+c) * 9}%"></i>`).join("")}</span>
         <button class="cs-aud-vel" data-s="au-vel">${String(PL.vel).replace(".", ",")}x</button></div>
       <div class="cs-aud-r"><small class="cs-aud-t">${mmss(ativo && PL.el.currentTime ? PL.el.currentTime : au.dur)}</small>${au.nome && au.nome !== "audio" ? `<small class="cs-aud-n">${esc(au.nome)}</small>` : ""}
-        ${tr && tr.texto ? "" : `<button class="cs-link cs-aud-tr" data-s="au-transc" data-v="${esc(au.id)}" data-t="${esc(au.tipo || "")}" ${tr && tr.trabalhando ? "disabled" : ""}>${tr && tr.trabalhando ? esc(tr.trabalhando) : `${I.texto} Transcrever`}</button>`}</div>
-      ${tr && tr.texto ? `<p class="cs-aud-tx">${esc(tr.texto)}</p>` : ""}
+        ${tr && tr.texto ? (tr.oculto ? `<button class="cs-link cs-aud-tr" data-s="au-tr-mostrar" data-v="${esc(au.id)}">${I.texto} Texto</button>` : "") : `<button class="cs-link cs-aud-tr" data-s="au-transc" data-v="${esc(au.id)}" data-t="${esc(au.tipo || "")}" ${tr && tr.trabalhando ? "disabled" : ""}>${tr && tr.trabalhando ? esc(tr.trabalhando) : `${I.texto} Transcrever`}</button>`}</div>
+      ${tr && tr.texto && !tr.oculto ? `<p class="cs-aud-tx">${esc(tr.texto)}<button class="cs-aud-tx-x" data-s="au-tr-ocultar" data-v="${esc(au.id)}" aria-label="Esconder o texto">${I.olhoX || "×"}</button></p>` : ""}
       <span class="cs-h">${o.hr}</span></div>`;
   }
   X.acoes["au-play"] = async el => {
@@ -1071,11 +1081,32 @@
   /* ---- transcrição (reconhecimento de voz no próprio aparelho, sem enviar o áudio a ninguém) ---- */
   const TRANSC = {};
   Object.entries(lerLS("cs.transc", {})).forEach(([k, v]) => TRANSC[k] = { texto: v });
+  lerLS("cs.transc.ocultos", []).forEach(k => { if (TRANSC[k]) TRANSC[k].oculto = true; });
+  const salvarOcultos = () => gravarLS("cs.transc.ocultos", Object.keys(TRANSC).filter(k => TRANSC[k].oculto).slice(-300));
+  X.acoes["au-tr-ocultar"] = el => { const t = TRANSC[el.dataset.v]; if (t) { t.oculto = true; salvarOcultos(); A.pintarMsgs(); } };
+  X.acoes["au-tr-mostrar"] = el => { const t = TRANSC[el.dataset.v]; if (t) { t.oculto = false; salvarOcultos(); A.pintarMsgs(); } };
+  /* transcrição na nuvem com o Gemini (bem mais fiel) quando há chave da IA grátis; senão, no próprio aparelho */
+  function chaveGemini() { try { const c = JSON.parse(localStorage.getItem("senov.ia") || "null") || {}; if (c.gemini) return c.gemini; } catch (e) { } return window.CS_IA_GEMINI || ""; }
+  async function transcreverGemini(blob, tipo) {
+    const k = chaveGemini(); if (!k) return null;
+    const b64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1]); r.onerror = rej; r.readAsDataURL(blob); });
+    const mime = ((tipo || blob.type || "audio/webm").split(";")[0]) || "audio/webm";
+    const corpo = { contents: [{ parts: [{ text: "Transcreva este áudio em português do Brasil exatamente como foi falado, palavra por palavra, com pontuação. Não resuma, não traduza e não acrescente nada. Responda só com a transcrição." }, { inline_data: { mime_type: mime, data: b64 } }] }], generationConfig: { temperature: 0 } };
+    for (const modelo of ["gemini-2.5-flash", "gemini-flash-latest", "gemini-2.0-flash"]) {
+      try {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${encodeURIComponent(k)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo) });
+        if (!r.ok) continue;
+        const j = await r.json(); const t = (((j.candidates || [])[0] || {}).content || {}).parts;
+        const tx = (t || []).map(x => x.text || "").join("").trim(); if (tx) return tx;
+      } catch (e) { }
+    }
+    return null;
+  }
   let asrP = null;
   function carregarAsr(onProg) {
     return asrP || (asrP = import(base() + "vendor/transformers/transformers.min.js").then(T => {
       T.env.allowLocalModels = false; T.env.useBrowserCache = true;
-      return T.pipeline("automatic-speech-recognition", "onnx-community/whisper-base", { dtype: "q8", device: "wasm", progress_callback: onProg });
+      return T.pipeline("automatic-speech-recognition", "onnx-community/whisper-base", { dtype: { encoder_model: "fp32", decoder_model_merged: "q8" }, device: "wasm", progress_callback: onProg });
     }).catch(e => { asrP = null; throw e; }));
   }
   async function pcm16k(blob) {
@@ -1090,26 +1121,33 @@
   function marcarTr(id, estado) { TRANSC[id] = estado; A.pintarMsgs(); }
   X.acoes["au-transc"] = el => {
     const id = el.dataset.v, tipo = el.dataset.t;
-    if (!lerLS("cs.asr.ok", false)) {
+    if (!lerLS("cs.asr.ok", false) && !chaveGemini()) {
       X._tr = { id, tipo };
       return window.abrirSheet(`<div class="sheet-h"><h2>Transcrever áudios</h2></div>
-        <p class="cs-just">O áudio vira texto <b>no seu próprio aparelho</b>: nada é enviado para outras empresas.</p>
-        <p class="cs-just">Na primeira vez o FlashPapo baixa o reconhecimento de voz (cerca de <b>80 MB</b>, uma vez só). Prefira o Wi-Fi.</p>
+        <p class="cs-just">Baixa uma vez o reconhecimento de voz (cerca de <b>80 MB</b>). Prefira o Wi-Fi.</p>
         <button class="btn primary cs-grande" data-s="au-transc-ok">${I.texto} Baixar e transcrever</button><button class="btn ghost" data-s="fechar">Agora não</button>`);
     }
     transcrever(id, tipo);
   };
   X.acoes["au-transc-ok"] = () => { gravarLS("cs.asr.ok", true); window.fecharSheet(); if (X._tr) transcrever(X._tr.id, X._tr.tipo); };
   async function transcrever(id, tipo) {
-    marcarTr(id, { trabalhando: "Preparando…" });
+    marcarTr(id, { trabalhando: "Transcrevendo…" });
     try {
+      const blobA = await obter(id, tipo);
+      const nuvem = await transcreverGemini(blobA, tipo).catch(() => null);
+      if (nuvem) {
+        marcarTr(id, { texto: nuvem });
+        const salvo = lerLS("cs.transc", {}); salvo[id] = nuvem; const ks = Object.keys(salvo); while (ks.length > 200) delete salvo[ks.shift()]; gravarLS("cs.transc", salvo);
+        return;
+      }
+      if (!lerLS("cs.asr.ok", false)) { delete TRANSC[id]; A.pintarMsgs(); X._tr = { id, tipo }; return X.acoes["au-transc"]({ dataset: { v: id, t: tipo } }); }
       const prog = {};
       const asr = await carregarAsr(p => {
         if (p && p.status === "progress" && p.total) { prog[p.file] = [p.loaded, p.total]; const v = Object.values(prog), l = v.reduce((s, x) => s + x[0], 0), t = v.reduce((s, x) => s + x[1], 0); TRANSC[id] = { trabalhando: `Baixando o reconhecimento de voz… ${Math.round(l / t * 100)}%` }; const b = document.querySelector(`.cs-aud[data-aud="${CSS.escape(id)}"] .cs-aud-tr`); if (b) b.textContent = TRANSC[id].trabalhando; }
       });
       marcarTr(id, { trabalhando: "Transcrevendo…" });
-      const pcm = await pcm16k(await obter(id, tipo));
-      const r = await asr(pcm, { language: "portuguese", task: "transcribe", chunk_length_s: 30, stride_length_s: 5 });
+      const pcm = await pcm16k(blobA);
+      const r = await asr(pcm, { language: "portuguese", task: "transcribe", chunk_length_s: 30, stride_length_s: 5, num_beams: 1, no_repeat_ngram_size: 3, condition_on_prev_tokens: false });
       const texto = String((r && r.text) || "").trim() || "(sem fala reconhecida)";
       marcarTr(id, { texto });
       const salvo = lerLS("cs.transc", {}); salvo[id] = texto; const ks = Object.keys(salvo); while (ks.length > 200) delete salvo[ks.shift()]; gravarLS("cs.transc", salvo);
@@ -1139,6 +1177,9 @@
     window.fecharSheet(); const id = el.dataset.id;
     const nat = await midiaNativa("camera", { modo: "foto" });
     const f = nat ? nat[0] : (await escolher("image/*", false))[0]; if (!f) return;
+    enviarUnicaFoto(id, f);
+  };
+  async function enviarUnicaFoto(id, f) {
     if (!/^image\//.test(f.type || "")) return toast("Para visualização única, escolha uma foto.");
     const barra = barraEnvio("foto de visualização única");
     try {
@@ -1147,7 +1188,7 @@
       await enviarMsg(id, { unica: { id: aid, tipo: "foto" }, prev: "Foto de visualização única" });
     } catch (e) { console.warn(e); toast(msgErro(e)); }
     barra(null);
-  };
+  }
   /* Mensagem de visualização única: tela própria com o texto no alto e o botão Enviar no topo,
      para o teclado do celular nunca cobrir o que está sendo escrito */
   function fecharUnTexto() { const o = document.getElementById("cs-un-ed"); if (o) o.remove(); document.body.classList.remove("cs-un-ed-on"); }
@@ -1295,10 +1336,14 @@
 
 .cs-midia{padding:4px!important;min-width:0}
 .cs-midia .cs-autor{padding:4px 8px 2px}
-.cs-mid{display:block;position:relative;border:0;padding:0;border-radius:14px;overflow:hidden;width:min(68vw,280px);max-height:360px;cursor:pointer;background:#0002}
+.cs-mid{display:block;position:relative;border:0;padding:0;border-radius:14px;overflow:hidden;width:min(58vw,232px);max-height:300px;cursor:pointer;background:#0002}
 .cs-mid img{width:100%;height:100%;object-fit:cover;display:block}
 .cs-mid-play{position:absolute;inset:0;margin:auto;width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;display:grid;place-items:center}
 .cs-mid-play svg{width:26px;height:26px}
+.cs-clip-4{grid-template-columns:repeat(4,1fr)!important}
+.cs-md-prev{display:grid;place-items:center}.cs-md-prev img{max-width:100%;max-height:52vh;border-radius:14px;object-fit:contain}
+.cs-md-un{width:52px;padding:0!important;display:grid;place-items:center}.cs-md-un svg{width:24px;height:24px}
+.cs-grav-1.on{background:#7C3AED!important;color:#fff!important}
 .cs-mid-dur{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:99px}
 .cs-midia .cs-h{position:absolute;right:12px;bottom:10px;background:rgba(0,0,0,.45);color:#fff!important;padding:1px 7px;border-radius:99px;opacity:1}
 .cs-midia{position:relative}
@@ -1371,6 +1416,8 @@ body.cs-apres-on{overflow:hidden}
 .cs-aud-n{opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
 .cs-aud-tr{display:inline-flex;align-items:center;gap:4px;font-size:.84rem;color:inherit!important;opacity:.95;text-decoration:underline}
 .cs-aud-tr svg{width:15px;height:15px}
+.cs-aud-tx{position:relative;padding-right:26px!important}
+.cs-aud-tx-x{position:absolute;right:0;top:0;border:0;background:none;color:inherit;opacity:.6;padding:2px;cursor:pointer}.cs-aud-tx-x svg{width:16px;height:16px}
 .cs-aud-tx{margin:4px 0 0;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,currentColor 8%,transparent);font-size:.95rem;line-height:1.4;white-space:pre-wrap}
 .spin.sm{width:20px;height:20px;border-width:3px}
 .cs-grav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(0,0,0,.12);flex-wrap:wrap}

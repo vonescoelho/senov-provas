@@ -24,7 +24,29 @@
     sino: ic('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/>'),
     grupo: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2a5 5 0 0 1 6 4.8"/>')
   };
-  const ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }, { urls: "stun:stun.cloudflare.com:3478" }];
+  /* STUN acha o caminho direto; TURN repassa a mídia quando a rede (4G, roteador) bloqueia o direto — sem ele a imagem fica preta.
+     Credenciais próprias (Metered, Twilio, Xirsys…) ficam em config/turn {urls:[...], username, credential}; sem elas usa o relé público. */
+  const STUN = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }, { urls: "stun:stun.cloudflare.com:3478" }];
+  const RELE_PUBLICO = [{ urls: ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp", "turns:openrelay.metered.ca:443?transport=tcp"], username: "openrelayproject", credential: "openrelayproject" }];
+  let TURN = null;
+  async function carregarTurn() {
+    if (TURN) return TURN;
+    try { const s = await fb.getDoc(D("config", "turn")); const d = s.exists() ? s.data() : null; if (d && d.urls && d.username) TURN = [{ urls: d.urls, username: d.username, credential: d.credential || "" }]; } catch (e) { }
+    if (!TURN) TURN = RELE_PUBLICO;
+    return TURN;
+  }
+  const ICE_ = () => [...STUN, ...(TURN || RELE_PUBLICO)];
+  /* som de "chamando" para quem liga (425 Hz: 1 s tocando, 4 s pausa, como no Brasil) */
+  function tocarChamando() {
+    pararChamando();
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)(); CH.ring = ctx;
+      const g = ctx.createGain(); g.gain.value = 0; g.connect(ctx.destination);
+      const o = ctx.createOscillator(); o.frequency.value = 425; o.connect(g); o.start();
+      const t = ctx.currentTime; for (let i = 0; i < 12; i++) { const b = t + 0.3 + i * 5; g.gain.setValueAtTime(0, b); g.gain.linearRampToValueAtTime(0.09, b + 0.03); g.gain.setValueAtTime(0.09, b + 1); g.gain.linearRampToValueAtTime(0, b + 1.03); }
+    } catch (e) { }
+  }
+  function pararChamando() { if (CH.ring) { try { CH.ring.close(); } catch (e) { } CH.ring = null; } }
   const MAX = 6;
   const mmss = s => { s = Number(s); if (!isFinite(s)) s = 0; s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   const CH = { id: null, d: null, local: null, pcs: new Map(), el: null, un: [], tipo: "video", mic: true, cam: true, frente: true, t0: 0, timer: null, feitos: new Set(), fila: Promise.resolve(), seq: 0, chat: null, aviso: null };
@@ -63,7 +85,7 @@
     const sent = o.meu ? I.saida : I.entrada;
     return `<div class="${cls}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-cmsg">${o.nome}
       <div class="cs-cmsg-l"><span class="cs-cmsg-ic ${urg ? "urg" : voz ? "voz" : "vid"}">${voz || urg ? I.fone2 : rtc ? I.video2 : I.grupo}</span>
-        <span class="cs-cmsg-t"><b>${tit}</b><small>${sent}${o.meu ? "Você ligou" : "Recebida"} · ${o.hr}</small></span>
+        <span class="cs-cmsg-t"><b>${tit}</b><small>${sent}${o.hr}</small></span>
         <button class="cs-cmsg-bt" data-s="${rtc ? "ch-entrar" : "ch-jitsi-entrar"}" data-v="${esc(m.chamada)}" aria-label="Entrar na chamada">${voz || urg ? I.fone2 : I.video2}</button></div></div></div>`;
   };
   X.acoes["ch-jitsi-entrar"] = el => abrirJitsi(el.dataset.v);
@@ -118,12 +140,13 @@
     if (CH.id) return toast("Você já está em uma chamada.");
     const c = SO.chats.find(x => x.id === chatId); if (!c) return;
     const local = await pegarMidia(tipo, true); if (!local) return;
+    await carregarTurn();
     try {
       const ref = fb.doc(C("chamadas"));
       const membros = c.membros || [];
       await fb.setDoc(ref, { chatId, de: eu(), membros, tipo, estado: "chamando", dentro: [eu()], tocando: membros.filter(m => m !== eu()), criadoEm: TS(), atualizadoEm: TS(), ...(urgente ? { urgente: true } : {}) });
       enviarMsg(chatId, { chamada: ref.id, rtc: true, tipoCh: tipo, prev: urgente ? "Chamada urgente" : tipo === "voz" ? "Chamada de voz" : "Chamada de vídeo" });
-      entrar(ref.id, local, tipo, c);
+      entrar(ref.id, local, tipo, c); tocarChamando();
       /* ninguém atendeu em 45 s: encerra */
       setTimeout(() => { if (CH.id === ref.id && CH.d && (CH.d.dentro || []).length <= 1) { toast("Ninguém atendeu."); sair(); } }, 45000);
     } catch (e) { console.warn(e); local.getTracks().forEach(t => t.stop()); toast(msgErro(e)); }
@@ -132,6 +155,7 @@
     fecharEntrada();
     if ((d.dentro || []).length >= MAX) return toast(`A chamada está cheia (máximo de ${MAX} pessoas).`);
     const local = await pegarMidia(d.tipo, true); if (!local) return;
+    await carregarTurn();
     try {
       await fb.updateDoc(D("chamadas", cid), { dentro: fb.arrayUnion(eu()), tocando: fb.arrayRemove(eu()), estado: "ativa", atualizadoEm: TS() });
       entrar(cid, local, d.tipo, SO.chats.find(x => x.id === d.chatId));
@@ -148,6 +172,7 @@
       CH.d = d;
       const dentro = d.dentro || [];
       if (dentro.length > 1 && !CH.t0) CH.t0 = Date.now();
+      if (dentro.length > 1) pararChamando();
       for (const uid of [...CH.pcs.keys()]) if (!dentro.includes(uid)) fecharPeer(uid);
       /* para cada par, quem tem o código menor faz a oferta: evita duas ofertas cruzadas */
       dentro.forEach(uid => { if (uid !== eu() && !CH.pcs.has(uid) && eu() < uid) chamarPeer(uid); });
@@ -166,6 +191,7 @@
   async function sair(remoto) {
     if (!CH.id) return;
     const cid = CH.id, d = CH.d;
+    pararChamando();
     CH.un.forEach(f => { try { f(); } catch (e) { } }); CH.un = [];
     [...CH.pcs.keys()].forEach(fecharPeer);
     if (CH.local) CH.local.getTracks().forEach(t => t.stop());
@@ -191,12 +217,18 @@
     fb.addDoc(C("chamadas", CH.id, "sinais"), { de: eu(), para, t, d: JSON.stringify(dados), n: Date.now() * 1000 + (++CH.seq % 1000) }).catch(e => console.warn(e));
   }
   function novoPeer(uid) {
-    const pc = new RTCPeerConnection({ iceServers: ICE });
+    const pc = new RTCPeerConnection({ iceServers: ICE_(), bundlePolicy: "max-bundle" });
     const p = { pc, fila: [], stream: null, uid, inicio: Date.now() };
     CH.pcs.set(uid, p);
     CH.local.getTracks().forEach(t => pc.addTrack(t, CH.local));
     pc.onicecandidate = e => { if (e.candidate) sinal(uid, "ice", e.candidate.toJSON()); };
-    pc.ontrack = e => { p.stream = e.streams[0] || new MediaStream([e.track]); atualizarUI(); };
+    pc.ontrack = e => {
+      p.stream = e.streams[0] || new MediaStream([e.track]);
+      /* o vídeo do outro chega "mudo" até os primeiros quadros: redesenha quando começar a chegar imagem */
+      e.track.onunmute = () => atualizarUI(); e.track.onmute = () => atualizarUI();
+      try { e.receiver.jitterBufferTarget = e.track.kind === "audio" ? 40 : 80; } catch (er) { }
+      atualizarUI();
+    };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "failed") { try { pc.restartIce(); } catch (e) { } avisoConexao(); }
       atualizarUI();
@@ -281,7 +313,8 @@
       }
       const v = t.querySelector("video");
       if (p && p.stream && v.srcObject !== p.stream) { v.srcObject = p.stream; v.play().catch(() => { }); }
-      const temVideo = !!(p && p.stream && p.stream.getVideoTracks().some(x => x.readyState === "live" && !x.muted));
+      const temVideo = !!(p && p.stream && (v.videoWidth > 0 || p.stream.getVideoTracks().some(x => x.readyState === "live" && !x.muted)));
+      if (p && p.stream && !v.dataset.ok) { v.dataset.ok = "1"; v.addEventListener("loadeddata", () => atualizarUI()); v.addEventListener("resize", () => atualizarUI()); }
       t.classList.toggle("so-voz", CH.tipo === "voz" || !temVideo);
       const est = p ? p.pc.connectionState : "new";
       t.querySelector(".cs-ch-con").textContent = est === "connected" ? "" : est === "failed" ? "Sem conexão" : "Conectando…";
@@ -490,8 +523,8 @@
 .cs-cmsg-ic.urg{background:linear-gradient(135deg,#F97316,#E5484D);box-shadow:0 4px 12px rgba(229,72,77,.3)}
 .cs-cmsg-ic svg{width:21px;height:21px}
 .cs-cmsg-t{display:flex;flex-direction:column;min-width:0;flex:1;gap:2px}
-.cs-cmsg-t b{font-size:.95rem;line-height:1.2}
-.cs-cmsg-t small{font-size:.78rem;opacity:.78;display:flex;align-items:center;gap:3px}
+.cs-cmsg-t b{font-size:.95rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-cmsg-t small{font-size:.78rem;opacity:.78;display:flex;align-items:center;gap:3px;white-space:nowrap}
 .cs-cmsg-t small svg{width:13px;height:13px}
 .cs-cmsg-bt{width:38px;height:38px;border-radius:50%;border:0;display:grid;place-items:center;flex:none;background:var(--primary-soft);color:var(--primary);cursor:pointer}
 .cs-cmsg-bt svg{width:18px;height:18px}

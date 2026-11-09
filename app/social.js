@@ -71,6 +71,11 @@
     mais2: ic('<path d="M12 5v14M5 12h14"/>'),
     fixa: ic('<path d="M9 4h6l-1 6 4 4H6l4-4z"/><path d="M12 14v7"/>'),
     arq: ic('<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10h14V9M10 13h4"/>'),
+    qr: ic('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/>'),
+    banco: ic('<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6M4 11.5v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>'),
+    novaProva: ic('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v6M9 15h6"/>'),
+    musica: ic('<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>'),
+    loja: ic('<path d="M4 7h16l-1.5 12.5a2 2 0 0 1-2 1.5h-9a2 2 0 0 1-2-1.5z"/><path d="M8.5 7a3.5 3.5 0 0 1 7 0"/>'),
     lixo: ic('<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>'),
     repost: ic('<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>'),
     proibido: ic('<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>'),
@@ -710,11 +715,12 @@
           : CS_E2E.pronto() ? `<button class="cs-e2e-chat" data-s="${g ? "e2e-info" : "e2e-codigo"}" data-id="${esc(g ? "" : t.outro)}">${K.lock} Mensagens criptografadas</button>` : ""; })() : ""}
       <div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
       ${podeEscrever ? `${SO.figAberta ? (EXT.painelEmoji ? EXT.painelEmoji() : painelFig("fig-msg")) : ""}
+      ${SO.resp && SO.resp[id] ? barraResp(SO.resp[id]) : ""}
       <form class="cs-compor ${EXT.composerFim && !(SO.rascunho[id] || "").trim() ? "vazio" : ""}" id="cs-f-msg" data-id="${esc(id)}">
         <button type="button" class="cs-ico-bt ${SO.figAberta ? "on" : ""}" data-s="fig-toggle" aria-label="Emojis" aria-pressed="${SO.figAberta}">${K.smile}</button>${EXT.composerBotoes ? EXT.composerBotoes(c) : ""}
         <textarea id="cs-txt" class="in" rows="1" maxlength="2000" placeholder="Mensagem" aria-label="Mensagem" enterkeyhint="send">${esc(SO.rascunho[id] || "")}</textarea>
         ${EXT.composerFim ? EXT.composerFim(c) : ""}<button class="btn primary cs-env" aria-label="Enviar">${K.enviar}</button>
-      </form>` : `<div class="cs-compor cs-aviso-comp">${bloq ? `Você bloqueou esta pessoa. <button class="cs-link" data-s="desbloquear" data-id="${esc(t.outro)}">Desbloquear</button>` : "Só administradores enviam mensagens neste grupo."}</div>`}`;
+      </form>` : `<div class="cs-compor cs-aviso-comp">${bloq ? `Bloqueado. <button class="cs-link" data-s="desbloquear" data-id="${esc(t.outro)}">Desbloquear</button>` : "Só administradores enviam mensagens neste grupo."}</div>`}`;
   }
   function htmlMsgs(c) {
     const ocultas = ocultasDe();
@@ -725,25 +731,74 @@
     let h = "", dia = "", ant = null;
     lista.forEach(m => {
       const d = diaSep(m.em); if (d !== dia) { h += `${dia ? "</div>" : ""}<div class="cs-dia-g"><div class="cs-dia"><span>${esc(d)}</span></div>`; dia = d; ant = null; }
+      const ini = h.length;
+      try {
       const meu = m.autor === eu(), seq = ant && ant.autor === m.autor && ms(m.em) - ms(ant.em) < 5 * 60e3;
       const nome = c.tipo === "grupo" && !meu && !seq ? `<b class="cs-autor" style="color:${corDe(m.autor)}">${esc(P(m.autor).nome)}</b>` : "";
       const hr = (m.em ? new Date(ms(m.em)).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : "") + tique(c, m);
-      if (m.apagada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb cs-apagada">${nome}<span class="cs-tx">${K.proibido}${m.por && m.por !== m.autor ? "Mensagem apagada pelo administrador" : meu ? "Você apagou esta mensagem" : "Mensagem apagada"}</span><span class="cs-h">${hr.replace(/<svg[\s\S]*$/, "")}</span></div></div>`; ant = m; return; }
+      if (m.apagada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb cs-apagada">${nome}<span class="cs-tx">${K.proibido}${m.por && m.por !== m.autor ? "Mensagem apagada pelo administrador" : meu ? "Você apagou este FlashPapo" : "Mensagem apagada"}</span><span class="cs-h">${hr.replace(/<svg[\s\S]*$/, "")}</span></div></div>`; ant = m; return; }
       if (m.cifrada) { h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-id="${esc(m.id)}"><div class="cs-b cs-tb cs-trancada">${nome}<span class="cs-tx">${m.cifrada === "pin" ? "🔒 Digite seu PIN para abrir" : m.cifrada === "abrindo" ? "🔒 Abrindo…" : "🔒 Mensagem protegida que este celular não consegue abrir"}</span><span class="cs-h">${hr}</span></div></div>`; ant = m; return; }
       if (EXT.msg && (m.arquivo || m.chamada || m.audio || m.unica)) { h += EXT.msg(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
-      if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
+      if (EXT.msgExtra && (m.local || m.figImg)) { h += EXT.msgExtra(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
+      if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig" data-s="fig-ver" data-v="${esc(m.id)}">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
       else if (EXT.emojiGrande && EXT.emojiGrande(m.texto)) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb cs-emo-msg">${nome}<span class="cs-tx">${[...new Intl.Segmenter("pt", { granularity: "grapheme" }).segment(m.texto.trim())].map(x => x.segment.trim() ? EXT.emojiAnimado(x.segment) : "").join("")}</span><span class="cs-h">${hr}</span></div></div>`;
       else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb ${m.link ? "cs-com-lk" : ""}">${nome}${m.link && window.CS_LINK ? CS_LINK.card(m.link) : ""}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
       ant = m;
+      } finally { if (m.resp && !m.apagada) h = h.slice(0, ini) + comResposta(h.slice(ini), m.resp); }
     });
     return h + (dia ? "</div>" : "");
   }
+  /* ===== Responder: puxar a mensagem para o lado ===== */
+  function prevMsg(m) {
+    if (!m) return ""; if (m.apagada) return "Mensagem apagada";
+    if (m.texto) return m.texto; if (m.fig || m.figImg) return "Figurinha"; if (m.local) return m.local.sos ? "🆘 SOS" : "📍 Localização";
+    if (m.audio) return "🎤 Áudio"; if (m.unica) return "Visualização única"; if (m.chamada) return "Chamada";
+    if (m.arquivo) { const t = m.arquivo.tipo || ""; return /^image\//.test(t) ? "📷 Foto" : /^video\//.test(t) ? "🎬 Vídeo" : /^audio\//.test(t) ? "🎤 Áudio" : "📄 " + (m.arquivo.nome || "Arquivo"); }
+    return "Mensagem";
+  }
+  function barraResp(r) {
+    return `<div class="cs-resp-bar" id="cs-resp-bar"><div class="cs-resp-q"><b>${esc(r.autor === eu() ? "Você" : P(r.autor).nome || "")}</b><span>${esc(r.t || "")}</span></div><button type="button" class="cs-ico-bt" data-s="resp-x" aria-label="Cancelar resposta">${K.x}</button></div>`;
+  }
+  function comResposta(html, r) {
+    const q = `<button type="button" class="cs-resp-q cs-resp-in" data-s="resp-ir" data-v="${esc(r.id || "")}"><b>${esc(r.autor === eu() ? "Você" : P(r.autor).nome || "")}</b><span>${esc(r.t || "")}</span></button>`;
+    const i = html.indexOf('class="cs-b'); if (i >= 0) { const j = html.indexOf(">", i); return html.slice(0, j + 1) + q + html.slice(j + 1); }
+    const k = html.indexOf('<div class="cs-fig'); if (k >= 0) return html.slice(0, k) + `<div class="cs-resp-solta">${q}</div>` + html.slice(k);
+    return html;
+  }
+  function responder(chatId, msgId) {
+    const m = (SO.msgs[chatId] || []).find(x => x.id === msgId); if (!m || m.apagada || m.cifrada) return;
+    SO.resp = SO.resp || {}; SO.resp[chatId] = { id: m.id, autor: m.autor, t: prevMsg(m).slice(0, 90) };
+    try { navigator.vibrate && navigator.vibrate(12); } catch (e) { }
+    pintar(); setTimeout(() => { const t = $("#cs-txt"); if (t) t.focus(); }, 80);
+  }
+  { let m0 = null, x0 = 0, y0 = 0, dx = 0, ativo = false;
+    document.addEventListener("touchstart", e => {
+      const b = e.target.closest && e.target.closest("#cs-msgs .cs-m[data-id]");
+      if (!b || e.touches.length !== 1 || e.target.closest("input,textarea,video,[data-s=au-seek],.cs-aud-onda")) { m0 = null; return; }
+      m0 = b; x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; dx = 0; ativo = false;
+    }, { passive: true });
+    document.addEventListener("touchmove", e => {
+      if (!m0) return; const t = e.touches[0], ddx = t.clientX - x0, ddy = t.clientY - y0;
+      if (!ativo) { if (Math.abs(ddy) > 12 && Math.abs(ddy) > Math.abs(ddx)) { m0 = null; return; } if (Math.abs(ddx) > 14) ativo = true; }
+      if (ativo) { dx = Math.max(-80, Math.min(80, ddx)); m0.style.transform = `translateX(${dx}px)`; m0.classList.add("cs-arrasta"); m0.classList.toggle("cs-arrasta-ok", Math.abs(dx) > 55); }
+    }, { passive: true });
+    const fim = () => { if (!m0) return; const b = m0; m0 = null; b.style.transform = ""; b.classList.remove("cs-arrasta", "cs-arrasta-ok"); const t = topo(); if (ativo && Math.abs(dx) > 55 && t && t.v === "chat") responder(t.id, b.dataset.id); };
+    document.addEventListener("touchend", fim, { passive: true }); document.addEventListener("touchcancel", fim, { passive: true });
+  }
+  /* ao tocar no campo de escrever, o painel de emojis desce (o teclado aparece e dá para ver o texto) */
+  document.addEventListener("focusin", e => {
+    if (!e.target || e.target.id !== "cs-txt" || !SO.figAberta) return;
+    SO.figAberta = false; document.body.classList.remove("cs-com-emo");
+    const p = document.querySelector(".cs-emop, .cs-figp"); if (p) p.remove();
+    const b = document.querySelector("[data-s=fig-toggle]"); if (b) { b.classList.remove("on"); b.setAttribute("aria-pressed", "false"); }
+  });
   function pintarMsgs() {
     const t = topo(); const el = $("#cs-msgs"); if (!t || t.v !== "chat" || !el) return;
     const c = SO.chats.find(x => x.id === t.id); if (!c) return pintar();
     const perto = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 160;
+    const l = SO.msgs[c.id] || [], ul = l[l.length - 1], minha = ul && ul.autor === eu() && (!ul.em || Date.now() - ms(ul.em) < 8000);
     el.innerHTML = htmlMsgs(c);
-    if (perto) window.scrollTo(0, document.documentElement.scrollHeight);
+    if (perto || minha) window.scrollTo(0, document.documentElement.scrollHeight);
   }
   /* Todas as figurinhas numa só grade; as usadas por último aparecem primeiro */
   const figRecentes = () => { try { return (JSON.parse(localStorage.getItem("cs.figrec") || "[]")).filter(id => FIGS[id]); } catch (e) { return []; } };
@@ -775,6 +830,9 @@
       conteudo = { texto: ts.slice(0, 2000), ...(conteudo.link && conteudo.link.u ? { link: conteudo.link } : {}) };
     }
     const prev = conteudo.prev || ""; delete conteudo.prev;
+    const rsp = SO.resp && SO.resp[id];
+    if (rsp && !conteudo.chamada && !conteudo.resp) { conteudo.resp = rsp; delete SO.resp[id]; const bar = document.getElementById("cs-resp-bar"); if (bar) bar.remove(); }
+    const flagUlt = conteudo.chamada ? { ch: 1 } : conteudo.local && conteudo.local.sos ? { sos: 1 } : {};
     const ult = { texto: conteudo.texto ? conteudo.texto.slice(0, 120) : prev.slice(0, 120), fig: conteudo.fig || null };
     /* criptografia de ponta a ponta: tranca a mensagem para cada participante */
     let sel = null;
@@ -782,10 +840,10 @@
     const b = fb.writeBatch(db);
     if (sel) {
       b.set(fb.doc(C("chats", id, "msgs")), { autor: eu(), em: TS(), ...sel.msg });
-      b.update(D("chats", id), { ultima: { autor: eu(), ...sel.ultima, ...(conteudo.chamada ? { ch: 1 } : {}) }, atualizadoEm: TS() });
+      b.update(D("chats", id), { ultima: { autor: eu(), ...sel.ultima, ...flagUlt }, atualizadoEm: TS() });
     } else {
       b.set(fb.doc(C("chats", id, "msgs")), { autor: eu(), em: TS(), ...conteudo });
-      b.update(D("chats", id), { ultima: { autor: eu(), ...ult, ...(conteudo.chamada ? { ch: 1 } : {}) }, atualizadoEm: TS() });
+      b.update(D("chats", id), { ultima: { autor: eu(), ...ult, ...flagUlt }, atualizadoEm: TS() });
     }
     try { await b.commit(); return true; } catch (e) { toast(msgErro(e)); return false; }
   }
@@ -1361,18 +1419,18 @@
       <section class="cs-pfl">
         <div class="cs-pf-top">
           <div class="cs-pf-av">${EXT.perfilAv ? EXT.perfilAv(uid, av(p, 88, uid)) : av(p, 88, uid)}</div>
-          <div class="cs-pf-nums">
-            <div title="Publicações" aria-label="${n.posts} publicações"><b>${n.posts}</b><i>${K.grade}</i></div>
-
+          <div class="cs-pf-lado">
+            <h2>${esc(p.nomeReal || p.nome)}${seloHtml(p)}</h2>
+            <span class="cs-pf-cont" title="Publicações" aria-label="${n.posts} publicações">${K.grade}<b>${n.posts}</b></span>
           </div>
+          ${meu ? `<button class="cs-pf-qr" data-s="perfil-qr" aria-label="QR code do perfil">${K.qr}</button>` : ""}
         </div>
         <div class="cs-pf-info">
-          <h2>${esc(p.nomeReal || p.nome)}${seloHtml(p)}</h2>
           ${p.inst ? `<span class="cs-pf-tag">${K.check} E-mail institucional</span>` : ""}
           ${p.escola ? `<span class="cs-pf-esc">${K.escola} ${esc(p.escola)}</span>` : ""}
           ${p.bio ? `<p class="cs-bio">${esc(p.bio)}</p>` : ""}
         </div>
-        ${meu ? `<div class="cs-pf-bts"><button class="btn" data-s="editar-perfil">Editar perfil</button><button class="btn" data-s="compartilhar-perfil">Compartilhar</button></div>`
+        ${meu ? ""
           : p.removido ? "" : `<div class="cs-pf-bts"><button class="btn ${seg ? "" : "primary"}" data-s="seguir" data-id="${esc(uid)}">${seg ? ((SO.segOculto || new Set()).has(uid) ? K.lock + " Em segredo" : "Seguindo") : "Seguir"}</button><button class="btn" data-s="abrir-direto" data-id="${esc(uid)}">Mensagem</button></div>`}
         ${meu && aba ? perfilCanto() : ""}
       </section>
@@ -1397,7 +1455,7 @@
         <label class="f" for="cs-inep">Código INEP da escola<input class="in" id="cs-inep" inputmode="numeric" maxlength="8" autocomplete="off" value="${esc(pr.inep || "")}" placeholder="8 números"></label>
         <label class="f" for="cs-pescola">Escola<input class="in" id="cs-pescola" maxlength="100" value="${esc(pr.escola || (SO.eu && SO.eu.escola) || "")}"></label>
         <button class="btn primary cs-grande">Liberar Provas</button>
-        ${pr.inep ? `<button type="button" class="btn ghost" data-s="prof-tirar">Remover</button>` : ""}</form>`);
+        ${pr.inep ? `<button type="button" class="btn" data-s="ir-escola">${K.escola} Escola e IA</button><button type="button" class="btn ghost" data-s="prof-tirar">Remover</button>` : ""}</form>`);
   }
   async function salvarProf() {
     const inep = (($("#cs-inep") || {}).value || "").replace(/\D/g, ""), escola = (($("#cs-pescola") || {}).value || "").trim();
@@ -1417,7 +1475,7 @@
       ${window.CS_E2E ? `<button data-s="e2e-codigo" data-id="${esc(uid)}">${K.lock}<span><b>Código de segurança</b></span></button>` : ""}
       ${bloq ? "" : SO.seguindo.has(uid) ? `<button data-s="seguir" data-id="${esc(uid)}">${K.addUser}<span><b>Deixar de seguir</b></span></button>`
         : `<button data-s="seguir-oculto" data-id="${esc(uid)}">${K.lock}<span><b>Seguir em segredo</b></span></button>`}
-      <button data-s="${bloq ? "desbloquear" : "bloquear"}" data-id="${esc(uid)}" class="${bloq ? "" : "perigo"}">${K.ban}<span><b>${bloq ? "Desbloquear" : "Bloquear"}</b><small>${bloq ? "Voltar a ver mensagens e publicações" : "Esta pessoa não poderá mais mandar mensagens para você"}</small></span></button>
+      <button data-s="${bloq ? "desbloquear" : "bloquear"}" data-id="${esc(uid)}" class="${bloq ? "" : "perigo"}">${K.ban}<span><b>${bloq ? "Desbloquear" : "Bloquear"}</b></span></button>
       <button data-s="denunciar" data-tipo="perfil" data-uid="${esc(uid)}" data-id="${esc(uid)}">${K.flag}<span><b>Denunciar perfil</b></span></button>
     </div>`);
   }
@@ -1430,7 +1488,7 @@
   const MOTIVOS = ["Linguagem ofensiva ou preconceito", "Assédio, ameaça ou intimidação", "Conteúdo impróprio", "Golpe, spam ou perfil falso", "Outro motivo"];
   function sheetDenuncia(d) {
     SO.den = d;
-    window.abrirSheet(`<div class="sheet-h"><h2>Denunciar</h2></div><p class="small muted">A denúncia é anônima para a pessoa denunciada.</p>
+    window.abrirSheet(`<div class="sheet-h"><h2>Denunciar</h2></div>
       <form class="stack" id="cs-f-den">${MOTIVOS.map((m, i) => `<label class="cs-radio"><input type="radio" name="motivo" value="${i}" ${i === 0 ? "checked" : ""}><span>${m}</span></label>`).join("")}
       <textarea class="in" id="cs-den-tx" rows="2" maxlength="500" placeholder="Detalhes (opcional)"></textarea>
       <button class="btn primary cs-grande">Enviar denúncia</button></form>`);
@@ -1522,13 +1580,7 @@
     const lin = (s, icone, t, sub, extra) => `<button data-s="${s}">${`<span class="cs-lic">${icone}</span>`}<span><b>${t}</b>${sub ? `<small>${sub}</small>` : ""}</span>${extra == null ? K.dir : extra}</button>`;
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Configurações</b></header>
       <div class="cs-pag stack cs-cfg">
-        <button class="card cs-conta" data-s="editar-perfil">${av(p, 56, eu())}<span><b>${esc(p.nome)}</b><small>@${esc(p.usuario)}</small></span>${K.dir}</button>
-        <h2 class="cs-sec">Conta</h2>
-        <div class="cs-menu card flat">
-          ${lin("editar-perfil", K.user, "Editar perfil", "")}
-          ${lin("email", K.mail, "E-mail", esc(u.email))}
-          ${lin("senha", K.chave, "Alterar senha", "")}
-        </div>
+        <button class="card cs-conta" data-s="conta-menu">${av(p, 56, eu())}<span><b>${esc(p.nome)}</b><small>@${esc(p.usuario)}</small></span>${K.dir}</button>
         <h2 class="cs-sec">Privacidade e segurança</h2>
         <div class="cs-menu card flat">
           <div class="cs-linha"><span class="cs-lic">${K.lock}</span><span><b>Quem pode me mandar mensagem</b>
@@ -1634,10 +1686,11 @@
 
   /* ================= Montagem da tela ================= */
   function vProvas() {
-    const sub = [["inicio", "Assistente"], ["banco", "Banco"], ["prova", "Nova prova"], ["escola", "Escola"]];
+    const sub = [["inicio", "Assistente", K.varinha], ["banco", "Banco de questões", K.banco], ["prova", "Nova prova", K.novaProva]];
+    const icX = { recursos: K.musica, vitrine: K.loja };
     const extra = EXT.provasSub, ativo = SO.provSub && extra.find(x => x.k === SO.provSub);
     const v = ativo ? ativo.view() : S.tab === "banco" ? vBanco() : S.tab === "prova" ? vProva() : S.tab === "escola" ? vEscola() : vConversa();
-    return `<div class="cs-cab"><h1>Provas e aulas</h1></div><div class="chips cs-sub" role="tablist">${sub.map(([k, n]) => `<button class="chip" data-tab="${k}" data-s="prov-sub" data-v="" aria-pressed="${!ativo && S.tab === k}">${n}</button>`).join("")}${extra.map(x => `<button class="chip" data-s="prov-sub" data-v="${x.k}" aria-pressed="${!!ativo && ativo.k === x.k}">${x.n}</button>`).join("")}</div>${v}`;
+    return `<div class="cs-cab"><h1>Provas e aulas</h1></div><div class="cs-sub-ic" role="tablist">${sub.map(([k, n, i]) => `<button data-tab="${k}" data-s="prov-sub" data-v="" aria-pressed="${!ativo && S.tab === k}" aria-label="${n}" title="${n}">${i}</button>`).join("")}${extra.map(x => `<button data-s="prov-sub" data-v="${x.k}" aria-pressed="${!!ativo && ativo.k === x.k}" aria-label="${esc(x.n)}" title="${esc(x.n)}">${icX[x.k] || K.mais}</button>`).join("")}</div>${v}`;
   }
   function vTela(t) {
     switch (t.v) {
@@ -1728,8 +1781,18 @@
       window.fecharSheet();
       if (d.tipo === "chat") { limparPilha(); SO.tab = "conversas"; lembrarTab(); pintar(); setTimeout(() => abrirChat(d.id), 350); }
       else if (d.tipo === "perfil") { setTimeout(() => abrirTela({ v: "perfil", id: d.id }), 200); }
+      else if (d.tipo === "sos" && window.CS_SOS) { CS_SOS.link(d.id); }
+      else if (d.tipo === "partilha") { setTimeout(() => sheetPartilha(d.id), 300); }
     };
     if (N && N.aviso) { try { N.addListener("aviso", abrirAviso); } catch (e) { } EXT.aoTrocarUsuario.push(u => { if (u) setTimeout(() => N.aviso().then(abrirAviso).catch(() => { }), 1800); }); }
+  }
+  /* ================= Compartilhado de outro app (link, texto): escolher a conversa ================= */
+  function sheetPartilha(texto) {
+    texto = String(texto || "").slice(0, 2000); if (!texto) return;
+    SO.partilha = texto;
+    const l = SO.chats.filter(c => c.ultima || c.tipo === "grupo").sort((a, b) => ms(b.atualizadoEm) - ms(a.atualizadoEm)).slice(0, 40);
+    window.abrirSheet(`<div class="sheet-h"><h2>Enviar para</h2></div><p class="cs-part-tx">${esc(texto.slice(0, 160))}</p>
+      <div class="cs-lista">${l.map(c => { const t = tituloChat(c); return `<button class="cs-item" data-s="part-env" data-id="${esc(c.id)}">${t.av(40)}<span class="cs-item-t"><b>${esc(t.nome)}</b></span></button>`; }).join("") || `<p class="small muted">Nenhuma conversa ainda.</p>`}</div>`);
   }
   /* ================= Puxar para o lado troca de aba ================= */
   { let x0 = 0, y0 = 0, t0 = 0, alvo = null;
@@ -1740,7 +1803,7 @@
       if (Date.now() - t0 > 700 || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
       if (x0 < 22 || x0 > window.innerWidth - 22) return; /* bordas: gesto de voltar do Android */
       if (!SO.user || !SO.eu || topo() || document.querySelector("#layer .scrim") || document.body.classList.contains("cs-com-emo")) return;
-      if (a.closest("input,textarea,select,video,.cs-emop,.chips,.seg,.cs-seg,.cs-aparencia,.cs-mus-cats,[data-noswipe],.cs-ch-entra,.cs-ch-tela")) return;
+      if (a.closest("input,textarea,select,video,.xf-qc,.cs-emop,.chips,.seg,.cs-seg,.cs-aparencia,.cs-mus-cats,[data-noswipe],.cs-ch-entra,.cs-ch-tela")) return;
       for (let n = a; n && n !== document.body; n = n.parentElement) { if (n.scrollWidth > n.clientWidth + 4 && /(auto|scroll)/.test(getComputedStyle(n).overflowX)) return; }
       const l = abas().map(x => x[0]), i = l.indexOf(SO.tab); if (i < 0) return;
       const j = i + (dx < 0 ? 1 : -1); if (j < 0 || j >= l.length) return;
@@ -1798,6 +1861,9 @@
       case "foto-tirar": ctxFoto().foto = null; pintar(); break;
       case "assistente": gravarLS("cs.assist.em." + eu(), Date.now()); SO.tab = "provas"; S.tab = "inicio"; lembrarTab(); pintar(); window.scrollTo(0, 0); break;
       case "abrir-chat": abrirChat(id); break;
+      case "part-env": { const tx = SO.partilha || ""; SO.partilha = ""; window.fecharSheet(); limparPilha(); SO.tab = "conversas"; lembrarTab(); SO.rascunho[id] = tx; pintar(); setTimeout(() => { abrirChat(id); setTimeout(() => { const t = $("#cs-txt"); if (t) { t.value = tx; autosize(t); t.focus(); const f = t.closest("form"); if (f) f.classList.remove("vazio"); } }, 400); }, 200); break; }
+      case "resp-x": { const t = topo(); if (t && SO.resp) delete SO.resp[t.id]; const b = $("#cs-resp-bar"); if (b) b.remove(); break; }
+      case "resp-ir": { const alvo = document.querySelector(`#cs-msgs .cs-m[data-id="${CSS.escape(v || "")}"]`); if (alvo) { alvo.scrollIntoView({ block: "center", behavior: "smooth" }); alvo.classList.add("cs-pisca"); setTimeout(() => alvo.classList.remove("cs-pisca"), 1300); } break; }
       case "cv-ver-arq": SO.verArq = true; pintar(); window.scrollTo(0, 0); break;
       case "cv-sair-arq": SO.verArq = false; pintar(); break;
       case "cv-fixar": { const cv = cvPref(); window.fecharSheet();
@@ -1821,8 +1887,13 @@
       case "sou-prof": sheetProf(); break;
       case "relac": try { await fb.updateDoc(D("users", eu()), { relac: v }); if (SO.eu) SO.eu.relac = v; window.fecharSheet(); if (v === "solteiro") { SO.tab = "conexoes"; lembrarTab(); } pintar(); } catch (e) { toast(msgErro(e)); } break;
       case "pf-aba": SO.pfAba = { ...(SO.pfAba || {}), [el.dataset.id]: el.dataset.v }; pintar(); break;
+      case "perfil-qr": {
+        const u = (SO.eu && SO.eu.usuario) || "", link = `https://vonescoelho.github.io/senov-provas/?u=${encodeURIComponent(u)}`;
+        window.abrirSheet(`<div class="cs-qr-box"><img src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=10&data=${encodeURIComponent(link)}" width="220" height="220" alt="QR code do perfil"><b>@${esc(u)}</b></div>
+          <div class="row"><button class="btn primary" data-s="compartilhar-perfil" style="flex:1">${K.share} Compartilhar</button></div>`); break;
+      }
       case "compartilhar-perfil": {
-        const u = (SO.eu && SO.eu.usuario) || "", t = `Me siga no FlashPapo: @${u} · https://vonescoelho.github.io/senov-provas/`;
+        const u = (SO.eu && SO.eu.usuario) || "", t = `Me siga no FlashPapo: @${u} · https://vonescoelho.github.io/senov-provas/?u=${encodeURIComponent(u)}`;
         try { if (navigator.share) { await navigator.share({ title: "FlashPapo", text: t }); break; } } catch (e) { break; }
         copiar(t); toast("Copiado."); break;
       }
@@ -1843,7 +1914,7 @@
       case "ver-perfil": window.fecharSheet(); abrirTela({ v: "perfil", id }); break;
       case "menu-pessoa": sheetPessoa(id); break;
       case "abrir-direto": window.fecharSheet(); abrirDireto(id); break;
-      case "fig-toggle": SO.figAberta = !SO.figAberta; document.body.classList.toggle("cs-com-emo", SO.figAberta); pintar(); if (SO.figAberta) setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 30); break;
+      case "fig-toggle": SO.figAberta = !SO.figAberta; if (SO.figAberta && document.activeElement && document.activeElement.id === "cs-txt") document.activeElement.blur(); document.body.classList.toggle("cs-com-emo", SO.figAberta); pintar(); if (SO.figAberta) setTimeout(() => window.scrollTo(0, document.documentElement.scrollHeight), 30); break;
       case "pacote": { SO.pacote = +v; const p = el.closest(".cs-figp"); if (p) p.outerHTML = painelFig(p.closest("#layer") ? "fig-post" : "fig-msg"); break; }
       case "fig-msg": { usarFig(v); const t = topo(); SO.figAberta = false; document.body.classList.remove("cs-com-emo"); pintar(); if (t) enviarMsg(t.id, { fig: v }); break; }
       case "fig-post": { usarFig(v); SO.postFig = v; const o = $("#cs-post-figsel"); if (o) o.innerHTML = `<div class="cs-figsel">${figurinha(v, 96)}<button type="button" class="btn ghost sm" data-s="fig-post-tirar">Tirar figurinha</button></div>`; const d = el.closest("details"); if (d) d.open = false; break; }
@@ -1862,7 +1933,7 @@
           const arqId = m && ((m.arquivo && m.arquivo.id) || (m.audio && m.audio.id) || (m.unica && m.unica.id));
           if (arqId && m.autor === eu() && EXT.midia) EXT.midia.apagarArquivo(arqId).catch(() => { });
           if (ult && ult.id === id) await fb.updateDoc(D("chats", chat), { ultima: { autor: eu(), texto: "Mensagem apagada", fig: null } }).catch(() => { });
-          window.fecharSheet(); toast("Mensagem apagada para todos.");
+          window.fecharSheet(); toast("Apagado.");
         } catch (e) { toast(msgErro(e)); }
         break;
       }
@@ -2025,8 +2096,14 @@
       case "tema": aplicarTema(v); pintar(); break;
       case "dados-escola": limparPilha(); SO.tab = "provas"; S.tab = "escola"; lembrarTab(); pintar(); break;
       case "excluir": sheetExcluir(); break;
+      case "conta-menu": window.abrirSheet(`<div class="cs-menu">
+          <button data-s="editar-perfil-sh">${K.user}<span><b>Editar perfil</b></span></button>
+          <button data-s="email">${K.mail}<span><b>E-mail</b><small>${esc((SO.user && SO.user.email) || "")}</small></span></button>
+          <button data-s="senha">${K.chave}<span><b>Alterar senha</b></span></button></div>`); break;
+      case "editar-perfil-sh": window.fecharSheet(); SO.ed = null; SO.edIni = false; SO.erro = ""; abrirTela({ v: "editar" }); setTimeout(checarUsuario, 60); break;
       case "conta-mais": window.abrirSheet(`<div class="sheet-h"><h2>Gerenciar conta</h2></div><div class="cs-menu"><button class="perigo" data-s="excluir">${K.lixo}<span><b>Excluir minha conta</b></span></button></div>`); break;
       case "prov-sub": SO.provSub = v || null; pintar(); break;
+      case "ir-escola": window.fecharSheet(); SO.provSub = null; try { S.tab = "escola"; localStorage.setItem("senov.tab", "escola"); } catch (e) { } SO.tab = "provas"; lembrarTab(); pintar(); window.scrollTo(0, 0); break;
       default: if (EXT.acoes[s]) EXT.acoes[s](el, ev);
     }
   });
@@ -2128,6 +2205,31 @@ body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padd
 .cs-pf-usu{font-size:1.12rem!important;font-weight:700}
 .cs-pf-pag{gap:16px}
 .cs-pfl{display:flex;flex-direction:column;gap:12px;padding:4px 2px 0}
+.cs-cfg{gap:4px!important}
+.cs-cfg .cs-menu.card{padding:2px 0;border-radius:16px}
+.cs-cfg .cs-menu>button,.cs-cfg .cs-menu>.cs-linha,.cs-cfg .cs-menu>label{min-height:50px!important;padding:6px 12px!important;gap:14px!important;border-radius:0!important;font-size:.98rem}
+.cs-cfg .cs-menu>*+*{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+.cs-cfg .cs-menu b,.cs-cfg .cs-linha>span>b{font-weight:500!important}
+.cs-cfg .cs-lic{width:32px!important;height:32px!important;border-radius:9px!important}.cs-cfg .cs-lic svg{width:18px!important;height:18px!important}
+.cs-cfg .cs-sec{margin:14px 6px 4px!important;font-size:.74rem!important}
+.cs-cfg .cs-conta{padding:10px 12px}.cs-cfg .cs-conta b{font-weight:600}
+.cs-cfg .cs-menu .pill{flex:0 0 auto!important;width:auto!important;padding:3px 10px;font-size:.78rem}
+.cs-part-tx{margin:0 4px;padding:8px 10px;border-radius:10px;background:var(--surface-2);font-size:.85rem;word-break:break-word;max-height:4.5em;overflow:hidden}
+.cs-m{transition:transform .18s ease}.cs-m.cs-arrasta{transition:none}
+.cs-m.cs-arrasta-ok::before{content:"↩";position:absolute;align-self:center;font-size:1.1rem;opacity:.7;margin-left:-26px}
+.cs-pisca .cs-b,.cs-pisca .cs-fig{animation:csPisca 1.2s ease}@keyframes csPisca{0%,100%{filter:none}30%{filter:brightness(.82)}}
+.cs-resp-bar{display:flex;align-items:center;gap:8px;margin:0 8px -2px;padding:8px 6px 8px 12px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;position:relative;z-index:3}
+.cs-resp-bar .cs-resp-q{flex:1}
+.cs-resp-q{display:flex;flex-direction:column;gap:1px;min-width:0;text-align:left;border:0;border-left:3px solid var(--primary);background:color-mix(in srgb,var(--primary) 9%,transparent);border-radius:8px;padding:5px 9px;font:inherit;color:inherit;cursor:pointer;width:100%}
+.cs-resp-q b{font-size:.78rem;color:var(--primary)}.cs-resp-q span{font-size:.82rem;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-m.eu .cs-resp-in{background:rgba(255,255,255,.16);border-left-color:#fff}.cs-m.eu .cs-resp-in b{color:#fff}
+.cs-resp-in{margin-bottom:6px}.cs-resp-solta{max-width:220px;margin-bottom:4px}
+.scrim{background:rgba(8,12,24,.26)!important}
+.scrim .sheet{background:color-mix(in srgb,var(--surface) 86%,transparent)!important;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);gap:6px!important;padding:6px 12px calc(12px + env(safe-area-inset-bottom,0px))!important;max-width:560px;box-shadow:0 -10px 30px rgba(0,0,0,.14)}
+.scrim .sheet-h{background:transparent!important;padding:4px 4px 0!important}
+.scrim .sheet-h h2{font-size:1rem;font-weight:700}
+.scrim .sheet .cs-menu>button{min-height:44px;padding:7px 8px;font-size:.95rem;border-radius:10px;gap:12px}
+.scrim .sheet .cs-menu>button>svg:first-child{width:20px;height:20px}
 .cs-lsw{cursor:pointer!important}.cs-lsw>span:nth-child(2){flex:1;min-width:0}
 .cs-swv{width:52px;height:32px;border-radius:99px;background:var(--line);position:relative;flex:none;transition:background .2s}
 .cs-swv::before{content:"";position:absolute;left:3px;top:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
@@ -2142,7 +2244,12 @@ body.cs-desl-e #main>*{animation:csDeslE .28s ease-out}body.cs-desl-d #main>*{an
 .toast::before{content:"";width:9px;height:9px;border-radius:50%;flex:none;background:linear-gradient(135deg,#FF3D7F,#B026FF 55%,#6D28FF)}
 .cs-fixa{display:inline-flex;color:var(--primary)}.cs-fixa svg{width:15px;height:15px}.cs-item .cs-av.cs-arq-ic{display:grid;place-items:center;background:var(--primary-soft)!important;color:var(--primary);border-radius:50%;flex:none}.cs-item .cs-arq-ic svg{width:24px;height:24px}.cs-arq-h{display:flex;align-items:center;gap:8px;margin:2px 0 4px}.cs-arq-h b{font-size:1.1rem}.cs-item{-webkit-touch-callout:none;user-select:none}
 .cs-seg{display:flex;gap:6px;flex-wrap:wrap}.cs-seg button{flex:1;min-width:120px;padding:10px 12px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:inherit;font:inherit;font-weight:600}.cs-seg button[aria-pressed=true]{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
-.cs-pf-top{display:flex;align-items:center;gap:18px}
+.cs-pf-top{display:flex;align-items:center;gap:16px}
+.cs-pf-lado{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.cs-pf-lado h2{margin:0;font-size:1.12rem;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.25}
+.cs-pf-cont{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.92rem}.cs-pf-cont svg{width:16px;height:16px}.cs-pf-cont b{color:var(--ink);font-variant-numeric:tabular-nums}
+.cs-pf-qr{width:52px;height:52px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;flex:none;cursor:pointer}.cs-pf-qr svg{width:28px;height:28px}
+.cs-qr-box{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0}.cs-qr-box img{border-radius:16px;background:#fff;padding:8px}
 .cs-pf-av{flex:none}.cs-pf-av .cs-fl-anel{margin:0}
 .cs-pf-nums{flex:1;display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
 .cs-pf-nums>div{display:flex;flex-direction:column;align-items:center;gap:3px}
@@ -2230,6 +2337,10 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-seg-mini{margin-top:8px;display:flex;flex-wrap:nowrap}
 .cs-seg-mini button{font-size:.86rem;min-height:40px;padding:0 6px}
 .cs-sub{margin-top:-6px}
+.cs-sub-ic{display:flex;gap:6px;margin:-4px 0 6px;padding:4px;background:var(--surface-2);border-radius:16px}
+.cs-sub-ic button{flex:1;height:42px;border:0;border-radius:12px;background:none;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.cs-sub-ic button svg{width:22px;height:22px}
+.cs-sub-ic button[aria-pressed="true"]{background:var(--surface);color:var(--primary);box-shadow:0 1px 4px rgba(20,18,31,.1)}
 .cs-atalhos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .cs-atalhos button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink);font-weight:700;font-size:.86rem;min-height:76px;text-align:center}
 .cs-atalhos button svg{width:24px;height:24px;color:var(--primary)}
@@ -2242,7 +2353,7 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-chat-quem b .cs-selo{vertical-align:-2px;margin-left:4px}
 .cs-chat-quem small{line-height:1.2}
 .cs-chat-quem small{color:var(--muted);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cs-msgs{display:flex;flex-direction:column;padding:10px 0 12px;min-height:calc(100vh - 170px)}
+.cs-msgs{display:flex;flex-direction:column;justify-content:flex-end;padding:10px 0 12px;min-height:calc(100vh - 170px)}
 .cs-dia-g{display:flex;flex-direction:column}
 .cs-dia{text-align:center;margin:14px 0 6px;position:sticky;top:calc(58px + env(safe-area-inset-top,0px));z-index:3;pointer-events:none}
 .cs-dia span{display:inline-block;background:var(--surface);border:1px solid var(--line);padding:4px 12px;border-radius:99px;font-size:.78rem;color:var(--muted);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.05)}
@@ -2471,5 +2582,5 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   document.head.appendChild(css);
 
   window.SOCIAL = { render: renderSocial, ext: EXT,
-    _: { SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk, itemPessoa, seguir, pub, reabrirMsgs, ehProf, ehAdulto, lembrarTab, idadeDe } };
+    _: { responder, prevMsg, sheetPartilha, SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk, itemPessoa, seguir, pub, reabrirMsgs, ehProf, ehAdulto, lembrarTab, idadeDe } };
 })();

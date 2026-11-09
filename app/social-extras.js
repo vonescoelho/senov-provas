@@ -160,6 +160,21 @@
       <path d="M48 36h32c-4 10-16 16-16 22-0-6-12-12-16-22z" fill="url(#@a)"/><path d="M64 64v26" stroke="#E9A23B" stroke-width="2.5" stroke-dasharray="3 4"/>
       <path d="M44 104c4-12 14-16 20-16s16 4 20 16z" fill="url(#@a)"/>` }
   };
+  /* figurinhas com texto (as que aparecem no painel) */
+  const txt = (y, t, tam, cor) => `<text x="64" y="${y}" text-anchor="middle" font-family="Outfit,Inter,system-ui,sans-serif" font-weight="800" font-size="${tam}" fill="${cor || "#fff"}" paint-order="stroke" stroke="rgba(0,0,0,.12)" stroke-width="1">${t}</text>`;
+  Object.assign(F, {
+    t_ok: { nome: "Ok", svg: `<defs><linearGradient id="@g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#34D399"/><stop offset="1" stop-color="#059669"/></linearGradient></defs>
+      <rect x="14" y="20" width="100" height="88" rx="30" fill="url(#@g)" stroke="#fff" stroke-width="5"/>${txt(76, "OK", 44)}<path d="M50 88l9 8 19-18" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>` },
+    t_valeu: { nome: "Valeu", svg: `<defs><linearGradient id="@g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF3D7F"/><stop offset="1" stop-color="#7C3AED"/></linearGradient></defs>
+      <rect x="8" y="30" width="112" height="70" rx="26" fill="url(#@g)" stroke="#fff" stroke-width="5"/>${txt(74, "Valeu!", 30)}<path d="M64 22c-4-7-15-6-15 3 0 6 15 14 15 14s15-8 15-14c0-9-11-10-15-3z" fill="#FF3D7F" stroke="#fff" stroke-width="4"/>` },
+    t_org: { nome: "Tudo organizado", svg: `<defs><linearGradient id="@g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60A5FA"/><stop offset="1" stop-color="#2447C6"/></linearGradient></defs>
+      <rect x="10" y="12" width="108" height="104" rx="26" fill="url(#@g)" stroke="#fff" stroke-width="5"/>
+      <g stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"><path d="M30 34l5 5 9-9M54 35h40M30 54l5 5 9-9M54 55h40"/></g>${txt(94, "Tudo", 20)}${txt(110, "organizado", 15)}` },
+    t_desorg: { nome: "Desorganizado", svg: `<defs><linearGradient id="@g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FDBA74"/><stop offset="1" stop-color="#EA580C"/></linearGradient></defs>
+      <rect x="10" y="14" width="108" height="100" rx="26" fill="url(#@g)" stroke="#fff" stroke-width="5" transform="rotate(-4 64 64)"/>
+      <path d="M30 50c10-18 22 14 32-4s20 14 34-6M34 66c12 8 18-10 30-2s20-6 30 4" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>${txt(100, "Desorganizado", 15)}` }
+  });
+  const TEXTOS = ["t_ok", "t_valeu", "t_org", "t_desorg"];
   const ORDEM = ["sextou", "cansado", "cafe", "pilha", "burocracia", "respira", "motivado", "ferias", "joinha", "rindo", "amei", "uau", "pensando", "obrigado",
     "nota10", "arrasou", "parabens", "presente", "dever", "boaprova", "revisao", "estudar", "eureca", "bomdia", "reuniao", "pi", "ciencia", "inclusao", "tempo"];
   const PACOTES = [{ nome: "Figurinhas", ids: ORDEM }];
@@ -257,5 +272,5 @@
     return { texto: m.texto, bloqueio: "", docs: m.n };
   }
 
-  window.SOC_EXTRAS = { F, PACOTES, ORDEM, figurinha, ofensivo, seguranca, linkPerigoso };
+  window.SOC_EXTRAS = { F, PACOTES, ORDEM, TEXTOS, figurinha, ofensivo, seguranca, linkPerigoso };
 })();

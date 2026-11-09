@@ -13,6 +13,8 @@
   const { SO, fb, D, C, TS, K, ic, esc, P, av, eu, pintar, abrirTela, topo, toast, msgErro, ofensivo } = A;
   const $ = s => document.querySelector(s);
   const I = {
+    voce: ic('<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>'),
+    amigos: ic('<circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 20c1.2-3.4 3.6-5 6.5-5s5.3 1.6 6.5 5"/><circle cx="17" cy="9" r="2.8"/><path d="M16.5 14.2c2.4.2 4.2 1.8 5 4.6"/>'),
     coracao: ic('<path d="M12 20s-7.5-4.6-9.3-9.2A5 5 0 0 1 12 6a5 5 0 0 1 9.3 4.8C19.5 15.4 12 20 12 20z"/>'),
     coment: ic('<path d="M21 11.5a8.4 8.4 0 0 1-12.2 7.5L3 20.5l1.6-5A8.5 8.5 0 1 1 21 11.5z"/>'),
     enviar: ic('<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>'),
@@ -82,8 +84,8 @@
     if (XF.el) return XF.el;
     const el = document.createElement("div"); el.id = "xf-app"; el.className = "xf";
     el.innerHTML = `<div class="xf-top"><button class="xf-x" data-s="xf-sair-fixo" aria-label="Fechar" hidden>${I.x}</button>
-        <div class="xf-modos"><button data-s="xf-modo" data-v="pv">Para você</button><button data-s="xf-modo" data-v="seg">Seguindo</button></div>
-        <button class="xf-tbt" data-s="xf-mudo" aria-label="Som" id="xf-mudo">${I.som}</button></div>
+        <div class="xf-modos"><button data-s="xf-modo" data-v="pv" aria-label="Para você" title="Para você">${I.voce}</button><button data-s="xf-modo" data-v="seg" aria-label="Seguindo" title="Seguindo">${I.amigos}</button></div>
+        <span class="xf-esp"></span><h1 class="xf-tit">MyFlash</h1><button class="xf-tbt" data-s="xf-mudo" aria-label="Som" id="xf-mudo">${I.som}</button></div>
       <div class="xf-feed" id="xf-feed"></div>
       <button class="xf-criar" data-s="xf-criar" aria-label="Criar MyFlash">${I.mais}</button>`;
     document.body.appendChild(el); XF.el = el;
@@ -143,6 +145,37 @@
         <button class="btn xf-art-bt" data-s="fx-usar-id" data-id="${esc(m.id)}">${I.camera} Criar com esta música</button>
         <button class="cs-link xf-art-ver" data-s="faixa-abrir" data-id="${esc(m.id)}">Ouvir</button></div></section>`;
   }
+  /* vazio: quebra-cabeça de uma peça — encaixar a peça (ou tocar nela) abre a câmera para criar o MyFlash */
+  const PECA = "M-30 -30H-9a9 9 0 1 1 18 0H30V-9a9 9 0 1 1 0 18V30H-30Z";
+  function quebraCabeca() {
+    return `<div class="xf-qc" id="xf-qc">
+      <svg class="xf-qc-logo" viewBox="0 0 200 200" aria-hidden="true"><defs><linearGradient id="xfqg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF3D7F"/><stop offset=".55" stop-color="#B026FF"/><stop offset="1" stop-color="#6D28FF"/></linearGradient></defs>
+        <path transform="scale(2)" fill="url(#xfqg)" stroke="url(#xfqg)" stroke-width="4" stroke-linejoin="round" d="M21 22Q21 8 35 8H56A30 30 0 0 1 56 68H41V78L15 92L21 78Z"/>
+        <path class="xf-qc-vaga" transform="translate(112 76)" d="${PECA}"/></svg>
+      <button class="xf-qc-peca" id="xf-qc-peca" aria-label="Criar MyFlash"><svg viewBox="-42 -42 84 84"><path d="${PECA}" fill="#fff"/><path d="M0 -15Q2.3 -2.3 15 0Q2.3 2.3 0 15Q-2.3 2.3 -15 0Q-2.3 -2.3 0 -15Z" fill="#B026FF"/></svg></button>
+    </div>`;
+  }
+  function encaixar(qc, peca) {
+    const r = qc.getBoundingClientRect(), lg = qc.querySelector(".xf-qc-logo").getBoundingClientRect(), k = lg.width / 200;
+    const alvoX = lg.left - r.left + 112 * k, alvoY = lg.top - r.top + 76 * k;
+    peca.style.transition = "left .3s ease, top .3s ease, transform .3s ease"; peca.style.left = alvoX + "px"; peca.style.top = alvoY + "px";
+    qc.classList.add("ok"); try { navigator.vibrate && navigator.vibrate(30); } catch (e) { }
+    setTimeout(() => { if (X.criarXFlesh) X.criarXFlesh(); setTimeout(() => { qc.classList.remove("ok"); peca.style.transition = ""; peca.style.left = ""; peca.style.top = ""; }, 800); }, 550);
+  }
+  document.addEventListener("pointerdown", e => {
+    const peca = e.target.closest && e.target.closest("#xf-qc-peca"); if (!peca) return;
+    const qc = peca.closest("#xf-qc"), r = qc.getBoundingClientRect(); e.preventDefault();
+    const ini = { x: e.clientX, y: e.clientY, t: Date.now() }; let moveu = false;
+    peca.setPointerCapture(e.pointerId); peca.style.transition = "none";
+    const mover = ev => { if (Math.hypot(ev.clientX - ini.x, ev.clientY - ini.y) > 6) moveu = true; peca.style.left = (ev.clientX - r.left) + "px"; peca.style.top = (ev.clientY - r.top) + "px"; };
+    const soltar = ev => {
+      peca.removeEventListener("pointermove", mover); peca.removeEventListener("pointerup", soltar); peca.removeEventListener("pointercancel", soltar);
+      const lg = qc.querySelector(".xf-qc-logo").getBoundingClientRect(), k = lg.width / 200;
+      const d = Math.hypot(ev.clientX - (lg.left + 112 * k), ev.clientY - (lg.top + 76 * k));
+      if (!moveu || d < 46 * k + 10) encaixar(qc, peca); else { peca.style.transition = "left .3s ease, top .3s ease"; peca.style.left = ""; peca.style.top = ""; }
+    };
+    peca.addEventListener("pointermove", mover); peca.addEventListener("pointerup", soltar); peca.addEventListener("pointercancel", soltar);
+  });
   function desenhar(doTopo) {
     const el = montar(), feed = el.querySelector("#xf-feed"), l = lista();
     el.querySelectorAll("[data-s=xf-modo]").forEach(b => b.setAttribute("aria-pressed", String(!XF.fixo && b.dataset.v === XF.modo)));
@@ -152,8 +185,9 @@
     if (l == null) { feed.innerHTML = `<div class="xf-vazio"><div class="spin"></div></div>`; return; }
     if (!l.length) {
       pararAtual();
-      feed.innerHTML = `<div class="xf-vazio">${I.camera}<b>${XF.modo === "seg" ? "Ninguém que você segue publicou ainda" : "Seja o primeiro"}</b><button class="btn primary" data-s="xf-criar">Criar MyFlash</button></div>`; return;
+      feed.innerHTML = `<div class="xf-vazio">${quebraCabeca()}</div>`; el.classList.add("xf-claro"); document.body.classList.add("cs-xf-claro"); return;
     }
+    el.classList.remove("xf-claro"); document.body.classList.remove("cs-xf-claro");
     /* mantém os itens já desenhados (o vídeo não reinicia); só acrescenta os novos */
     const ja = new Map([...feed.querySelectorAll(".xf-it")].map(n => [n.dataset.id, n]));
     const html = [], ordem = [];
@@ -444,12 +478,31 @@ body.cs-xf .nav button[aria-current="page"]{color:#fff}body.cs-xf .nav button[ar
 body.cs-xf main{visibility:hidden}
 .xf-top{position:absolute;top:0;left:0;right:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:linear-gradient(rgba(0,0,0,.45),transparent);pointer-events:none}
 .xf-top>*{pointer-events:auto}
-.xf-modos{display:flex;gap:18px}.xf-modos[hidden]{display:none}
-.xf-modos button{border:0;background:none;color:rgba(255,255,255,.7);font:inherit;font-weight:800;font-size:1.02rem;padding:4px 0;cursor:pointer;border-bottom:2px solid transparent}
-.xf-modos button[aria-pressed="true"]{color:#fff;border-bottom-color:#fff}
+.xf-modos{display:flex;gap:6px;background:rgba(255,255,255,.14);border-radius:999px;padding:3px}.xf-modos[hidden]{display:none}
+.xf-modos button{border:0;background:none;color:rgba(255,255,255,.75);width:38px;height:32px;border-radius:999px;display:grid;place-items:center;cursor:pointer}
+.xf-modos button svg{width:20px;height:20px}
+.xf-modos button[aria-pressed="true"]{background:#fff;color:#14121F}
+.xf-esp{flex:1}
+.xf-tit{margin:0 2px 0 6px;font-size:1.12rem;font-weight:700;letter-spacing:-.01em;color:#fff;pointer-events:none}
+.xf.xf-claro{background:var(--bg);color:var(--ink)}
+.xf.xf-claro .xf-top{background:none}
+.xf.xf-claro .xf-tit,.xf.xf-claro .xf-tbt{color:var(--ink)}
+.xf.xf-claro .xf-modos{background:var(--surface-2)}.xf.xf-claro .xf-modos button{color:var(--muted)}.xf.xf-claro .xf-modos button[aria-pressed="true"]{background:var(--primary);color:#fff}
+body.cs-xf.cs-xf-claro{background:var(--bg)}body.cs-xf.cs-xf-claro .nav{background:var(--surface);border-top-color:var(--line)}body.cs-xf.cs-xf-claro .nav button{color:var(--muted)}
+body.cs-xf.cs-xf-claro .nav button[aria-current="page"]{color:var(--primary)}body.cs-xf.cs-xf-claro .nav button[aria-current="page"] .ico{background:var(--primary-soft)}
+.xf-qc{position:relative;width:240px;height:330px;margin:0 auto;touch-action:none}
+.xf-qc-logo{position:absolute;left:10px;top:0;width:220px;height:220px;filter:drop-shadow(0 10px 24px rgba(176,38,255,.28))}
+.xf-qc-vaga{fill:rgba(255,255,255,.88);stroke:#fff;stroke-width:2.5;stroke-dasharray:5 4}
+.xf-qc-peca{position:absolute;left:120px;top:282px;width:74px;height:74px;margin:-37px 0 0 -37px;border:0;background:none;padding:0;cursor:grab;touch-action:none;filter:drop-shadow(0 6px 14px rgba(20,18,31,.28));animation:xfQc 1.8s ease-in-out infinite}
+.xf-qc-peca svg{width:100%;height:100%}
+.xf-qc-peca svg path:first-child{fill:url(#xfqg)}.xf-qc-peca svg path:last-child{fill:#fff}
+.xf-qc.ok .xf-qc-peca{animation:none;transform:scale(1.08)}.xf-qc.ok .xf-qc-vaga{opacity:0}
+@keyframes xfQc{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
 .xf-tbt,.xf-x{position:absolute;right:10px;top:calc(6px + env(safe-area-inset-top,0px));width:40px;height:40px;border:0;border-radius:50%;background:rgba(0,0,0,.3);color:#fff;display:grid;place-items:center;cursor:pointer}
 .xf-x{left:10px;right:auto}.xf-x[hidden]{display:none}
 .xf-tbt svg,.xf-x svg{width:22px;height:22px}
+.xf-top .xf-tbt{position:static;width:34px;height:34px;margin-left:6px;background:rgba(0,0,0,.25)}.xf-top .xf-tbt svg{width:19px;height:19px}
+.xf.xf-claro .xf-tbt{display:none}
 .xf-feed{position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none}
 .xf-feed::-webkit-scrollbar{display:none}
 .xf-it{position:relative;height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;background:#000}
@@ -490,8 +543,8 @@ body.cs-xf main{visibility:hidden}
 .xf-criar{position:absolute;right:14px;bottom:auto;top:calc(54px + env(safe-area-inset-top,0px));z-index:3;width:44px;height:44px;border-radius:14px;border:0;background:linear-gradient(135deg,#25F4EE,#FE2C55);color:#fff;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.35)}
 .xf-criar svg{width:24px;height:24px;stroke-width:3}
 .xf.fixo .xf-criar{display:none}
-.xf-vazio{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#fff;text-align:center;padding:20px}
-.xf-vazio svg{width:56px;height:56px;opacity:.8}
+.xf-vazio{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:inherit;text-align:center;padding:20px}
+.xf-vazio>svg{width:56px;height:56px;opacity:.8}
 .xf-art{display:grid;place-items:center;background:radial-gradient(120% 80% at 20% 10%,#7C3AED,transparent 60%),radial-gradient(120% 80% at 90% 90%,#EC4899,transparent 55%),#0b0b12}
 .xf-art-in{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:20px;max-width:360px}
 .xf-art-in small{display:flex;align-items:center;gap:6px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:.72rem;opacity:.9}.xf-art-in small svg{width:14px;height:14px;fill:#FDE047;color:#FDE047}
