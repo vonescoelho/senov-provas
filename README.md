@@ -11,7 +11,7 @@ Dois robôs (GitHub Actions) rodam sozinhos a cada envio para a branch `main`:
 | Robô | O que faz | Onde ver o resultado |
 |---|---|---|
 | **Publicar site (PWA)** | Publica o app em `https://SEU-USUARIO.github.io/senov-provas/` | Aba **Actions** → link no final |
-| **Gerar APK Android** | Cria o arquivo `ChatMil.apk` | Aba **Releases** (lado direito da página do repositório) |
+| **Gerar APK Android** | Cria o arquivo `FlashPapo.apk` | Aba **Releases** (lado direito da página do repositório) |
 
 ## Passo a passo (uma vez só)
 
@@ -27,7 +27,7 @@ Dois robôs (GitHub Actions) rodam sozinhos a cada envio para a branch `main`:
 
 **Como PWA (qualquer celular com navegador):** abra o link do site → menu do navegador → **Adicionar à tela inicial** / **Instalar app**. Abre sem internet depois da primeira vez.
 
-**Como APK (Android e HarmonyOS 2, 3 e 4):** no celular, abra a página do repositório → **Releases** → baixe `ChatMil.apk` → abra o arquivo → permita **instalar apps desconhecidos**. Novas versões instalam por cima, sem perder os dados.
+**Como APK (Android e HarmonyOS 2, 3 e 4):** no celular, abra a página do repositório → **Releases** → baixe `FlashPapo.apk` → abra o arquivo → permita **instalar apps desconhecidos**. Novas versões instalam por cima, sem perder os dados.
 
 > HarmonyOS NEXT (5 ou mais novo) não instala APK. Nesses aparelhos, use a versão PWA pelo navegador.
 
