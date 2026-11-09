@@ -483,7 +483,7 @@ body.cs-xf main{visibility:hidden}
 .xf-modos button svg{width:20px;height:20px}
 .xf-modos button[aria-pressed="true"]{background:#fff;color:#14121F}
 .xf-esp{flex:1}
-.xf-tit{margin:0 2px 0 6px;font-size:1.12rem;font-weight:700;letter-spacing:-.01em;color:#fff;pointer-events:none}
+.xf-tit{margin:0 2px 0 6px;color:#fff;pointer-events:none}
 .xf.xf-claro{background:var(--bg);color:var(--ink)}
 .xf.xf-claro .xf-top{background:none}
 .xf.xf-claro .xf-tit,.xf.xf-claro .xf-tbt{color:var(--ink)}

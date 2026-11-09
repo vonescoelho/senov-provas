@@ -638,7 +638,7 @@
     const verArq = !!SO.verArq && !f;
     const lista = f ? todas : verArq ? arquivadas : todas.filter(c => !cv.arq.includes(c.id));
     const assist = !verArq && ehProf() && (!f || "assistente de provas".includes(f));
-    return `<div class="cs-cab"><div class="cs-marca"><h1>${logoNome()}</h1></div><div class="row" style="gap:6px">
+    return `<div class="cs-cab"><div class="cs-marca"><h1 class="cs-tit">FlashPapo</h1></div><div class="row" style="gap:6px">
         <button class="cs-ico-bt" data-s="novo" aria-label="Contatos e grupos">${K.maisV}</button></div></div>
       ${avisoEmail()}${EXT.avisos.map(f => { try { return f() || ""; } catch (e) { return ""; } }).join("")}
       <label class="cs-busca">${K.busca}<input id="cs-filtro" placeholder="Buscar conversa ou pessoa" value="${esc(SO.filtroChats)}" aria-label="Buscar conversa ou pessoa"></label>
@@ -1694,7 +1694,7 @@
     const icX = { recursos: K.musica, vitrine: K.loja };
     const extra = EXT.provasSub, ativo = SO.provSub && extra.find(x => x.k === SO.provSub);
     const v = ativo ? ativo.view() : S.tab === "banco" ? vBanco() : S.tab === "prova" ? vProva() : S.tab === "escola" ? vEscola() : vConversa();
-    return `<div class="cs-cab"><h1>Provas e aulas</h1></div><div class="cs-sub-ic" role="tablist">${sub.map(([k, n, i]) => `<button data-tab="${k}" data-s="prov-sub" data-v="" aria-pressed="${!ativo && S.tab === k}" aria-label="${n}" title="${n}">${i}</button>`).join("")}${extra.map(x => `<button data-s="prov-sub" data-v="${x.k}" aria-pressed="${!!ativo && ativo.k === x.k}" aria-label="${esc(x.n)}" title="${esc(x.n)}">${icX[x.k] || K.mais}</button>`).join("")}</div>${v}`;
+    return `<div class="cs-cab"><h1>Ensino</h1></div><div class="cs-sub-ic" role="tablist">${sub.map(([k, n, i]) => `<button data-tab="${k}" data-s="prov-sub" data-v="" aria-pressed="${!ativo && S.tab === k}" aria-label="${n}" title="${n}">${i}</button>`).join("")}${extra.map(x => `<button data-s="prov-sub" data-v="${x.k}" aria-pressed="${!!ativo && ativo.k === x.k}" aria-label="${esc(x.n)}" title="${esc(x.n)}">${icX[x.k] || K.mais}</button>`).join("")}</div>${v}`;
   }
   function vTela(t) {
     switch (t.v) {
@@ -1760,7 +1760,7 @@
     const l = [["xflesh", "MyFlash", K.xflesh, 0]];
     if (nn || SO.tab === "notif") l.push(["notif", "Notificações", K.sino, nn]);
     l.push(["conversas", "Conversas", K.chat, nl || 0]);
-    if (ehProf()) l.push(["provas", "Provas", K.prova, 0]);
+    if (ehProf()) l.push(["provas", "Ensino", K.prova, 0]);
     if (ehAdulto() && ehSolteiro()) l.push(["conexoes", "Conexões", K.conexoes, 0]);
     l.push(["perfil", "Perfil", K.user, 0]);
     EXT.tabs.filter(x => !x.se || x.se()).forEach(x => l.splice(Math.min(x.pos, l.length - 1), 0, [x.k, x.n, x.i, 0]));
@@ -2194,8 +2194,8 @@ body.cs-sem-nav main{padding-bottom:40px}
 body.cs-com-compor main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px) + var(--kb,0px))}
 body.cs-chatbg{background-image:radial-gradient(color-mix(in srgb,var(--primary) 11%,transparent) 1.2px,transparent 1.3px);background-size:22px 22px}
 .cs-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
-.cs-cab h1{font-size:1.12rem;font-weight:700;letter-spacing:-.01em;line-height:1.2;margin:0}
-.cs-marca{display:flex;align-items:center;gap:10px}.cs-marca h1{margin:0;line-height:0}
+.cs-cab h1,.xf-tit,h1.cs-pf-usu{font-family:var(--display)!important;font-size:1.15rem!important;font-weight:700!important;letter-spacing:-.01em!important;line-height:1.2!important;margin:0;text-transform:none}
+.cs-marca{display:flex;align-items:center;gap:10px}.cs-marca h1{margin:0}
 .cs-lg{height:30px;width:auto;color:var(--ink);display:block}.cs-marca .cs-lg{height:17px}
 body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padding:6px 16px}body.cs-on .nav button svg{width:26px;height:26px}
 .cs-aparencia{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
@@ -2207,7 +2207,7 @@ body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padd
 .ap-escuro{background:#0C1120}.ap-escuro b{background:#2A3554}
 .ap-auto{background:linear-gradient(135deg,#F2F4F9 50%,#0C1120 50%);border:1px solid #D8DEEA}.ap-auto b{background:linear-gradient(90deg,#C9D1E3 50%,#2A3554 50%)}
 /* ---------- Perfil (contemporâneo) ---------- */
-.cs-pf-usu{font-size:1.12rem!important;font-weight:700}
+.cs-pf-usu{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .cs-pf-pag{gap:16px}
 .cs-pfl{display:flex;flex-direction:column;gap:12px;padding:4px 2px 0}
 .cs-cfg{gap:4px!important}
