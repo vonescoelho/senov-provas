@@ -384,20 +384,22 @@ service cloud.firestore {
       function f() { return get(/databases/$(database)/documents/flashes/$(id)).data; }
       allow read: if logado();
       allow create: if logado() && flashOk();
+      allow update: if logado() && resource.data.dono == eu() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['legenda']) && textoOk('legenda', 200);
       allow delete: if logado() && resource.data.dono == eu();
       match /partes/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
       match /som/{pid} { allow read: if logado(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
-      match /vistos/{uid} { allow create, update: if logado() && uid == eu() && request.resource.data.keys().hasOnly(['em', 'curtiu']); allow read, delete: if logado() && f().dono == eu(); }
+      match /vistos/{uid} { allow create, update: if logado() && uid == eu() && request.resource.data.keys().hasOnly(['em', 'curtiu', 'emo']) && textoOk('emo', 16); allow read, delete: if logado() && f().dono == eu(); }
     }
     match /flashesPriv/{id} {
       function f() { return get(/databases/$(database)/documents/flashesPriv/$(id)).data; }
       function pode() { return f().dono == eu() || eu() in f().para; }
       allow read: if logado() && (resource.data.dono == eu() || eu() in resource.data.para);
       allow create: if logado() && flashOk() && request.resource.data.para is list && request.resource.data.para.size() <= 400;
+      allow update: if logado() && resource.data.dono == eu() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['legenda']) && textoOk('legenda', 200);
       allow delete: if logado() && resource.data.dono == eu();
       match /partes/{pid} { allow read: if logado() && pode(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
       match /som/{pid} { allow read: if logado() && pode(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
-      match /vistos/{uid} { allow create, update: if logado() && uid == eu() && pode() && request.resource.data.keys().hasOnly(['em', 'curtiu']); allow read, delete: if logado() && f().dono == eu(); }
+      match /vistos/{uid} { allow create, update: if logado() && uid == eu() && pode() && request.resource.data.keys().hasOnly(['em', 'curtiu', 'emo']) && textoOk('emo', 16); allow read, delete: if logado() && f().dono == eu(); }
     }
     // Destaques do perfil (até 5, controlado pelo app)
     match /destaques/{id} {
