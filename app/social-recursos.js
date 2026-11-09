@@ -109,8 +109,23 @@
       return { para, lat: +lat.toFixed(6), lng: +lng.toFixed(6) };
     } catch (e) { return null; }
   }
-  { const p = lerParametros(location.href); if (p) { try { sessionStorage.setItem("cs.sos.pend", JSON.stringify(p)); history.replaceState(null, "", location.pathname); } catch (e) { } } }
+  /* no site: tenta abrir o app instalado; se não abrir em ~1,5 s, segue na web */
+  const nativo = () => { const c = window.Capacitor; return !!(c && c.isNativePlatform && c.isNativePlatform()); };
+  let esperaApp = 0, foiProApp = false;
+  function tentarApp(caminho, q) {
+    if (nativo() || !/android/i.test(navigator.userAgent || "")) return false;
+    try { if (new URLSearchParams(location.search).get("web")) return false; } catch (e) { }
+    const volta = location.origin + location.pathname + "?" + q + "&web=1";
+    esperaApp = Date.now() + 1600;
+    document.addEventListener("visibilitychange", () => { if (document.hidden && Date.now() < esperaApp) foiProApp = true; });
+    window.addEventListener("pagehide", () => { if (Date.now() < esperaApp) foiProApp = true; });
+    try { location.href = "intent://" + caminho + "?" + q + "#Intent;scheme=flashpapo;package=br.com.senov.provas;S.browser_fallback_url=" + encodeURIComponent(volta) + ";end"; } catch (e) { esperaApp = 0; return false; }
+    return true;
+  }
+  { const p = lerParametros(location.href); if (p) { try { sessionStorage.setItem("cs.sos.pend", JSON.stringify(p)); history.replaceState(null, "", location.pathname); } catch (e) { } if (!p.erro) tentarApp("sos", "para=" + encodeURIComponent("@" + p.para) + "&lat=" + p.lat + "&lng=" + p.lng); } }
   async function processarLinkSos() {
+    if (esperaApp && Date.now() < esperaApp) { setTimeout(processarLinkSos, esperaApp - Date.now() + 50); return; }
+    if (foiProApp) { try { sessionStorage.removeItem("cs.sos.pend"); } catch (e) { } return; }
     let p = null; try { p = JSON.parse(sessionStorage.getItem("cs.sos.pend") || "null"); } catch (e) { }
     if (!p || !eu()) return; try { sessionStorage.removeItem("cs.sos.pend"); } catch (e) { }
     if (p.erro) return toast("Link de SOS incompleto.");
@@ -128,14 +143,68 @@
     } catch (e) { console.warn(e); toast(msgErro(e)); }
   }
   /* link do QR code do perfil: ?u=usuario → abre o perfil (depois de entrar ou criar a conta) */
-  try { const q = new URLSearchParams(location.search).get("u"); if (q) { sessionStorage.setItem("cs.perfil.pend", q.replace(/^@/, "").toLowerCase()); history.replaceState(null, "", location.pathname); } } catch (e) { }
+  try { const q = new URLSearchParams(location.search).get("u"); if (q) { const nm = q.replace(/^@/, "").toLowerCase(); sessionStorage.setItem("cs.perfil.pend", nm); history.replaceState(null, "", location.pathname); tentarApp("perfil", "u=" + encodeURIComponent(nm)); } } catch (e) { }
+  function abrirPerfilPend() {
+    if (esperaApp && Date.now() < esperaApp) return setTimeout(abrirPerfilPend, esperaApp - Date.now() + 50);
+    let nome = ""; try { nome = sessionStorage.getItem("cs.perfil.pend") || ""; sessionStorage.removeItem("cs.perfil.pend"); } catch (e) { }
+    if (!nome || foiProApp || !eu()) return;
+    fb.getDoc(D("usernames", nome)).then(s => { if (s.exists()) A.abrirTela({ v: "perfil", id: s.data().uid }); }, () => { });
+  }
   X.aoTrocarUsuario.push(u => {
-    if (!u) return; let nome = ""; try { nome = sessionStorage.getItem("cs.perfil.pend") || ""; } catch (e) { } if (!nome) return;
-    setTimeout(async () => {
-      try { sessionStorage.removeItem("cs.perfil.pend"); const s = await fb.getDoc(D("usernames", nome)); if (s.exists()) A.abrirTela({ v: "perfil", id: s.data().uid }); } catch (e) { }
-    }, 1500);
+    if (u) setTimeout(abrirPerfilPend, 1500);
   });
-  window.CS_SOS = { link: u => { const p = lerParametros(u); if (!p) return; try { sessionStorage.setItem("cs.sos.pend", JSON.stringify(p)); } catch (e) { } processarLinkSos(); } };
+  window.CS_SOS = { link: u => {
+    if (/^flashpapo:\/\/perfil/i.test(u)) { try { const nm = new URL(u).searchParams.get("u"); if (nm) { sessionStorage.setItem("cs.perfil.pend", nm.replace(/^@/, "").toLowerCase()); abrirPerfilPend(); } } catch (e) { } return; }
+    const p = lerParametros(u); if (!p) return; try { sessionStorage.setItem("cs.sos.pend", JSON.stringify(p)); } catch (e) { } processarLinkSos(); } };
+
+  /* ================= Papel de parede (conversas em Destaque) — fica só neste aparelho ================= */
+  const FUNDOS = [
+    ["f1", "linear-gradient(160deg,#fde2e4,#e2ece9 60%,#dfe7fd)"], ["f2", "linear-gradient(160deg,#c9f2e9,#b8d8f8)"],
+    ["f3", "linear-gradient(160deg,#ffe8c2,#ffc8dd)"], ["f4", "linear-gradient(160deg,#e9d5ff,#c7d2fe 55%,#bae6fd)"],
+    ["f5", "linear-gradient(160deg,#0f172a,#312e81)"], ["f6", "linear-gradient(160deg,#052e2b,#134e4a 60%,#1e3a8a)"],
+    ["f7", "radial-gradient(circle at 20% 20%,#fef9c3 0,transparent 40%),radial-gradient(circle at 80% 70%,#fbcfe8 0,transparent 45%),#f1f5f9"],
+    ["f8", "radial-gradient(circle at 25% 25%,rgba(124,58,237,.55) 0,transparent 45%),radial-gradient(circle at 75% 75%,rgba(219,39,119,.5) 0,transparent 45%),#111827"]
+  ];
+  const chaveFundo = () => "cs.fundos." + eu();
+  const fundoDe = chatId => (lerLS(chaveFundo(), {}) || {})[chatId] || "";
+  function cssFundo(v) {
+    if (!v) return "";
+    if (/^data:image\/(jpeg|webp|png);base64,/.test(v)) return `background:url('${v}') center/cover no-repeat`;
+    const f = FUNDOS.find(x => x[0] === v); return f ? `background:${f[1]}` : "";
+  }
+  window.CS_FUNDO = {
+    html: chatId => { const c = cssFundo(fundoDe(chatId)); return c ? `<div class="cs-fundo-chat" style="${c}"></div>` : ""; },
+    tem: chatId => !!fundoDe(chatId)
+  };
+  function gravarFundo(chatId, v) {
+    const m = lerLS(chaveFundo(), {}) || {};
+    if (v) m[chatId] = v; else delete m[chatId];
+    const fotos = Object.keys(m).filter(k => /^data:/.test(m[k])); if (fotos.length > 6) delete m[fotos[0]];
+    try { localStorage.setItem(chaveFundo(), JSON.stringify(m)); } catch (e) { toast("Sem espaço para a foto."); return false; }
+    return true;
+  }
+  X.acoes["fundo-cfg"] = el => {
+    const id = el.dataset.id, atual = fundoDe(id);
+    window.abrirSheet(`<div class="sheet-h"><h2>Papel de parede</h2></div>
+      <div class="cs-fundos">${FUNDOS.map(([k, v]) => `<button data-s="fundo-ok" data-id="${esc(id)}" data-v="${k}" aria-pressed="${atual === k}" style="background:${v}" aria-label="Fundo ${k.slice(1)}"></button>`).join("")}
+        <button class="cs-fundo-gal" data-s="fundo-gal" data-id="${esc(id)}" aria-label="Da galeria" aria-pressed="${/^data:/.test(atual)}" ${/^data:/.test(atual) ? `style="background:url('${atual}') center/cover"` : ""}>${/^data:/.test(atual) ? "" : I.img}</button></div>
+      ${atual ? `<div class="cs-menu"><button data-s="fundo-ok" data-id="${esc(id)}" data-v="">${I.x}<span><b>Sem papel de parede</b></span></button></div>` : ""}`);
+  };
+  X.acoes["fundo-ok"] = el => { if (gravarFundo(el.dataset.id, el.dataset.v)) { window.fecharSheet(); pintar(); } };
+  X.acoes["fundo-gal"] = el => {
+    const id = el.dataset.id, inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
+    inp.onchange = async () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      try {
+        const bm = await createImageBitmap(f), lado = 1080, esc_ = Math.min(1, lado / Math.max(bm.width, bm.height));
+        const cv = document.createElement("canvas"); cv.width = Math.round(bm.width * esc_); cv.height = Math.round(bm.height * esc_);
+        const cx = cv.getContext("2d"); cx.imageSmoothingQuality = "high"; cx.drawImage(bm, 0, 0, cv.width, cv.height);
+        let u = cv.toDataURL("image/webp", 0.72); if (!/^data:image\/webp/.test(u)) u = cv.toDataURL("image/jpeg", 0.75);
+        if (gravarFundo(id, u)) { window.fecharSheet(); pintar(); }
+      } catch (e) { console.warn(e); toast("Não deu para usar esta foto."); }
+    };
+    inp.click();
+  };
 
   /* ================= Figurinhas próprias ================= */
   const FG = { lista: lerLS("cs.figc", []), uid: "" };
@@ -240,9 +309,9 @@
   /* ================= IA grátis (chave do Gemini) — fácil de achar nas Configurações ================= */
   const chaveIA = () => { try { return (JSON.parse(localStorage.getItem("senov.ia") || "null") || {}).gemini || ""; } catch (e) { return ""; } };
   X.configExtra.push(() => `<h2 class="cs-sec">Inteligência artificial</h2><div class="cs-menu card flat"><button data-s="ia-chave"><span class="cs-lic">${I.ia}</span><span><b>IA grátis (Gemini)</b></span><span class="pill ${chaveIA() || window.CS_IA_GEMINI ? "d1" : ""}">${chaveIA() || window.CS_IA_GEMINI ? "Ligada" : "Desligada"}</span></button></div>`);
-  X.acoes["ia-chave"] = () => window.abrirSheet(`<div class="sheet-h"><h2>IA grátis (Gemini)</h2></div>
+  X.acoes["ia-chave"] = () => window.abrirSheet(`<div class="sheet-h cs-ia-h"><h2>IA grátis (Gemini)</h2><button type="button" class="cs-ajuda" data-s="ia-criar" aria-label="Como conseguir a chave">?</button></div>
     <form class="stack" id="ia-chave-f"><input class="in" id="ia-chave-in" type="password" autocomplete="off" placeholder="${chaveIA() ? "Chave salva · cole outra para trocar" : "Cole a chave (AIza…)"}">
-    <div class="row"><button class="btn primary" style="flex:1">Salvar</button><button type="button" class="btn" data-s="ia-criar" style="flex:1">Criar chave grátis</button></div>
+    <button class="btn primary">Salvar</button>
     ${chaveIA() ? `<button type="button" class="btn ghost" data-s="ia-tirar">Remover</button>` : ""}</form>`);
   X.acoes["ia-criar"] = () => abrirLink("https://aistudio.google.com/apikey");
   X.acoes["ia-tirar"] = () => { try { const c = JSON.parse(localStorage.getItem("senov.ia") || "null") || {}; delete c.gemini; localStorage.setItem("senov.ia", JSON.stringify(c)); } catch (e) { } window.fecharSheet(); toast("Removida."); pintar(); };
@@ -275,6 +344,13 @@
 .cs-loc-sos{display:flex;align-items:center;gap:6px;margin:2px 4px 6px;padding:6px 10px;border-radius:10px;background:#E5484D;color:#fff;font-size:.85rem}
 .cs-loc-sos b{font-size:.95rem;letter-spacing:.06em}.cs-loc-sos span{margin-left:auto;opacity:.9;white-space:nowrap}.cs-loc-sos svg{width:18px;height:18px}
 .cs-figc{display:block;width:128px;height:128px;object-fit:contain}
+.cs-ia-h{display:flex;align-items:center;gap:8px}.cs-ajuda{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);background:none;color:var(--muted);font:700 .8rem/1 inherit;cursor:pointer;display:grid;place-items:center;padding:0}
+.cs-fundo-chat{position:fixed;inset:0;z-index:0;pointer-events:none}
+body.cs-chatbg .cs-msgs{position:relative;z-index:1}
+.cs-fundos{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 2px 12px}
+.cs-fundos button{aspect-ratio:9/14;border-radius:16px;border:2px solid transparent;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.cs-fundos button[aria-pressed=true]{border-color:var(--primary);box-shadow:0 0 0 3px color-mix(in srgb,var(--primary) 25%,transparent)}
+.cs-fundo-gal{display:grid;place-items:center;background:var(--surface-2,rgba(127,127,127,.12));color:var(--muted)}.cs-fundo-gal svg{width:28px;height:28px}
 .cs-fig-ver{display:grid;place-items:center;padding:6px 0}.cs-fig-ver img,.cs-fig-ver svg{width:160px;height:160px}
 .cs-sos-l{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
 .cs-sos-l small{color:var(--muted)}

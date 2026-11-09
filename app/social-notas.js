@@ -77,7 +77,7 @@
     return `<article class="cs-nt ${n.feito ? "feito" : ""}" style="--c:${c[2]}">
       <button class="cs-nt-ok ${n.feito ? "on" : ""}" data-s="notas-feito" data-id="${esc(n.id)}" aria-label="${n.feito ? "Marcar como pendente" : "Marcar como feito"}">${I.check}</button>
       <div class="cs-nt-c" data-s="notas-menu" data-id="${esc(n.id)}" role="button" tabindex="0">${corpo}
-        <div class="cs-nt-m"><span class="cs-nt-cat">${esc(c[1])}</span><span class="cs-nt-pri" style="--p:${p[2]}">${I.flag}${esc(p[1])}</span>${n.fixada ? `<span class="cs-nt-fx">${I.pin}</span>` : ""}<small>${quando(n)}</small></div></div></article>`;
+        <div class="cs-nt-m"><span class="cs-nt-cat" title="${esc(c[1])}"><i></i>${esc(c[1])}</span>${(n.prioridade || 2) === 1 && !n.feito ? `<span class="cs-nt-pri" style="--p:${p[2]}">${I.flag}</span>` : ""}${n.fixada ? `<span class="cs-nt-fx">${I.pin}</span>` : ""}<small>${quando(n)}</small></div></div></article>`;
   }
   X.views["notas"] = () => {
     const l = visiveis(), total = (NT.lista || []).length, cont = k => (NT.lista || []).filter(n => k === "alta" ? n.prioridade === 1 && !n.feito : n.cat === k).length;
@@ -89,15 +89,16 @@
       ${NT.buscando ? `<div class="cs-nt-busca"><input class="in" id="nt-q" placeholder="Buscar nas anotações" value="${esc(NT.busca)}" aria-label="Buscar nas anotações"></div>` : ""}
       <div class="cs-nt-filtros">${filtros.map(([k, n, q]) => `<button data-s="notas-filtro" data-v="${k}" aria-pressed="${NT.filtro === k}" ${k !== "todas" && k !== "alta" ? `style="--c:${cat(k)[2]}"` : ""}>${k !== "todas" && k !== "alta" ? "<i></i>" : ""}${esc(n)}${q ? ` <small>${q}</small>` : ""}</button>`).join("")}</div>
       <div class="cs-nt-lista" id="cs-nt-lista">${NT.lista === null ? `<div class="cs-carr"><div class="spin"></div></div>`
-        : l.length ? l.map(htmlNota).join("") : `<div class="empty">${I.nota}<b>${total ? "Nada neste filtro" : "Suas anotações"}</b><span class="small muted">${total ? "Escolha outro filtro." : "Escreva abaixo, cole um link ou anexe uma foto ou arquivo. Só você vê."}</span></div>`}</div>
+        : l.length ? l.map(htmlNota).join("") : `<div class="empty">${I.nota}<b>${total ? "Nada neste filtro" : "Suas anotações"}</b></div>`}</div>
       <form class="cs-compor cs-nt-comp" id="nt-f">
-        <div class="cs-nt-sel">
+        <div class="cs-nt-sel" ${NT.opcoes ? "" : "hidden"}>
           ${CATS.map(c => `<button type="button" class="cs-nt-chip" data-s="notas-cat" data-v="${c[0]}" aria-pressed="${NT.cat === c[0]}" style="--c:${c[2]}"><i></i>${c[1]}</button>`).join("")}
           <span class="cs-nt-sep"></span>
           ${PRIS.map(p => `<button type="button" class="cs-nt-chip pri" data-s="notas-pri" data-v="${p[0]}" aria-pressed="${NT.pri === p[0]}" style="--c:${p[2]}">${I.flag}${p[1]}</button>`).join("")}
         </div>
         ${a ? `<div class="cs-nt-anx">${a.url ? `<img src="${a.url}" alt="">` : I.clip}<span>${esc(a.nome)}${NT.enviando ? ` · ${Math.round(NT.prog * 100)}%` : ""}</span><button type="button" data-s="notas-anx-tirar" aria-label="Tirar anexo">${K.x}</button></div>` : ""}
         <div class="cs-nt-linha">
+          <button type="button" class="cs-ico-bt cs-nt-tag ${NT.opcoes ? "on" : ""}" data-s="notas-opcoes" style="--c:${cat(NT.cat)[2]}" aria-label="Categoria e prioridade" aria-expanded="${!!NT.opcoes}"><i></i>${NT.pri === 1 ? I.flag : ""}</button>
           <button type="button" class="cs-ico-bt" data-s="notas-anexar" aria-label="Anexar foto ou arquivo">${I.clip}</button>
           <textarea id="nt-tx" class="in" rows="1" maxlength="5000" placeholder="Escreva uma anotação" aria-label="Nova anotação">${esc(NT.rascunho || "")}</textarea>
           <button class="btn primary cs-env" aria-label="Guardar" ${NT.enviando ? "disabled" : ""}>${I.env}</button>
@@ -167,8 +168,9 @@
     "notas-abrir": () => { try { localStorage.setItem("cs.notas.em." + eu(), String(Date.now())); } catch (e) { } abrirTela({ v: "notas" }); },
     "notas-buscar": () => { NT.buscando = !NT.buscando; if (!NT.buscando) NT.busca = ""; pintar(); setTimeout(() => { const q = $("#nt-q"); if (q) q.focus(); }, 60); },
     "notas-filtro": el => { NT.filtro = el.dataset.v; pintar(); },
-    "notas-cat": el => { NT.cat = el.dataset.v; document.querySelectorAll("#nt-f [data-s=notas-cat]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === NT.cat))); },
-    "notas-pri": el => { NT.pri = +el.dataset.v; document.querySelectorAll("#nt-f [data-s=notas-pri]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.v === NT.pri))); },
+    "notas-opcoes": () => { const t = $("#nt-tx"); if (t) NT.rascunho = t.value; NT.opcoes = !NT.opcoes; pintar(); },
+    "notas-cat": el => { NT.cat = el.dataset.v; document.querySelectorAll("#nt-f [data-s=notas-cat]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === NT.cat))); const tg = $(".cs-nt-tag"); if (tg) tg.style.setProperty("--c", cat(NT.cat)[2]); },
+    "notas-pri": el => { NT.pri = +el.dataset.v; document.querySelectorAll("#nt-f [data-s=notas-pri]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.v === NT.pri))); const tg = $(".cs-nt-tag"); if (tg) tg.innerHTML = "<i></i>" + (NT.pri === 1 ? I.flag : ""); },
     "notas-ed-cat": el => { NT.ed.cat = el.dataset.v; document.querySelectorAll("#nt-ed [data-s=notas-ed-cat]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === NT.ed.cat))); },
     "notas-ed-pri": el => { NT.ed.pri = +el.dataset.v; document.querySelectorAll("#nt-ed [data-s=notas-ed-pri]").forEach(b => b.setAttribute("aria-pressed", String(+b.dataset.v === NT.ed.pri))); },
     "notas-anexar": () => {
@@ -219,7 +221,10 @@
 .cs-nt-link b,.cs-nt-link small,.cs-nt-arq b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cs-nt-link small,.cs-nt-arq small{color:var(--muted)}
 .cs-nt-foto{border:0;padding:0;background:none;border-radius:12px;overflow:hidden;max-width:240px;cursor:pointer}.cs-nt-foto img{display:block;width:100%;height:auto}
 .cs-nt-m{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.76rem}
-.cs-nt-cat{color:var(--c);font-weight:700}.cs-nt-pri{display:inline-flex;align-items:center;gap:3px;color:var(--p);font-weight:700}.cs-nt-pri svg,.cs-nt-fx svg{width:13px;height:13px}
+.cs-nt-cat{color:var(--muted);font-weight:500;display:inline-flex;align-items:center;gap:5px}.cs-nt-cat i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.cs-nt-tag{position:relative}.cs-nt-tag i{width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 22%,transparent)}.cs-nt-tag svg{position:absolute;right:3px;top:3px;width:11px;height:11px;color:#DC2626}.cs-nt-tag.on{background:color-mix(in srgb,var(--c) 14%,transparent)}
+.cs-nt-sel[hidden]{display:none!important}
+.cs-nt-lista .empty{background:none;border:0;box-shadow:none;padding:40px 0;gap:8px;color:var(--muted)}.cs-nt-lista .empty svg{width:46px;height:46px;opacity:.45}.cs-nt-lista .empty b{font-weight:600;font-size:.95rem}.cs-nt-pri{display:inline-flex;align-items:center;gap:3px;color:var(--p);font-weight:700}.cs-nt-pri svg,.cs-nt-fx svg{width:13px;height:13px}
 .cs-nt-fx{color:var(--muted);display:inline-flex}.cs-nt-m small{margin-left:auto;color:var(--muted)}
 .cs-nt-comp{flex-direction:column;align-items:stretch;gap:6px}
 .cs-nt-sel{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0}.cs-nt-sel::-webkit-scrollbar{display:none}

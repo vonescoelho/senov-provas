@@ -20,6 +20,8 @@
     pessoas: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2a5 5 0 0 1 6 4.8"/>'),
     som: ic('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>'),
     semSom: ic('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6M16 9l6 6"/>'),
+    lapis: ic('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>'),
+    emoji: ic('<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/>'),
     coracao: ic('<path d="M12 20s-7.5-4.6-9.3-9.2A5 5 0 0 1 12 6a5 5 0 0 1 9.3 4.8C19.5 15.4 12 20 12 20z"/>')
   });
   const DIA = 24 * 3600e3, MAXDEST = 5, MAXDUR = 30, PARTE = 700 * 1024;
@@ -233,14 +235,14 @@
         <button class="cs-vbt" data-s="flv-fechar" aria-label="Fechar">${I.fechar}</button></div>
       <div class="cs-flv-palco"><div class="spin"></div></div>
       ${f.legenda ? `<p class="cs-flv-leg">${esc(f.legenda)}</p>` : ""}
-      <div class="cs-flv-pe">${meu ? `${s.tipo === "flash" ? `<button class="cs-flv-bt" data-s="flv-vistos">${I.olho}<span id="flv-nv">Visto por…</span><span class="cs-flv-nc" id="flv-nc" hidden>${I.coracao}<b></b></span></button><button class="cs-flv-bt" data-s="flv-destacar">${I.estrela}<span>Destacar</span></button>` : ""}
-          <button class="cs-flv-bt" data-s="flv-apagar">${I.lixo}<span>${s.tipo === "destaque" ? "Remover" : "Apagar"}</span></button>`
-        : s.tipo === "flash" ? `<button class="cs-flv-bt cs-flv-cur ${curtiLocal(f.id) ? "on" : ""}" data-s="flv-curtir" aria-pressed="${curtiLocal(f.id)}" aria-label="Curtir">${I.coracao}</button><input class="in cs-flv-resp" id="flv-resp" maxlength="500" placeholder="Responder a ${esc((p.nome || "").split(" ")[0])}…" aria-label="Responder"><button class="cs-flv-bt env" data-s="flv-responder" aria-label="Enviar resposta">${I.enviar}</button>` : ""}</div>`;
+      <div class="cs-flv-pe">${meu ? `${s.tipo === "flash" ? `<button class="cs-flv-bt" data-s="flv-vistos">${I.olho}<span id="flv-nv"></span><span class="cs-flv-nc" id="flv-nc" hidden>${I.coracao}<b></b></span></button><button class="cs-flv-bt" data-s="flv-destacar" aria-label="Destacar">${I.estrela}</button><button class="cs-flv-bt" data-s="flv-editar" aria-label="Editar">${I.lapis}</button>` : ""}
+          <button class="cs-flv-bt" data-s="flv-apagar" aria-label="${s.tipo === "destaque" ? "Remover" : "Apagar"}">${I.lixo}</button>`
+        : s.tipo === "flash" ? `<button class="cs-flv-bt cs-flv-cur ${curtiLocal(f.id) ? "on" : ""}" data-s="flv-curtir" aria-pressed="${curtiLocal(f.id)}" aria-label="Curtir">${I.coracao}</button><button class="cs-flv-bt cs-flv-emo ${emoLocal(f.id) ? "on" : ""}" data-s="flv-emo" aria-label="Reagir">${emoLocal(f.id) || I.emoji}</button><input class="in cs-flv-resp" id="flv-resp" maxlength="500" placeholder="Responder a ${esc((p.nome || "").split(" ")[0])}…" aria-label="Responder"><button class="cs-flv-bt env" data-s="flv-responder" aria-label="Enviar resposta">${I.enviar}</button>` : ""}</div>`;
     if (meu && s.tipo === "flash") fb.getDocs(C(f.col, f.id, "vistos")).then(q => {
       if (itemAtual() !== f) return;
-      const e = $("#flv-nv"), c = $("#flv-nc"), n = q.docs.filter(d => d.data().curtiu).length;
-      if (e) e.textContent = `Visto por ${q.size}`;
-      if (c && n) { c.hidden = false; c.querySelector("b").textContent = n; }
+      const e = $("#flv-nv"), c = $("#flv-nc"), n = q.docs.filter(d => d.data().curtiu).length, em = q.docs.map(d => d.data().emo).filter(Boolean);
+      if (e) e.textContent = `${q.size}`;
+      if (c && (n || em.length)) { c.hidden = false; c.innerHTML = (n ? `${I.coracao}<b>${n}</b>` : "") + (em.length ? `<i class="cs-flv-emos">${[...new Set(em)].slice(0, 3).join("")}</i><b>${em.length}</b>` : ""); }
     }).catch(() => { });
     const meuItem = f;
     try {
@@ -352,16 +354,51 @@
     const f = itemAtual(); if (!f) return; pausar(true);
     try {
       const s = await fb.getDocs(C(f.col, f.id, "vistos"));
-      const l = s.docs.map(d => ({ u: d.id, ...d.data() })).sort((a, b) => (b.curtiu ? 1 : 0) - (a.curtiu ? 1 : 0) || A.ms(b.em) - A.ms(a.em));
-      const nc = l.filter(x => x.curtiu).length;
-      window.abrirSheet(`<div class="sheet-h"><h2>Visto por ${l.length}${nc ? ` · <span class="cs-flv-nc on">${I.coracao}<b>${nc}</b></span>` : ""}</h2></div>
-        ${l.length ? `<div class="cs-menu">${l.map(x => { const p = P(x.u); return `<button data-s="ver-perfil" data-id="${esc(x.u)}">${av(p, 40, x.u)}<span><b>${esc(p.nome)}</b><small>${x.curtiu ? "Curtiu · " : ""}${x.em ? haQuanto(A.ms(x.em)) : ""}</small></span>${x.curtiu ? `<i class="cs-flv-cur-i">${I.coracao}</i>` : ""}</button>`; }).join("")}</div>` : `<p class="muted">Ninguém viu ainda.</p>`}`);
+      const l = s.docs.map(d => ({ u: d.id, ...d.data() })).sort((a, b) => ((b.curtiu || b.emo) ? 1 : 0) - ((a.curtiu || a.emo) ? 1 : 0) || A.ms(b.em) - A.ms(a.em));
+      const nc = l.filter(x => x.curtiu).length, ne = l.filter(x => x.emo).length;
+      window.abrirSheet(`<div class="sheet-h"><h2>${I.olho} ${l.length}${nc ? ` <span class="cs-flv-nc on">${I.coracao}<b>${nc}</b></span>` : ""}${ne ? ` <span class="cs-flv-nc on">${I.emoji}<b>${ne}</b></span>` : ""}</h2></div>
+        ${l.length ? `<div class="cs-menu">${l.map(x => { const p = P(x.u); return `<button data-s="ver-perfil" data-id="${esc(x.u)}">${av(p, 40, x.u)}<span><b>${esc(p.nome)}</b><small>${x.em ? haQuanto(A.ms(x.em)) : ""}</small></span>${x.emo ? `<i class="cs-flv-emo-i">${esc(x.emo)}</i>` : ""}${x.curtiu ? `<i class="cs-flv-cur-i">${I.coracao}</i>` : ""}</button>`; }).join("")}</div>` : `<p class="muted cs-flv-ninguem">${I.olho} 0</p>`}`);
     } catch (e) { toast(msgErro(e)); }
+  };
+  /* reagir com emoji (quem vê); o dono vê quem mandou */
+  const EMOS = ["😍", "😂", "😮", "😢", "🔥", "👏"];
+  const emoLocal = id => (lerLS("cs.fle." + eu(), {})[id] || "");
+  X.acoes["flv-emo"] = el => {
+    const pe = el.closest(".cs-flv-pe"); if (!pe) return;
+    const ja = VW.el.querySelector(".cs-flv-emos-bar"); if (ja) { ja.remove(); pausar(false); return; }
+    pausar(true);
+    pe.insertAdjacentHTML("beforebegin", `<div class="cs-flv-emos-bar">${EMOS.map(e => `<button data-s="flv-emo-ok" data-v="${e}" class="${emoLocal((itemAtual() || {}).id) === e ? "on" : ""}">${e}</button>`).join("")}</div>`);
+  };
+  X.acoes["flv-emo-ok"] = async el => {
+    const f = itemAtual(); if (!f || f.dono === eu()) return;
+    const m = lerLS("cs.fle." + eu(), {}), v = m[f.id] === el.dataset.v ? "" : el.dataset.v;
+    if (v) m[f.id] = v; else delete m[f.id];
+    const ks = Object.keys(m); if (ks.length > 400) ks.slice(0, ks.length - 400).forEach(k => delete m[k]);
+    gravarLS("cs.fle." + eu(), m);
+    const bar = VW.el.querySelector(".cs-flv-emos-bar"); if (bar) bar.remove();
+    const b = VW.el.querySelector("[data-s=flv-emo]"); if (b) { b.innerHTML = v || I.emoji; b.classList.toggle("on", !!v); }
+    if (v) { const voa = document.createElement("div"); voa.className = "cs-flv-voa"; voa.textContent = v; VW.el.appendChild(voa); setTimeout(() => voa.remove(), 1200); try { navigator.vibrate && navigator.vibrate(15); } catch (e) { } }
+    pausar(false);
+    try { await fb.setDoc(D(f.col, f.id, "vistos", eu()), { em: TS(), emo: v || null }, { merge: true }); } catch (e) { console.warn(e); }
+  };
+  /* editar a legenda depois de postar (só o dono) */
+  X.acoes["flv-editar"] = () => {
+    const f = itemAtual(); if (!f) return; pausar(true);
+    window.abrirSheet(`<div class="sheet-h"><h2>Editar</h2></div><textarea class="in" id="flv-ed-leg" maxlength="200" rows="3" placeholder="Legenda">${esc(f.legenda || "")}</textarea>
+      <div class="row" style="margin-top:10px"><button class="btn" data-s="fechar" style="flex:1">Cancelar</button><button class="btn primary" data-s="flv-editar-ok" style="flex:1">Salvar</button></div>`);
+    setTimeout(() => { const t = $("#flv-ed-leg"); if (t) t.focus(); }, 80);
+  };
+  X.acoes["flv-editar-ok"] = async () => {
+    const f = itemAtual(), t = $("#flv-ed-leg"); if (!f || !t) return;
+    const leg = t.value.trim().slice(0, 200);
+    if (leg && ofensivo(leg)) return toast("Tem palavras não permitidas.");
+    try { await fb.updateDoc(D(f.col, f.id), { legenda: leg }); f.legenda = leg; window.fecharSheet(); mostrarItem(); toast("Salvo."); }
+    catch (e) { console.warn(e); toast(msgErro(e)); }
   };
   X.acoes["flv-apagar"] = async () => {
     const f = itemAtual(), s = VW.s; if (!f) return; pausar(true);
     window.abrirSheet(`<div class="sheet-h"><h2>${s.tipo === "destaque" ? "Remover este destaque?" : "Apagar este Flash?"}</h2></div>
-      <button class="btn perigo cs-grande" data-s="flv-apagar-ok">${I.lixo} ${s.tipo === "destaque" ? "Remover" : "Apagar"}</button><button class="btn ghost" data-s="fechar">Cancelar</button>`);
+      <div class="row"><button class="btn" data-s="fechar" style="flex:1">Cancelar</button><button class="btn cs-perigo-f" data-s="flv-apagar-ok" style="flex:1">${s.tipo === "destaque" ? "Remover" : "Apagar"}</button></div>`);
   };
   X.acoes["flv-apagar-ok"] = async () => {
     window.fecharSheet(); const f = itemAtual(), s = VW.s; if (!f) return;
@@ -785,7 +822,7 @@
     <span class="seg cs-seg-mini"><button data-s="priv-flash" data-v="todos" aria-pressed="${(p.privFlash || "todos") === "todos"}">Todos</button><button data-s="priv-flash" data-v="seguindo" aria-pressed="${p.privFlash === "seguindo"}">Só quem eu sigo</button></span></span></div>`);
   X.acoes["priv-flash"] = async el => { try { await fb.updateDoc(D("users", eu()), { privFlash: el.dataset.v }); } catch (e) { toast(msgErro(e)); } };
 
-  X.flash = { baixar, apagarTudo, abrirCriador, subirPartes };
+  X.flash = { baixar, apagarTudo, abrirCriador, subirPartes, abrirVisor };
   X.criarXFlesh = m => abrirCriador("xflesh", m || null);
   X.criarFlash = () => abrirCriador("flash");
 
@@ -856,6 +893,14 @@
 .cs-flv-cur.pulo svg{animation:flpulo .35s ease}
 @keyframes flpulo{50%{transform:scale(1.35)}}
 .cs-flv-nc{display:inline-flex;align-items:center;gap:3px;margin-left:8px;color:#ff3b6b}.cs-flv-nc svg{width:16px;height:16px;fill:currentColor}
+.cs-flv-emo{padding:8px 11px;flex:none;font-size:1.3rem;line-height:1}.cs-flv-emo svg{width:24px;height:24px}.cs-flv-emo.on{background:rgba(255,255,255,.24)}
+.cs-flv-emos-bar{display:flex;justify-content:center;gap:6px;padding:6px 10px;margin:0 10px;border-radius:99px;background:rgba(20,20,28,.55);backdrop-filter:blur(14px);animation:flsobe .18s ease}
+.cs-flv-emos-bar button{border:0;background:none;font-size:1.75rem;line-height:1;padding:6px;border-radius:50%;cursor:pointer;transition:transform .12s}.cs-flv-emos-bar button:active{transform:scale(1.25)}.cs-flv-emos-bar button.on{background:rgba(255,255,255,.22)}
+.cs-flv-voa{position:absolute;left:50%;bottom:22%;font-size:4.5rem;transform:translateX(-50%);pointer-events:none;animation:flvoa 1.15s ease-out forwards;z-index:5}
+@keyframes flvoa{0%{opacity:0;transform:translate(-50%,30px) scale(.5)}25%{opacity:1;transform:translate(-50%,0) scale(1.15)}100%{opacity:0;transform:translate(-50%,-160px) scale(1)}}
+@keyframes flsobe{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.cs-flv-emos{font-style:normal;letter-spacing:-3px;margin-right:2px}.cs-flv-emo-i{font-style:normal;font-size:1.3rem;margin-left:auto}.cs-flv-emo-i+.cs-flv-cur-i{margin-left:6px}
+.cs-flv-ninguem{display:flex;align-items:center;gap:6px;justify-content:center}.cs-flv-ninguem svg{width:18px;height:18px}
 .cs-flv-cur-i{color:#ff3b6b;margin-left:auto}.cs-flv-cur-i svg{width:20px;height:20px;fill:currentColor}
 .cs-flv-bt{border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:99px;display:flex;align-items:center;gap:6px;padding:10px 14px;font:inherit;font-weight:700;cursor:pointer;min-height:46px}
 .cs-flv-bt svg{width:20px;height:20px}

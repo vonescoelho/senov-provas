@@ -311,6 +311,7 @@ div.f{display:flex;flex-direction:column;gap:6px;font-weight:700;font-size:.9rem
 .ia-passos{list-style:none;counter-reset:p;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:12px}
 .ia-passos li{counter-increment:p;display:grid;grid-template-columns:32px 1fr;column-gap:12px;row-gap:2px;align-items:start}
 .ia-passos li::before{content:counter(p);grid-row:span 2;width:32px;height:32px;border-radius:50%;background:var(--primary);color:var(--primary-ink,#fff);font-weight:800;display:grid;place-items:center}
+.ia-passos-c{gap:8px}.ia-passos-c li{align-items:center;grid-template-columns:28px 1fr}.ia-passos-c li::before{grid-row:auto;width:28px;height:28px;font-size:.85rem}
 .ia-passos li span{font-size:.92rem;color:var(--muted);line-height:1.45}
 .ajuda-btn:hover,.ajuda-btn[aria-expanded="true"]{border-color:var(--primary);color:var(--primary);background:var(--primary-soft)}
 .dica-txt{display:block;flex-basis:100%;width:100%;font-size:.84rem;font-weight:400;line-height:1.45;color:var(--ink);background:var(--surface-2);border-radius:10px;padding:8px 11px;margin-top:6px;text-transform:none;letter-spacing:0;animation:dica .18s ease-out}
@@ -333,6 +334,9 @@ label.f>*:not(.ajuda-btn){flex-basis:100%}
 .aeebox[open]>summary::after{transform:rotate(-135deg)}
 .aeebox[open]>summary{margin-bottom:12px}
 .hero{gap:4px}
+body.cs-on .hero .eyebrow{display:none}body.cs-on .hero h1{font-size:1.05rem;font-weight:700;letter-spacing:0;line-height:1.3;margin:0}
+.filters{display:grid!important;grid-template-columns:minmax(0,.8fr) minmax(0,1fr) minmax(0,1.2fr);overflow:visible!important}
+.filters select{min-width:0;width:100%;-webkit-appearance:none;appearance:none;background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center/13px!important;padding:0 24px 0 11px!important;font-size:.8rem!important;font-weight:600!important;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
 .dica-txt,.notice>span,.notice .stack>span,.qcard .txt,.sheet p,.hero p,.revdoc p,.origbox p,.card p,.selitem .body p,.opt span span{text-align:justify;hyphens:auto;-webkit-hyphens:auto}
 .aviso>span:not(.dica-txt){flex:1 1 0;min-width:0}
 .th>:not(.dica-txt):not(.ajuda-btn):not(svg){max-width:calc(100% - 34px)}
@@ -349,6 +353,12 @@ label.f>*:not(.ajuda-btn){flex-basis:100%}
 .bolha small{opacity:.8}
 .hora{position:absolute;right:11px;bottom:4px;font-size:.66rem;opacity:.6}
 .chips.resp{padding-left:2px}
+.chips-ic{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;max-width:340px}
+.termo-mais summary{cursor:pointer;color:var(--primary);font-weight:600;font-size:.9rem;margin:2px 0 8px}
+.chip-ic{display:flex;flex-direction:column;align-items:center;gap:5px;border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:11px 4px 8px;cursor:pointer;color:var(--ink,inherit);font:inherit}
+.chip-ic svg{width:24px;height:24px;color:var(--primary)}.chip-ic small{font-size:.7rem;font-weight:600;line-height:1.1;text-align:center;opacity:.85}
+.chip-ic.pri{background:var(--primary);border-color:transparent;color:var(--primary-ink,#fff)}.chip-ic.pri svg{color:inherit}
+.chip-ic:active{transform:scale(.96)}
 .chips.resp .chip{background:var(--surface);border-color:color-mix(in srgb,var(--primary) 45%,var(--line));color:var(--primary)}
 .digitando{display:flex;gap:5px;padding:13px 15px;min-width:0}
 .digitando i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:pisca 1s infinite}
@@ -576,13 +586,12 @@ function exigirTermo(){
   return new Promise(res=>{
     if(termoOk()) return res(true);
     abrirSheet(`
-      <div class="sheet-h"><h2>Autorização de compartilhamento</h2></div>
-      <p>Você usa o FlashPapo sem custo. Em troca, autoriza o compartilhamento das questões que cadastrar.</p>
-      <div class="notice info">${I.info}<div class="stack" style="gap:6px">
+      <div class="sheet-h"><h2>Compartilhar questões</h2></div>
+      <details class="termo-mais"><summary>Ler termo</summary><div class="notice info">${I.info}<div class="stack" style="gap:6px">
         <span>As questões que você cadastrar passam a fazer parte do <b>banco de questões da SENOV Educacional</b>, que pode usá-las e organizá-las.</span>
         <span>Você <b>continua com acesso</b> a todas as suas questões, pode editá-las e usá-las em suas provas sempre que quiser.</span>
         <span>Antes de entrar no banco, cada questão passa por uma <b>revisão da IA</b>, que corrige o texto mudando o mínimo e garante que não haja dúvida sobre a resposta. Você vê cada ajuste antes de enviar.</span>
-        <span class="taxa">${TEXTO_TAXA}</span></div></div>
+        <span class="taxa">${TEXTO_TAXA}</span></div></div></details>
       <label class="switch" for="termo-ok"><input type="checkbox" id="termo-ok"><span class="t"><b>Li e autorizo o compartilhamento</b></span></label>
       <div class="row"><button class="btn" data-a="termo-nao" style="flex:1">Agora não</button><button class="btn primary" data-a="termo-sim" style="flex:1" disabled id="termo-btn">Autorizar</button></div>`);
     $("#termo-ok").onchange=e=>{$("#termo-btn").disabled=!e.target.checked;};
@@ -1176,16 +1185,15 @@ function qCard(q,extra=""){
 function vBanco(){
   const f=S.f,lista=filtrosBanco();
   return `${avisoModo()}
-  <section class="hero"><span class="eyebrow">Banco de questões</span><h1>Questões por conteúdo</h1></section>
-  <div class="row" style="flex-wrap:nowrap"><input class="in" id="busca" placeholder="Buscar no enunciado ou conteúdo" value="${esc(f.busca)}" aria-label="Buscar"><button class="btn primary" data-a="nova-questao" aria-label="Cadastrar questão">${I.plus}</button></div>
+  <div class="row" style="flex-wrap:nowrap"><input class="in" id="busca" placeholder="Buscar" value="${esc(f.busca)}" aria-label="Buscar"><button class="btn primary" data-a="nova-questao" aria-label="Cadastrar questão">${I.plus}</button></div>
   <div class="filters" role="group" aria-label="Filtros">
-    <select id="f-nivel" aria-label="Nível"><option value="">Todos os níveis</option><option value="EF" ${f.nivel==="EF"?"selected":""}>Fundamental (A–D)</option><option value="EM" ${f.nivel==="EM"?"selected":""}>Médio (A–E)</option></select>
-    <select id="f-disc" aria-label="Disciplina"><option value="">Todas as disciplinas</option>${todasDisciplinas().map(d=>`<option ${f.disciplina===d?"selected":""}>${esc(d)}</option>`).join("")}</select>
-    <select id="f-dif" aria-label="Dificuldade"><option value="">Qualquer dificuldade</option>${[1,2,3].map(d=>`<option value="${d}" ${f.dif==d?"selected":""}>${DIF[d]}</option>`).join("")}</select>
+    <select id="f-nivel" aria-label="Nível"><option value="">Nível</option><option value="EF" ${f.nivel==="EF"?"selected":""}>Fundamental (A–D)</option><option value="EM" ${f.nivel==="EM"?"selected":""}>Médio (A–E)</option></select>
+    <select id="f-disc" aria-label="Disciplina"><option value="">Disciplina</option>${todasDisciplinas().map(d=>`<option ${f.disciplina===d?"selected":""}>${esc(d)}</option>`).join("")}</select>
+    <select id="f-dif" aria-label="Dificuldade"><option value="">Dificuldade</option>${[1,2,3].map(d=>`<option value="${d}" ${f.dif==d?"selected":""}>${DIF[d]}</option>`).join("")}</select>
   </div>
   <div class="chips"><button class="chip" data-a="f-aee" aria-pressed="${f.aee}">Adequadas ao AEE</button><button class="chip" data-a="f-minhas" aria-pressed="${f.minhas}">Só as minhas</button></div>
   <p class="small muted">${lista.length} ${lista.length===1?"questão encontrada":"questões encontradas"}</p>
-  ${lista.length?`<div class="qlist">${lista.map(q=>qCard(q)).join("")}</div>`:`<div class="empty"><b>Nenhuma questão com esses filtros</b><span>Cadastre uma questão ou limpe os filtros.</span><button class="btn" data-a="limpar-f">Limpar filtros</button></div>`}`;
+  ${lista.length?`<div class="qlist">${lista.map(q=>qCard(q)).join("")}</div>`:`<div class="empty"><b>Nenhuma questão</b><button class="btn" data-a="limpar-f">Limpar filtros</button></div>`}`;
 }
 
 /* ---------- Nova prova ---------- */
@@ -1225,6 +1233,7 @@ const hora=()=>new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-d
 const semAcento=t=>String(t).normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 /* "Ativar IA grátis" ganha destaque quando o professor monta provas com frequência (3+ em 14 dias) */
 const usoFrequente=()=>(S.provas||[]).filter(pv=>{const t=Date.parse(pv.atualizadoEm||pv.criadoEm||"");return t&&Date.now()-t<14*864e5;}).length>=3;
+const CHIP_IC={"c-nova":["prova","Nova prova"],"c-minhas":["save","Minhas provas"],"c-questao":["pen","Questão"],"ia-passos":["wand","IA grátis"]};
 const chipIA=()=>({t:"Ativar IA grátis",a:"ia-passos",v:"gemini",...(usoFrequente()?{pri:true}:{})});
 const menuChips=()=>{const ia=S.sample?[]:[chipIA()];return ia.length&&ia[0].pri?[...ia,{t:"Nova prova",a:"c-nova"},{t:"Minhas provas",a:"c-minhas"},{t:"Cadastrar questão",a:"c-questao"}]:[{t:"Nova prova",a:"c-nova"},{t:"Minhas provas",a:"c-minhas"},{t:"Cadastrar questão",a:"c-questao"},...ia];};
 function renderChat(){if(S.tab!=="inicio")return;render();requestAnimationFrame(()=>window.scrollTo(0,document.documentElement.scrollHeight));}
@@ -1238,7 +1247,7 @@ function iniciarChat(){
 function vConversa(){
   iniciarChat();
   const ult=CHAT.msgs.length-1;
-  return `${avisoModo()}<div class="chat" id="chat">${CHAT.msgs.map((m,i)=>`<div class="msg ${m.de}"><div class="bolha">${m.html}${m.extra||""}<span class="hora">${m.h}</span></div>${m.de==="bot"&&i===ult&&!CHAT.digitando&&m.chips.length?`<div class="chips resp">${m.chips.map(c=>`<button class="chip ${c.on?"on":""} ${c.pri?"pri":""}" data-a="${c.a}" data-v="${esc(c.v||"")}" ${c.on!=null?`aria-pressed="${!!c.on}"`:""}>${esc(c.t)}</button>`).join("")}</div>`:""}</div>`).join("")}${CHAT.digitando?`<div class="msg bot"><div class="bolha digitando" aria-label="Digitando"><i></i><i></i><i></i></div></div>`:""}</div>
+  return `${avisoModo()}<div class="chat" id="chat">${CHAT.msgs.map((m,i)=>`<div class="msg ${m.de}"><div class="bolha">${m.html}${m.extra||""}<span class="hora">${m.h}</span></div>${m.de==="bot"&&i===ult&&!CHAT.digitando&&m.chips.length?(m.chips.every(c=>CHIP_IC[c.a])?`<div class="chips resp chips-ic">${m.chips.map(c=>`<button class="chip-ic ${c.pri?"pri":""}" data-a="${c.a}" data-v="${esc(c.v||"")}" aria-label="${esc(c.t)}" title="${esc(c.t)}">${I[CHIP_IC[c.a][0]]}<small>${CHIP_IC[c.a][1]}</small></button>`).join("")}</div>`:`<div class="chips resp">${m.chips.map(c=>`<button class="chip ${c.on?"on":""} ${c.pri?"pri":""}" data-a="${c.a}" data-v="${esc(c.v||"")}" ${c.on!=null?`aria-pressed="${!!c.on}"`:""}>${esc(c.t)}</button>`).join("")}</div>`):""}</div>`).join("")}${CHAT.digitando?`<div class="msg bot"><div class="bolha digitando" aria-label="Digitando"><i></i><i></i><i></i></div></div>`:""}</div>
   <form class="composer" id="composer"><input id="chat-txt" class="in" autocomplete="off" enterkeyhint="send" aria-label="Mensagem" placeholder="${CHAT.espera?esc(CHAT.espera.ph):"Ex.: Matemática, 6º ano, 10 questões"}"><button class="btn primary" aria-label="Enviar">${I.send}</button></form>`;
 }
 function perguntar(){
@@ -1666,20 +1675,15 @@ function vEscola(){
 function vIALocal(){
   let c={};try{c=JSON.parse(localStorage.getItem("senov.ia")||"null")||{};}catch(e){}
   const comp=!!window.CS_IA_GEMINI,lig=!!(c.chave||c.gemini||comp);
-  const status=(c.chave||c.openai)&&!c.gemini?`<div class="notice">${I.info}<span>Usando ${c.chave?"o Claude":"o ChatGPT"} com <b>sua chave paga</b>. Dica: com a chave grátis do Gemini você não tem custo.</span></div>`:c.gemini?`<div class="notice okk">${I.check}<span>Usando <b>sua chave grátis do Gemini</b>. A IA é só sua, sem custo.</span></div>`
-    :comp?`<div class="notice">${I.info}<span>A IA grátis do FlashPapo está ligada, mas é <b>dividida entre todos</b> e pode acabar no meio do dia. Com sua própria chave grátis do Gemini ela fica só para você.</span></div>`
-    :`<p class="small">Com a IA o assistente <b>cria questões novas alinhadas à BNCC</b>, revisa suas questões e gera versões inéditas das provas.</p>`;
+  const status="";
   return `<div class="card stack ia-card"><div class="th"><h3>Inteligência artificial</h3><span class="pill ${lig?"d1":"mine"}">${lig?"ligada":"desligada"}</span></div>
     ${status}
     <div class="ia-reco stack">
-      <div class="ia-reco-h"><b>Gemini, do Google</b><span class="pill d1">Grátis · recomendado</span></div>
-      <ul class="ia-vant"><li>${I.check}<span>Sem custo: cota grátis todos os dias</span></li><li>${I.check}<span>Não precisa de cartão</span></li><li>${I.check}<span>Leva uns 2 minutos com seu Gmail</span></li></ul>
+      <div class="ia-reco-h"><b>Gemini</b><span class="pill d1">Grátis</span></div>
       <div class="f"><span class="ia-rot"><label for="ia-gemini">Chave do Gemini</label><button type="button" class="ajuda-btn" data-a="ia-passos" data-v="gemini" aria-label="Como conseguir a chave do Gemini">?</button></span><input class="in" id="ia-gemini" type="password" autocomplete="off" value="${esc(c.gemini||"")}" placeholder="Cole aqui (começa com AIza)"></div>
-      ${c.gemini?"":`<button class="btn" data-a="ia-passos" data-v="gemini">${I.info} Como conseguir minha chave grátis</button>`}
     </div>
-    <details class="ia-outras" ${c.chave||c.openai?"open":""}><summary>Outras opções (pagas): ChatGPT ou Claude</summary>
+    <details class="ia-outras" ${c.chave||c.openai?"open":""}><summary>ChatGPT ou Claude (pagos)</summary>
       <div class="stack" style="margin-top:10px">
-        <p class="small muted">Só se você já tem créditos nelas. Cada uso é cobrado no seu cartão. Para a maioria dos professores, o Gemini grátis basta.</p>
         <div class="f"><span class="ia-rot"><label for="ia-openai">Chave do ChatGPT (OpenAI)</label><button type="button" class="ajuda-btn" data-a="ia-passos" data-v="chatgpt" aria-label="Como conseguir a chave do ChatGPT">?</button></span><input class="in" id="ia-openai" type="password" autocomplete="off" value="${esc(c.openai||"")}" placeholder="sk-..."></div>
         <div class="f"><span class="ia-rot"><label for="ia-chave">Chave do Claude</label><button type="button" class="ajuda-btn" data-a="ia-passos" data-v="claude" aria-label="Como conseguir a chave do Claude">?</button></span><input class="in" id="ia-chave" type="password" autocomplete="off" value="${esc(c.chave||"")}" placeholder="sk-ant-..."></div>
         <label class="f" for="ia-modelo">Modelo do Claude<input class="in" id="ia-modelo" value="${esc(c.modelo||"claude-sonnet-5-5")}"></label>
@@ -1712,9 +1716,8 @@ function passosIA(qual){
     ["Cole aqui e salve","Volte ao FlashPapo, abra <b>Outras opções (pagas)</b>, cole no campo <b>Chave do Claude</b> e toque em <b>Salvar</b>."]
   ];
   return `<div class="sheet-h"><h2>${G?"Chave do Gemini":O?"Chave do ChatGPT":"Chave do Claude"}</h2></div>
-    <p class="small muted">${G?"<b>Grátis e sem cartão.</b> Tem um limite de uso por dia que dá para o dia a dia do professor. Leva uns 2 minutos.":"Pago por uso, cobrado no cartão. Prefira o Gemini, que é grátis."}</p>
-    <ol class="ia-passos">${passos.map(([t,d])=>`<li><b>${t}</b><span>${d}</span></li>`).join("")}</ol>
-    <div class="notice">${I.info}<span>A chave fica <b>só neste aparelho</b>. Não compartilhe com ninguém: ela é como uma senha.</span></div>
+    <ol class="ia-passos ia-passos-c">${passos.map(([t])=>`<li><b>${t}</b></li>`).join("")}</ol>
+    ${G?`<a class="btn" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com</a>`:""}
     <button class="btn primary" data-a="ia-ir" data-v="${G?"ia-gemini":O?"ia-openai":"ia-chave"}">${S.tab==="escola"?"Entendi":"Abrir onde colar a chave"}</button>`;
 }
 function vAdmin(){

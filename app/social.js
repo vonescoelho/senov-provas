@@ -41,6 +41,7 @@
     foto: ic('<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>'),
     x: ic('<path d="M6 6l12 12M18 6 6 18"/>'),
     baixar: ic('<path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/>'),
+    resp: ic('<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v4"/>'),
     maisV: ic('<circle cx="12" cy="5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="19" r="1.3" fill="currentColor"/>'),
     mais: ic('<circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/>'),
     heart: ic('<path d="M12 20s-7-4.4-9-9.1C1.6 7.3 4 4 7.4 4c2 0 3.6 1.1 4.6 2.7C13 5.1 14.6 4 16.6 4 20 4 22.4 7.3 21 10.9 19 15.6 12 20 12 20z"/>'),
@@ -713,7 +714,7 @@
       ${window.CS_E2E ? (() => { const fa = CS_E2E.faltam(); const sem = fa && fa.chat === c.id ? fa.uids.filter(u => u !== eu()) : [];
         return sem.length ? `<button class="cs-e2e-chat" data-s="e2e-info">🔓 ${esc(sem.map(u => P(u).nome).join(", "))} ainda não ativou a criptografia (precisa atualizar o app)</button>`
           : CS_E2E.pronto() ? `<button class="cs-e2e-chat" data-s="${g ? "e2e-info" : "e2e-codigo"}" data-id="${esc(g ? "" : t.outro)}">${K.lock} Mensagens criptografadas</button>` : ""; })() : ""}
-      <div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
+      ${window.CS_FUNDO ? CS_FUNDO.html(c.id) : ""}<div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
       ${podeEscrever ? `${SO.figAberta ? (EXT.painelEmoji ? EXT.painelEmoji() : painelFig("fig-msg")) : ""}
       ${SO.resp && SO.resp[id] ? barraResp(SO.resp[id]) : ""}
       <form class="cs-compor ${EXT.composerFim && !(SO.rascunho[id] || "").trim() ? "vazio" : ""}" id="cs-f-msg" data-id="${esc(id)}">
@@ -878,6 +879,8 @@
     const adminGrupo = c && c.tipo === "grupo" && (c.admins || []).includes(eu());
     const paraTodos = !m.apagada && !m.cifrada && (meu || adminGrupo);
     window.abrirSheet(`<div class="sheet-h"><h2>Mensagem</h2></div><div class="cs-menu">
+      ${!m.apagada && !m.cifrada ? `<button data-s="msg-resp" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.resp}<span><b>Responder</b></span></button>` : ""}
+      ${m.figImg && !m.apagada && window.CS_FIG && !CS_FIG.lista().some(f => f.src === m.figImg) ? `<button data-s="fig-salvar" data-v="${esc(msgId)}">${K.baixar}<span><b>Salvar figurinha</b></span></button>` : ""}
       ${m.texto && !m.apagada ? `<button data-s="copiar" data-v="${esc(m.texto)}">${K.copiar}<span><b>Copiar texto</b></span></button>` : ""}
       ${paraTodos ? `<button data-s="apagar-msg" data-chat="${esc(chatId)}" data-id="${esc(msgId)}" class="perigo">${K.lixo}<span><b>Apagar para todos</b>${!meu ? "<small>Como administrador do grupo</small>" : ""}</span></button>` : ""}
       <button data-s="apagar-mim" data-chat="${esc(chatId)}" data-id="${esc(msgId)}">${K.lixo}<span><b>Apagar para mim</b></span></button>
@@ -1420,10 +1423,10 @@
         <div class="cs-pf-top">
           <div class="cs-pf-av">${EXT.perfilAv ? EXT.perfilAv(uid, av(p, 88, uid)) : av(p, 88, uid)}</div>
           <div class="cs-pf-lado">
-            <h2>${esc(p.nomeReal || p.nome)}${seloHtml(p)}</h2>
-            <span class="cs-pf-cont" title="Publicações" aria-label="${n.posts} publicações">${K.grade}<b>${n.posts}</b></span>
+            <h2 title="${esc(p.nomeReal || p.nome)}"><span class="cs-pf-nm">${esc(p.nomeReal || p.nome)}</span>${seloHtml(p)}</h2>
+            <div class="cs-pf-linha"><span class="cs-pf-cont" title="Publicações" aria-label="${n.posts} publicações">${K.grade}<b>${n.posts}</b></span>
+            ${meu ? `<button class="cs-pf-qr" data-s="perfil-qr" aria-label="QR code do perfil">${K.qr}</button>` : ""}</div>
           </div>
-          ${meu ? `<button class="cs-pf-qr" data-s="perfil-qr" aria-label="QR code do perfil">${K.qr}</button>` : ""}
         </div>
         <div class="cs-pf-info">
           ${p.inst ? `<span class="cs-pf-tag">${K.check} E-mail institucional</span>` : ""}
@@ -1475,6 +1478,7 @@
       ${window.CS_E2E ? `<button data-s="e2e-codigo" data-id="${esc(uid)}">${K.lock}<span><b>Código de segurança</b></span></button>` : ""}
       ${bloq ? "" : SO.seguindo.has(uid) ? `<button data-s="seguir" data-id="${esc(uid)}">${K.addUser}<span><b>Deixar de seguir</b></span></button>`
         : `<button data-s="seguir-oculto" data-id="${esc(uid)}">${K.lock}<span><b>Seguir em segredo</b></span></button>`}
+      ${window.CS_FUNDO && cvPref().fix.includes([eu(), uid].sort().join("_")) ? `<button data-s="fundo-cfg" data-id="${esc([eu(), uid].sort().join("_"))}">${K.foto}<span><b>Papel de parede</b></span></button>` : ""}
       <button data-s="${bloq ? "desbloquear" : "bloquear"}" data-id="${esc(uid)}" class="${bloq ? "" : "perigo"}">${K.ban}<span><b>${bloq ? "Desbloquear" : "Bloquear"}</b></span></button>
       <button data-s="denunciar" data-tipo="perfil" data-uid="${esc(uid)}" data-id="${esc(uid)}">${K.flag}<span><b>Denunciar perfil</b></span></button>
     </div>`);
@@ -1862,6 +1866,7 @@
       case "assistente": gravarLS("cs.assist.em." + eu(), Date.now()); SO.tab = "provas"; S.tab = "inicio"; lembrarTab(); pintar(); window.scrollTo(0, 0); break;
       case "abrir-chat": abrirChat(id); break;
       case "part-env": { const tx = SO.partilha || ""; SO.partilha = ""; window.fecharSheet(); limparPilha(); SO.tab = "conversas"; lembrarTab(); SO.rascunho[id] = tx; pintar(); setTimeout(() => { abrirChat(id); setTimeout(() => { const t = $("#cs-txt"); if (t) { t.value = tx; autosize(t); t.focus(); const f = t.closest("form"); if (f) f.classList.remove("vazio"); } }, 400); }, 200); break; }
+      case "msg-resp": window.fecharSheet(); responder(el.dataset.chat, el.dataset.id); break;
       case "resp-x": { const t = topo(); if (t && SO.resp) delete SO.resp[t.id]; const b = $("#cs-resp-bar"); if (b) b.remove(); break; }
       case "resp-ir": { const alvo = document.querySelector(`#cs-msgs .cs-m[data-id="${CSS.escape(v || "")}"]`); if (alvo) { alvo.scrollIntoView({ block: "center", behavior: "smooth" }); alvo.classList.add("cs-pisca"); setTimeout(() => alvo.classList.remove("cs-pisca"), 1300); } break; }
       case "cv-ver-arq": SO.verArq = true; pintar(); window.scrollTo(0, 0); break;
@@ -2098,7 +2103,7 @@
       case "excluir": sheetExcluir(); break;
       case "conta-menu": window.abrirSheet(`<div class="cs-menu">
           <button data-s="editar-perfil-sh">${K.user}<span><b>Editar perfil</b></span></button>
-          <button data-s="email">${K.mail}<span><b>E-mail</b><small>${esc((SO.user && SO.user.email) || "")}</small></span></button>
+          <button data-s="email">${K.mail}<span><b>E-mail</b></span></button>
           <button data-s="senha">${K.chave}<span><b>Alterar senha</b></span></button></div>`); break;
       case "editar-perfil-sh": window.fecharSheet(); SO.ed = null; SO.edIni = false; SO.erro = ""; abrirTela({ v: "editar" }); setTimeout(checarUsuario, 60); break;
       case "conta-mais": window.abrirSheet(`<div class="sheet-h"><h2>Gerenciar conta</h2></div><div class="cs-menu"><button class="perigo" data-s="excluir">${K.lixo}<span><b>Excluir minha conta</b></span></button></div>`); break;
@@ -2246,9 +2251,12 @@ body.cs-desl-e #main>*{animation:csDeslE .28s ease-out}body.cs-desl-d #main>*{an
 .cs-seg{display:flex;gap:6px;flex-wrap:wrap}.cs-seg button{flex:1;min-width:120px;padding:10px 12px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:inherit;font:inherit;font-weight:600}.cs-seg button[aria-pressed=true]{border-color:var(--primary);background:var(--primary-soft);color:var(--primary)}
 .cs-pf-top{display:flex;align-items:center;gap:16px}
 .cs-pf-lado{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.cs-pf-lado h2{margin:0;font-size:1.12rem;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.25}
+.cs-pf-lado h2{margin:0;font-size:1.02rem;font-weight:700;display:flex;align-items:flex-start;gap:5px;line-height:1.3;letter-spacing:-.005em}
+.cs-pf-nm{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;min-width:0}
+.cs-pf-lado h2>:not(.cs-pf-nm){flex:none;margin-top:2px}
+.cs-pf-linha{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .cs-pf-cont{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.92rem}.cs-pf-cont svg{width:16px;height:16px}.cs-pf-cont b{color:var(--ink);font-variant-numeric:tabular-nums}
-.cs-pf-qr{width:52px;height:52px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;flex:none;cursor:pointer}.cs-pf-qr svg{width:28px;height:28px}
+.cs-pf-qr{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;flex:none;cursor:pointer}.cs-pf-qr svg{width:21px;height:21px}
 .cs-qr-box{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0}.cs-qr-box img{border-radius:16px;background:#fff;padding:8px}
 .cs-pf-av{flex:none}.cs-pf-av .cs-fl-anel{margin:0}
 .cs-pf-nums{flex:1;display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
