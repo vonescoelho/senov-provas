@@ -153,8 +153,9 @@ public class ChamadasService extends Service {
                 if (MainActivity.visivel || System.currentTimeMillis() - em > 6 * 3600 * 1000L) continue;
                 final String chatId = d.getId(), grupo = "grupo".equals(d.getString("tipo")) ? d.getString("nome") : null;
                 Object tx = ult.get("texto");
-                final String texto = ult.get("e2e") != null ? "Nova mensagem" : ult.get("fig") != null ? "Figurinha" : tx instanceof String && !((String) tx).isEmpty() ? (String) tx : "Nova mensagem";
-                nomeDe((String) autor, nome -> avisar("c" + chatId, grupo != null ? grupo : nome, grupo != null ? nome + ": " + texto : texto, abrirAviso("chat", chatId), NotificationCompat.CATEGORY_MESSAGE));
+                final boolean sos = ult.get("sos") != null;
+                final String texto = sos ? "🆘 Pedido de socorro com localização" : ult.get("e2e") != null ? "Nova mensagem" : ult.get("fig") != null ? "Figurinha" : tx instanceof String && !((String) tx).isEmpty() ? (String) tx : "Nova mensagem";
+                nomeDe((String) autor, nome -> avisar("c" + chatId, (sos ? "🆘 SOS · " : "") + (grupo != null ? grupo : nome), grupo != null ? nome + ": " + texto : texto, abrirAviso("chat", chatId), sos ? NotificationCompat.CATEGORY_ALARM : NotificationCompat.CATEGORY_MESSAGE));
             }
             ed.apply();
         });

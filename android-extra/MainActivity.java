@@ -61,6 +61,20 @@ public class MainActivity extends BridgeActivity {
     private void tratarChamada(Intent i) {
         if (i == null) return;
         if (i.getBooleanExtra("chatmil_atualizar", false)) { i.removeExtra("chatmil_atualizar"); NativoPlugin.pedirAtualizar(); }
+        /* link de fora: flashpapo://sos?para=@x&lat=..&lng=.. (NotePino) */
+        android.net.Uri dados = i.getData();
+        if (dados != null && "flashpapo".equalsIgnoreCase(dados.getScheme())) { i.setData(null); NativoPlugin.avisoPendente("sos", dados.toString()); }
+        /* compartilhado de outro app (link ou texto): escolher a conversa */
+        if (Intent.ACTION_SEND.equals(i.getAction())) {
+            CharSequence tx = i.getCharSequenceExtra(Intent.EXTRA_TEXT);
+            String assunto = i.getStringExtra(Intent.EXTRA_SUBJECT);
+            if (tx != null && tx.length() > 0) {
+                String t = tx.toString();
+                if (assunto != null && !assunto.isEmpty() && !t.contains(assunto)) t = assunto + "\n" + t;
+                NativoPlugin.avisoPendente("partilha", t);
+            }
+            i.setAction(Intent.ACTION_MAIN);
+        }
         String avTipo = i.getStringExtra("aviso_tipo"), avId = i.getStringExtra("aviso_id");
         if (avTipo != null && avId != null) { i.removeExtra("aviso_tipo"); i.removeExtra("aviso_id"); NativoPlugin.avisoPendente(avTipo, avId); }
         String cid = i.getStringExtra("chamada_cid");
