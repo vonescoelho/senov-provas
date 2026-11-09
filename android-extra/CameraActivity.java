@@ -150,7 +150,8 @@ public class CameraActivity extends AppCompatActivity {
     /* Square */
     private int square = 0, squareUltimo = 4;
     private final List<Bitmap> celulas = new ArrayList<>();
-    private boolean ferrAbertas = false, efeitosAbertos, ajustesAbertos;
+    private boolean ferrAbertas = false, efeitosAbertos, ajustesAbertos, grade;
+    private LinearLayout painelAjustes; private View vGrade;
     private Icone bAjustes;
     /* Dupla (frente + trás) */
     private boolean dupla, concorrente;
@@ -177,6 +178,7 @@ public class CameraActivity extends AppCompatActivity {
         comMusica = i.getBooleanExtra("comMusica", false);
         flash = prefs.getInt("flash", ImageCapture.FLASH_MODE_OFF);
         hdr = prefs.getBoolean("hdr", false);
+        grade = prefs.getBoolean("grade", false);
         efeito = prefs.getString("efeito", "original");
         if (Efeitos.matriz(efeito) == null) efeito = "original";
         squareUltimo = prefs.getInt("square", 4);
@@ -315,6 +317,16 @@ public class CameraActivity extends AppCompatActivity {
             @Override public void onChildViewRemoved(View pai, View filho) { }
         });
         raiz.addView(preview, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        vGrade = new View(this) {
+            final Paint pg = new Paint(Paint.ANTI_ALIAS_FLAG);
+            @Override protected void onDraw(Canvas c) {
+                pg.setColor(Color.argb(110, 255, 255, 255)); pg.setStrokeWidth(dp(1));
+                float w = getWidth(), hh = getHeight();
+                for (int i = 1; i < 3; i++) { c.drawLine(w * i / 3f, 0, w * i / 3f, hh, pg); c.drawLine(0, hh * i / 3f, w, hh * i / 3f, pg); }
+            }
+        };
+        vGrade.setVisibility(grade ? View.VISIBLE : View.GONE);
+        raiz.addView(vGrade, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         anel = new View(this);
         GradientDrawable ga = new GradientDrawable(); ga.setShape(GradientDrawable.OVAL); ga.setStroke(dp(2), AMARELO); ga.setColor(Color.TRANSPARENT);
@@ -348,10 +360,20 @@ public class CameraActivity extends AppCompatActivity {
         meio.addView(bMusica); meio.addView(tempo);
         topo.addView(fechar); topo.addView(meio, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         bAjustes = new Icone(this, Icone.AJUSTES); bAjustes.setContentDescription("Ajustes da câmera");
-        bAjustes.setOnClickListener(v -> { ajustesAbertos = !ajustesAbertos; pintarTopo(); });
+        bAjustes.setOnClickListener(v -> { ajustesAbertos = !ajustesAbertos; pintarTopo(); pintarAjustes(); });
         topo.addView(bFlash); topo.addView(bHdr); topo.addView(bTimer);
         topo.addView(bAjustes, new LinearLayout.LayoutParams(dp(44), dp(44)));
         raiz.addView(topo, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP));
+
+        /* painel de ajustes (engrenagem): flash, HDR, temporizador e grade */
+        painelAjustes = new LinearLayout(this); painelAjustes.setOrientation(LinearLayout.VERTICAL);
+        painelAjustes.setPadding(dp(14), dp(10), dp(14), dp(10));
+        GradientDrawable fp = new GradientDrawable(); fp.setCornerRadius(dp(20)); fp.setColor(Color.argb(185, 22, 22, 28)); fp.setStroke(dp(1), Color.argb(40, 255, 255, 255));
+        painelAjustes.setBackground(fp); painelAjustes.setVisibility(View.GONE); painelAjustes.setElevation(dp(6));
+        painelAjustes.setOnClickListener(v -> { });
+        FrameLayout.LayoutParams lpa = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
+        lpa.topMargin = dp(84); lpa.rightMargin = dp(10);
+        raiz.addView(painelAjustes, lpa);
 
         /* ferramentas à esquerda (Loop, Square, Effects) */
         ferramentas = new LinearLayout(this); ferramentas.setOrientation(LinearLayout.VERTICAL); ferramentas.setPadding(dp(10), 0, dp(4), 0);
@@ -415,6 +437,8 @@ public class CameraActivity extends AppCompatActivity {
             topo.setPadding(dp(6) + bar.left, bar.top + dp(6), dp(6) + bar.right, dp(10));
             baixo.setPadding(bar.left, dp(10), bar.right, bar.bottom + dp(16));
             ferramentas.setPadding(dp(10) + bar.left, 0, dp(4), 0);
+            FrameLayout.LayoutParams pa = (FrameLayout.LayoutParams) painelAjustes.getLayoutParams();
+            pa.topMargin = bar.top + dp(62); pa.rightMargin = dp(10) + bar.right; painelAjustes.setLayoutParams(pa);
             return ins;
         });
 
@@ -428,7 +452,7 @@ public class CameraActivity extends AppCompatActivity {
             }
         });
         toque = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            @Override public boolean onSingleTapUp(MotionEvent e) { focar(e.getX(), e.getY()); return true; }
+            @Override public boolean onSingleTapUp(MotionEvent e) { if (ajustesAbertos) { ajustesAbertos = false; pintarTopo(); pintarAjustes(); return true; } focar(e.getX(), e.getY()); return true; }
             @Override public boolean onDoubleTap(MotionEvent e) { if (gravando == null && !capturandoLoop && !ocupado) { frente = !frente; ligar(); } return true; }
         });
         preview.setOnTouchListener((v, e) -> { pinca.onTouchEvent(e); if (!pinca.isInProgress()) toque.onTouchEvent(e); return true; });
@@ -442,10 +466,10 @@ public class CameraActivity extends AppCompatActivity {
         int idx = flash == ImageCapture.FLASH_MODE_AUTO ? 1 : flash == ImageCapture.FLASH_MODE_ON ? 2 : 0;
         bFlash.setText(!M_VIDEO.equals(modo) ? nomes[idx] : (flash == ImageCapture.FLASH_MODE_ON ? "🔦" : "⚡̸"));
         bFlash.setContentDescription("Flash: " + (idx == 0 ? "desligado" : idx == 1 ? "automático" : "ligado"));
-        bFlash.setVisibility(!ajustesAbertos || frente || loop || square > 0 || dupla ? View.GONE : View.VISIBLE);
+        bFlash.setVisibility(frente || loop || square > 0 || dupla ? View.GONE : View.VISIBLE);
         bAjustes.ativo = ajustesAbertos; bAjustes.invalidate();
         boolean temHdr = extensoes != null && M_FOTO.equals(modo) && !loop && square == 0 && extensaoDisponivel(ExtensionMode.HDR);
-        bHdr.setVisibility(ajustesAbertos && temHdr ? View.VISIBLE : View.GONE);
+        bHdr.setVisibility(temHdr && hdr && !ajustesAbertos ? View.VISIBLE : View.GONE);
         bHdr.setTextColor(hdr ? AMARELO : Color.WHITE);
         boolean livre = gravando == null && !capturandoLoop;
         bMusica.setVisibility(comMusica && livre && !loop && square == 0 ? View.VISIBLE : View.GONE);
@@ -453,11 +477,57 @@ public class CameraActivity extends AppCompatActivity {
         bMusica.setTextColor(musicaUri != null ? AMARELO : Color.WHITE);
         bTimer.setText(timer == 0 ? "⏱" : "⏱" + timer + "s");
         bTimer.setTextColor(timer == 0 ? Color.WHITE : AMARELO);
-        bTimer.setVisibility(ajustesAbertos && foto && !loop ? View.VISIBLE : View.GONE);
+        bTimer.setVisibility(foto && !loop && timer > 0 && !ajustesAbertos ? View.VISIBLE : View.GONE);
+        if (painelAjustes != null && painelAjustes.getVisibility() == View.VISIBLE) pintarAjustes();
         if (gravando == null && !capturandoLoop) {
             tempo.setTextColor(Color.WHITE);
             tempo.setText(loop ? "Loop" : square > 0 ? "Square · " + Math.min(celulas.size() + 1, square) + " de " + square : dupla && !concorrente ? "Dupla · trás e frente" : "");
         }
+    }
+    private boolean pintandoAjustes;
+    private void pintarAjustes() {
+        if (painelAjustes == null || pintandoAjustes) return;
+        pintandoAjustes = true;
+        try {
+            painelAjustes.removeAllViews();
+            if (!ajustesAbertos) { painelAjustes.setVisibility(View.GONE); return; }
+            boolean foto = !M_VIDEO.equals(modo) || loop;
+            if (!(frente || loop || square > 0 || dupla)) {
+                if (M_VIDEO.equals(modo)) linhaAjuste("Lanterna", new String[]{"Não", "Sim"}, flash == ImageCapture.FLASH_MODE_ON ? 1 : 0, i -> definirFlash(i == 1 ? ImageCapture.FLASH_MODE_ON : ImageCapture.FLASH_MODE_OFF));
+                else linhaAjuste("Flash", new String[]{"Não", "Auto", "Sim"}, flash == ImageCapture.FLASH_MODE_AUTO ? 1 : flash == ImageCapture.FLASH_MODE_ON ? 2 : 0,
+                        i -> definirFlash(i == 1 ? ImageCapture.FLASH_MODE_AUTO : i == 2 ? ImageCapture.FLASH_MODE_ON : ImageCapture.FLASH_MODE_OFF));
+            }
+            boolean temHdr = extensoes != null && M_FOTO.equals(modo) && !loop && square == 0 && extensaoDisponivel(ExtensionMode.HDR);
+            if (temHdr) linhaAjuste("HDR", new String[]{"Não", "Sim"}, hdr ? 1 : 0, i -> { boolean n = i == 1; if (n == hdr) return; hdr = n; prefs.edit().putBoolean("hdr", hdr).apply(); ligar(); });
+            if (foto) linhaAjuste("Temporizador", new String[]{"Não", "3 s", "10 s"}, timer == 3 ? 1 : timer == 10 ? 2 : 0, i -> timer = i == 1 ? 3 : i == 2 ? 10 : 0);
+            linhaAjuste("Grade", new String[]{"Não", "Sim"}, grade ? 1 : 0, i -> { grade = i == 1; prefs.edit().putBoolean("grade", grade).apply(); vGrade.setVisibility(grade ? View.VISIBLE : View.GONE); });
+            painelAjustes.setVisibility(View.VISIBLE);
+            if (painelAjustes.getAlpha() < 1f || painelAjustes.getTag() == null) { painelAjustes.setTag(1); painelAjustes.setAlpha(0f); painelAjustes.setTranslationY(-dp(8)); painelAjustes.animate().alpha(1f).translationY(0).setDuration(160).start(); }
+        } finally { pintandoAjustes = false; if (!ajustesAbertos && painelAjustes != null) painelAjustes.setTag(null); }
+    }
+    private interface AoEscolher { void escolher(int i); }
+    private void linhaAjuste(String nome, String[] ops, int sel, AoEscolher f) {
+        LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.HORIZONTAL); l.setGravity(Gravity.CENTER_VERTICAL); l.setPadding(0, dp(5), 0, dp(5));
+        TextView t = new TextView(this); t.setText(nome); t.setTextColor(Color.WHITE); t.setTextSize(14); t.setMinWidth(dp(104));
+        l.addView(t);
+        LinearLayout g = new LinearLayout(this); g.setBackground(pilula(Color.argb(60, 255, 255, 255), 0)); g.setPadding(dp(3), dp(3), dp(3), dp(3));
+        for (int i = 0; i < ops.length; i++) {
+            final int k = i;
+            TextView o = new TextView(this); o.setText(ops[i]); o.setTextSize(13); o.setGravity(Gravity.CENTER);
+            o.setPadding(dp(12), dp(6), dp(12), dp(6)); o.setMinWidth(dp(48));
+            boolean on = i == sel;
+            o.setTextColor(on ? Color.BLACK : Color.WHITE);
+            if (on) o.setBackground(pilula(AMARELO, 0));
+            o.setOnClickListener(v -> { f.escolher(k); pintarTopo(); pintarAjustes(); });
+            g.addView(o);
+        }
+        l.addView(g);
+        painelAjustes.addView(l);
+    }
+    private void definirFlash(int novo) {
+        flash = novo; prefs.edit().putInt("flash", flash).apply();
+        if (captura != null) captura.setFlashMode(flash);
+        if (camera != null && M_VIDEO.equals(modo)) { try { camera.getCameraControl().enableTorch(flash == ImageCapture.FLASH_MODE_ON); } catch (Exception e) { } }
     }
     private void pintarModos() {
         modos.removeAllViews();
