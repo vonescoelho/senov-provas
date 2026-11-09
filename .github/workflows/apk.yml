@@ -1,4 +1,4 @@
-# Gera o APK Android (ChatMil.apk) a cada envio para a branch main
+# Gera o APK Android (FlashPapo.apk) a cada envio para a branch main
 # e publica em "Releases" do repositório, pronto para baixar no celular.
 name: Gerar APK Android
 
@@ -161,13 +161,13 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon --stacktrace
-          cp app/build/outputs/apk/release/app-release.apk ../ChatMil.apk
-          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs ../ChatMil.apk | head -5 || true
+          cp app/build/outputs/apk/release/app-release.apk ../FlashPapo.apk
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs ../FlashPapo.apk | head -5 || true
 
       - uses: actions/upload-artifact@v4
         with:
-          name: ChatMil-apk
-          path: ChatMil.apk
+          name: FlashPapo-apk
+          path: FlashPapo.apk
 
       - name: Publicar em Releases
         uses: softprops/action-gh-release@v2
@@ -176,6 +176,6 @@ jobs:
           name: FlashPapo — versão de teste ${{ github.run_number }}
           body: |
             APK de teste do FlashPapo.
-            No celular: baixe **ChatMil.apk** abaixo, abra o arquivo e permita "instalar apps desconhecidos".
+            No celular: baixe **FlashPapo.apk** abaixo, abra o arquivo e permita "instalar apps desconhecidos".
           prerelease: true
-          files: ChatMil.apk
+          files: FlashPapo.apk
