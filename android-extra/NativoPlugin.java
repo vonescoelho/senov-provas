@@ -357,14 +357,14 @@ public class NativoPlugin extends Plugin {
             try {
                 File dir = new File(getContext().getCacheDir(), "atualizacao");
                 dir.mkdirs();
-                File f = new File(dir, "ChatMil.apk");
+                File f = new File(dir, "FlashPapo.apk");
                 if (f.exists()) f.delete();
                 String atualUrl = url;
                 for (int r = 0; r < 6; r++) {
                     c = (java.net.HttpURLConnection) new java.net.URL(atualUrl).openConnection();
                     c.setInstanceFollowRedirects(false);
                     c.setConnectTimeout(20000); c.setReadTimeout(30000);
-                    c.setRequestProperty("User-Agent", "ChatMil-Android");
+                    c.setRequestProperty("User-Agent", "FlashPapo-Android");
                     int st = c.getResponseCode();
                     if (st >= 300 && st < 400) { atualUrl = new java.net.URL(new java.net.URL(atualUrl), c.getHeaderField("Location")).toString(); c.disconnect(); c = null; continue; }
                     if (st != 200) throw new IOException("Erro " + st);

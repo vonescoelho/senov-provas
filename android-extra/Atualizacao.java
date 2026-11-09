@@ -49,7 +49,7 @@ public class Atualizacao {
     static JSONObject ultima() throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(API).openConnection();
         c.setRequestProperty("Accept", "application/vnd.github+json");
-        c.setRequestProperty("User-Agent", "ChatMil-Android");
+        c.setRequestProperty("User-Agent", "FlashPapo-Android");
         c.setConnectTimeout(15000); c.setReadTimeout(20000);
         try {
             if (c.getResponseCode() != 200) return null;
