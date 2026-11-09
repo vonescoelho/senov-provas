@@ -1,4 +1,4 @@
-/* Reúne só as partes do Firebase que o ChatMil usa.
+/* Reúne só as partes do Firebase que o FlashPapo usa.
    O tools/build.py empacota este arquivo em www/vendor/firebase.js (variável global FB). */
 export { initializeApp } from "firebase/app";
 export {
