@@ -73,6 +73,23 @@ jobs:
           m = _re.search(r'<activity[^>]*android:name="\.MainActivity"', s)
           if m and "supportsPictureInPicture" not in s:
               s = s[:m.end()] + ' android:supportsPictureInPicture="true" android:resizeableActivity="true"' + s[m.end():]
+          # links de fora (NotePino: flashpapo://sos?...) e "Compartilhar" de outros apps (links e textos)
+          m = _re.search(r'<activity[^>]*android:name="\.MainActivity"[^>]*>', s)
+          if m and "flashpapo" not in s:
+              filtros = """
+                      <intent-filter>
+                          <action android:name="android.intent.action.VIEW" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <category android:name="android.intent.category.BROWSABLE" />
+                          <data android:scheme="flashpapo" />
+                      </intent-filter>
+                      <intent-filter>
+                          <action android:name="android.intent.action.SEND" />
+                          <category android:name="android.intent.category.DEFAULT" />
+                          <data android:mimeType="text/plain" />
+                      </intent-filter>
+          """
+              s = s[:m.end()] + filtros + s[m.end():]
           open(p, "w").write(s)
           g = "android/app/build.gradle"
           t = open(g).read()
