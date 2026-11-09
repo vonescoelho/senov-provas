@@ -66,7 +66,7 @@
   X.acoes["ch-iniciar"] = el => { window.fecharSheet(); iniciar(el.dataset.id, el.dataset.v, el.dataset.u === "1"); };
   X.acoes["ch-jitsi"] = async el => {
     window.fecharSheet();
-    const sala = "ChatMil-" + String(el.dataset.id).replace(/[^A-Za-z0-9]/g, "").slice(0, 10) + "-" + Math.random().toString(36).slice(2, 8);
+    const sala = "FlashPapo-" + String(el.dataset.id).replace(/[^A-Za-z0-9]/g, "").slice(0, 10) + "-" + Math.random().toString(36).slice(2, 8);
     const ok = await enviarMsg(el.dataset.id, { chamada: sala, prev: "Reunião (Jitsi Meet)" });
     if (ok !== false) abrirJitsi(sala);
   };

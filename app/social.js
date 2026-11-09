@@ -402,7 +402,7 @@
 
   /* ================= Cadastro e entrada ================= */
   const USU_RE = /^[a-z0-9](?:[a-z0-9._]{1,18})[a-z0-9]$/;
-  const RESERVADOS = ["admin", "administrador", "senov", "chatmil", "chatsenov", "suporte", "oficial", "moderacao", "moderador", "sistema", "ajuda"];
+  const RESERVADOS = ["admin", "administrador", "senov", "chatmil", "flashpapo", "chatsenov", "suporte", "oficial", "moderacao", "moderador", "sistema", "ajuda"];
   function limparUsuario(t) { return semAc(t).replace(/^@/, "").replace(/\s+/g, ".").replace(/[^a-z0-9._]/g, "").slice(0, 20); }
   function problemaUsuario(u) {
     if (u.length < 3) return "Use pelo menos 3 caracteres.";
@@ -1154,7 +1154,7 @@
         criadosArq = aid; M.guardar("postArqs:" + aid, r.blob);
         arq = { id: aid, nome: r.nome, tipo: r.tipo, tamanho: r.blob.size, ...r.extra };
       }
-      const aoVivo = live ? "ChatMil-AoVivo-" + eu().slice(0, 6) + "-" + Math.random().toString(36).slice(2, 8) : null;
+      const aoVivo = live ? "FlashPapo-AoVivo-" + eu().slice(0, 6) + "-" + Math.random().toString(36).slice(2, 8) : null;
       const extraP = Object.assign({}, ...EXT.postDados.map(f => { try { return f(para) || {}; } catch (e) { return {}; } }));
       /* link no texto: vai com a miniatura (só quando a publicação não tem fotos) */
       if (!imgs.length && !arq && window.CS_LINK) { if (ok) ok.textContent = "Publicando…"; const lk = await CS_LINK.paraTexto(t, 3500).catch(() => null); if (lk) extraP.link = lk; }
@@ -1297,7 +1297,7 @@
         if (b && meu === i && MI.el) { const u = URL.createObjectURL(b); const pre = new Image(); pre.onload = () => { if (meu === i && MI.el) { const ant = img.src; img.src = u; img.dataset.cheia = u; } else URL.revokeObjectURL(u); }; pre.src = u; }
       }
     };
-    MI.salvar = async () => { const m = l[i]; let b = MI.cheia.get(ck(m.id + "f")); if (!b) { const u = await baixarFotoPost(m.id + "m", col); if (u) b = await (await fetch(u)).blob(); } if (!b) return; const nome = "chatmil-foto-" + (i + 1) + (b.type === "image/webp" ? ".webp" : ".jpg"); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); toast("Foto salva."); };
+    MI.salvar = async () => { const m = l[i]; let b = MI.cheia.get(ck(m.id + "f")); if (!b) { const u = await baixarFotoPost(m.id + "m", col); if (u) b = await (await fetch(u)).blob(); } if (!b) return; const nome = "flashpapo-foto-" + (i + 1) + (b.type === "image/webp" ? ".webp" : ".jpg"); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = nome; document.body.appendChild(a); a.click(); a.remove(); toast("Foto salva."); };
     let x0 = 0, y0 = 0, ult = 0, arr = false, px = 0, py = 0;
     palco.addEventListener("pointerdown", e => { x0 = e.clientX; y0 = e.clientY; px = tx; py = ty; arr = true; });
     palco.addEventListener("pointermove", e => { if (!arr || z === 1) return; tx = px + (e.clientX - x0); ty = py + (e.clientY - y0); aplicar(); });
@@ -1615,7 +1615,7 @@
     const u = SO.user;
     window.abrirSheet(`<div class="sheet-h"><h2>${u.emailVerified ? "E-mail confirmado" : "Confirme o seu e-mail"}</h2></div>
       ${titulo ? `<p>${esc(titulo)}</p>` : ""}
-      <p class="cs-just">${u.emailVerified ? `O e-mail <b>${esc(u.email)}</b> está confirmado.` : `Confirmar é <b>opcional</b>: você já pode usar tudo no FlashPapo. Quem confirma um e-mail institucional (.gov.br ou .edu.br) ganha o selo de professor(a).</p><p class="cs-just">O link vai para <b>${esc(u.email)}</b>, enviado por <b>noreply@chatmil-56408.firebaseapp.com</b>. Pode demorar alguns minutos e cair em <b>Spam</b>, <b>Lixo eletrônico</b> ou <b>Promoções</b>. E-mails de escola às vezes bloqueiam mensagens automáticas.`}</p>
+      <p class="cs-just">${u.emailVerified ? `<b>${esc(u.email)}</b> confirmado.` : `O link vai para <b>${esc(u.email)}</b>. Veja também em <b>Spam</b> ou <b>Promoções</b>.`}</p>
       ${u.emailVerified ? "" : `<div class="stack"><button class="btn primary cs-grande" data-s="ja-confirmei">Já confirmei</button><button class="btn" data-s="reenviar">Enviar o link de novo</button></div>`}`);
   }
   function sheetSenha() {

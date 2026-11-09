@@ -2233,11 +2233,11 @@ document.addEventListener("click",async ev=>{
       try{localStorage.setItem("senov.ia",JSON.stringify({chave:k,gemini:g,openai:o,modelo:m}));}catch(e){}S.sample=window.claude?await window.claude.use("sample"):null;toast(k||g||o?"IA ligada.":"Chaves removidas.");render();break;}
     case "ia-remover":try{localStorage.removeItem("senov.ia");}catch(e){}S.sample=window.claude?await window.claude.use("sample"):null;toast("Chaves removidas.");render();break;
     case "imp-json":$("#imp-file").click();break;
-    case "exp-json":await baixar("banco-chatmil-questoes.json",JSON.stringify(S._banco,null,2));break;
+    case "exp-json":await baixar("banco-flashpapo-questoes.json",JSON.stringify(S._banco,null,2));break;
     case "exp-csv":{const cols=["id","disciplina","nivel","serie","conteudo","dificuldade","aee","enunciado","A","B","C","D","E","correta","autorId","criadoEm"];
       const cel=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
       const lin=S._banco.map(q=>[q.id,q.disciplina,q.nivel,q.serie,q.conteudo,DIF[q.dificuldade],q.aee?"sim":"não",q.enunciado,...[0,1,2,3,4].map(i=>(q.alternativas||[])[i]||""),LET[q.correta],q.autorId,q.criadoEm].map(cel).join(";"));
-      await baixar("banco-chatmil-questoes.csv","﻿"+cols.join(";")+"\n"+lin.join("\n"));break;}
+      await baixar("banco-flashpapo-questoes.csv","﻿"+cols.join(";")+"\n"+lin.join("\n"));break;}
     case "rem-exemplos":confirmar("Remover questões de exemplo?","As questões marcadas como Exemplo serão apagadas do banco.","Remover",async()=>{for(const q of S.questoes.filter(x=>x.exemplo)){try{await S.db.doc("questoes/"+q.id).delete();}catch(e){}}toast("Exemplos removidos.");});break;
   }
 });

@@ -356,6 +356,7 @@
       const s = await fb.getDocs(C(f.col, f.id, "vistos"));
       const l = s.docs.map(d => ({ u: d.id, ...d.data() })).sort((a, b) => ((b.curtiu || b.emo) ? 1 : 0) - ((a.curtiu || a.emo) ? 1 : 0) || A.ms(b.em) - A.ms(a.em));
       const nc = l.filter(x => x.curtiu).length, ne = l.filter(x => x.emo).length;
+      await Promise.all(l.slice(0, 80).map(x => SO.perfis[x.u] ? null : fb.getDoc(D("users", x.u)).then(d => { if (d.exists()) SO.perfis[x.u] = A.pub(x.u, d.data()); }).catch(() => { })));
       window.abrirSheet(`<div class="sheet-h"><h2>${I.olho} ${l.length}${nc ? ` <span class="cs-flv-nc on">${I.coracao}<b>${nc}</b></span>` : ""}${ne ? ` <span class="cs-flv-nc on">${I.emoji}<b>${ne}</b></span>` : ""}</h2></div>
         ${l.length ? `<div class="cs-menu">${l.map(x => { const p = P(x.u); return `<button data-s="ver-perfil" data-id="${esc(x.u)}">${av(p, 40, x.u)}<span><b>${esc(p.nome)}</b><small>${x.em ? haQuanto(A.ms(x.em)) : ""}</small></span>${x.emo ? `<i class="cs-flv-emo-i">${esc(x.emo)}</i>` : ""}${x.curtiu ? `<i class="cs-flv-cur-i">${I.coracao}</i>` : ""}</button>`; }).join("")}</div>` : `<p class="muted cs-flv-ninguem">${I.olho} 0</p>`}`);
     } catch (e) { toast(msgErro(e)); }
