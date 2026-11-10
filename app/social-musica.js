@@ -19,7 +19,8 @@
     pausa: ic('<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" stroke="none"/>'),
     x: ic('<path d="M6 6l12 12M18 6 6 18"/>'),
     voltar: ic('<path d="M15 18l-6-6 6-6"/>'),
-    busca: ic('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>')
+    busca: ic('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'),
+    cel: ic('<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/>')
   };
   const temChatMil = () => !!X.musicasChatMil && !MU.soLivre;
   const MU = { sel: null, cat: 1, cb: null, soLivre: true, titulo: "", trecho: 30, busca: "", lista: null, carregando: false, erro: "", escolhida: null, inicio: 0, tocandoId: null, audio: null, timer: null };
@@ -105,7 +106,7 @@
     const el = document.createElement("div"); el.id = "cs-mus"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Escolher música");
     el.innerHTML = `<header class="cs-mus-h"><button class="cs-ico-bt" data-s="mus-fechar" aria-label="Fechar">${I.voltar}</button><b>${esc(MU.titulo)}</b></header>
       <form class="cs-mus-busca" id="mus-f"><span>${I.busca}</span><input class="in" id="mus-q" type="search" placeholder="Buscar música ou artista" enterkeyhint="search" value="${esc(MU.busca)}"></form>
-      <div class="cs-mus-cats">${CATS.map(([n, q], i) => q === null && !temChatMil() ? "" : `<button type="button" data-s="mus-cat" data-v="${i}" aria-pressed="${!MU.busca && MU.cat === i}">${esc(n)}</button>`).join("")}</div>
+      <div class="cs-mus-cats">${MU.cb ? `<button type="button" class="cs-mus-loc" data-s="mus-local">${I.cel}Do celular</button>` : ""}${CATS.map(([n, q], i) => q === null && !temChatMil() ? "" : `<button type="button" data-s="mus-cat" data-v="${i}" aria-pressed="${!MU.busca && MU.cat === i}">${esc(n)}</button>`).join("")}</div>
       <div class="cs-mus-lista" id="mus-lista"></div>
       <div class="cs-mus-trecho" id="mus-trecho" hidden></div>
       <p class="cs-mus-cred">FlashPapo: faixas de artistas independentes · Livres: Creative Commons (Openverse)</p>`;
@@ -161,6 +162,20 @@
   X.escolherMusica = op => new Promise(res => abrir({ ...(op || {}), cb: res }));
   Object.assign(X.acoes, {
     "mus-abrir": () => abrir(),
+    /* música do celular (arquivo de áudio ou o som de um vídeo baixado) */
+    "mus-local": () => {
+      const inp = document.createElement("input"); inp.type = "file"; inp.accept = "audio/*,video/*";
+      inp.onchange = async () => {
+        const f = inp.files && inp.files[0]; if (!f) return;
+        const u = URL.createObjectURL(f), a = new Audio(); a.preload = "metadata"; a.src = u;
+        await new Promise(r => { a.onloadedmetadata = r; a.onerror = r; setTimeout(r, 6000); });
+        if (!isFinite(a.duration) || !a.duration) { URL.revokeObjectURL(u); return toast("Este arquivo não tem som que dê para usar."); }
+        const m = { id: "loc" + Date.now().toString(36), fonte: "local", titulo: (f.name || "Música").replace(/\.\w+$/, "").slice(0, 80), artista: "Do celular", url: u, dur: Math.round(a.duration), arq: f };
+        MU.lista = [m, ...(MU.lista || []).filter(x => x.fonte !== "local")]; MU.escolhida = m; MU.inicio = m.dur > 60 ? Math.floor(m.dur * 0.3) : 0;
+        pintarLista(); pintarTrecho(); const l = $("#mus-lista"); if (l) l.scrollTop = 0;
+      };
+      inp.click();
+    },
     "mus-fechar": () => fechar(),
     "mus-tirar": () => { MU.sel = null; parar(); pintarCompositor(); },
     "mus-prev-sel": () => { if (MU.sel) tocar("pc", MU.sel.url, MU.sel.inicio, 15); },
@@ -195,6 +210,7 @@
 .cs-mus-busca{display:flex;align-items:center;gap:8px;margin:0 14px;position:relative}.cs-mus-busca>span{position:absolute;left:12px;color:var(--muted)}.cs-mus-busca>span svg{width:18px;height:18px}.cs-mus-busca .in{padding-left:38px}
 .cs-mus-cats{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;scrollbar-width:none}.cs-mus-cats::-webkit-scrollbar{display:none}
 .cs-mus-cats button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.88rem;cursor:pointer}
+.cs-mus-cats .cs-mus-loc{display:inline-flex;align-items:center;gap:6px;border-color:var(--primary);color:var(--primary);font-weight:600}.cs-mus-loc svg{width:16px;height:16px}
 .cs-mus-cats button[aria-pressed=true]{background:var(--primary);border-color:var(--primary);color:var(--primary-ink,#fff)}
 .cs-mus-lista{flex:1;overflow-y:auto;padding:0 14px 10px;display:flex;flex-direction:column;gap:6px}
 .cs-mus-item{display:flex;align-items:center;gap:10px;padding:6px;border-radius:14px}.cs-mus-item.sel{background:color-mix(in srgb,var(--primary) 12%,transparent)}

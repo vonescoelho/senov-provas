@@ -86,7 +86,7 @@
     const grande = lk.i && lk.w >= 300 && lk.w >= lk.h * 1.2;
     const img = lk.i && /^data:image\//.test(lk.i) ? `<img src="${esc(lk.i)}" alt="" loading="lazy">` : "";
     return `<a class="cs-lkc ${grande ? "grande" : img ? "peq" : "sem"} ${cls || ""}" href="${esc(lk.u)}" data-s="link" data-v="${esc(lk.u)}" rel="noopener">
-      ${img ? `<span class="cs-lkc-img">${img}</span>` : ""}<span class="cs-lkc-tx"><b>${esc(lk.t || "")}</b>${lk.d ? `<small>${esc(lk.d)}</small>` : ""}<i>${esc(lk.s || dominio(lk.u))}</i></span></a>`;
+      ${img ? `<span class="cs-lkc-img">${img}</span>` : ""}<span class="cs-lkc-tx"><b>${esc(lk.t || "")}</b>${lk.d ? `<small>${esc(lk.d)}</small>` : ""}${!lk.t && !lk.d ? `<i>${esc(lk.s || dominio(lk.u))}</i>` : ""}</span></a>`;
   }
 
   /* ---------- prévia enquanto escreve a mensagem ---------- */
@@ -125,7 +125,9 @@
     return r;
   }
 
-  window.CS_LINK = { primeiro, previa, paraTexto, paraMensagem, card };
+  /* tira o endereço do texto quando o cartão do link aparece (fica só a imagem e o resumo) */
+  const semUrl = (t, lk) => { if (!t || !lk || !lk.u) return t || ""; let r = String(t).split(lk.u).join(" "); try { r = r.split(decodeURI(lk.u)).join(" "); } catch (e) { } return r.replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim(); };
+  window.CS_LINK = { primeiro, previa, paraTexto, paraMensagem, card, semUrl };
 
   /* publicação do mural com link */
   X.postCorpo.push(p => p.link && !(p.imgs && p.imgs.length) ? card(p.link, "post") : "");

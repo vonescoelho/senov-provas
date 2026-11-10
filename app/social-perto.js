@@ -335,7 +335,7 @@
       ST.primeiro = id; abrirTela({ v: "pt-descobrir" });
     },
     "pt-convidar": async () => {
-      const url = "https://vonescoelho.github.io/senov-provas/", t = "Estou no FlashPapo: vídeos, amigos e conversas, sem anúncios. Entre também: " + url;
+      const url = "https://vonescoelho.github.io/senov-provas/", t = "Estou no FlashPapo: vídeos, amigos e conversas. Entre também: " + url;
       try { if (navigator.share) { await navigator.share({ title: "FlashPapo", text: t }); return; } } catch (e) { return; }
       A.copiar(t); toast("Convite copiado. Cole no WhatsApp.");
     },

@@ -13,6 +13,8 @@
   const pri = n => PRIS.find(p => p[0] === n) || PRIS[1];
   const I = {
     nota: ic('<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>'),
+    lapis: ic('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>'),
+    colar: ic('<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h4"/>'),
     flag: ic('<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>'),
     pin: ic('<path d="M9 4h6l-1 6 3 3H7l3-3zM12 13v8"/>'),
     clip: ic('<path d="m21.4 11.6-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>'),
@@ -69,7 +71,8 @@
   function htmlNota(n) {
     const c = cat(n.cat), p = pri(n.prioridade), link = (n.texto || "").match(URL_RE);
     let corpo = "";
-    if (n.texto) corpo += `<div class="cs-nt-tx">${A.textoComLinks ? A.textoComLinks(n.texto) : esc(n.texto)}</div>`;
+    const txt = n.link && window.CS_LINK && CS_LINK.semUrl ? CS_LINK.semUrl(n.texto, n.link) : n.texto;
+    if (txt) corpo += `<div class="cs-nt-tx">${A.textoComLinks ? A.textoComLinks(txt) : esc(txt)}</div>`;
     if (n.link && window.CS_LINK) corpo += CS_LINK.card(n.link);
     else if (link) { corpo += `<button class="cs-nt-link" data-s="notas-link" data-v="${esc(link[0])}">${I.link}<span><b>${esc(dominio(link[0]))}</b><small>${esc(link[0].slice(0, 80))}</small></span></button>`; completarLink(n); }
     if (n.thumb) corpo += `<button class="cs-nt-foto" data-s="notas-arq" data-id="${esc(n.id)}"><img src="${esc(n.thumb)}" alt="" loading="lazy"></button>`;
@@ -188,11 +191,36 @@
       inp.click();
     },
     "notas-anx-tirar": () => { if (NT.anexo && NT.anexo.url) URL.revokeObjectURL(NT.anexo.url); NT.anexo = null; pintar(); },
-    "notas-menu": el => { const n = nota(el.dataset.id); if (n) sheetNota(n); },
+    "notas-menu": el => {
+      const n = nota(el.dataset.id); if (!n) return;
+      if (!A.barraFlutuante) return sheetNota(n);
+      const d = { id: n.id }, K = A.K;
+      A.barraFlutuante(el.closest(".cs-nt") || el, [
+        { s: "nt-fb-ed", t: "Editar", ic: I.lapis, d },
+        (n.texto || n.arq) && { s: "nt-fb-part", t: "Compartilhar", ic: K.share, d },
+        n.texto && { s: "nt-fb-copiar", t: "Copiar", ic: I.copiar, d },
+        { s: "nt-fb-colar", t: "Colar", ic: I.colar, d },
+        { s: "nt-fb-fixar", t: n.fixada ? "Desafixar" : "Fixar", ic: I.pin, d },
+        { s: "nt-fb-feito", t: n.feito ? "Pendente" : "Feito", ic: I.check, d },
+        { s: "notas-apagar", t: "Apagar", ic: I.lixo, d, perigo: true }
+      ]);
+    },
+    "nt-fb-ed": el => { A.fecharBarra(); const n = nota(el.dataset.id); if (n) sheetNota(n); },
+    "nt-fb-part": el => { A.fecharBarra(); const n = nota(el.dataset.id); if (!n) return; if (n.texto) return A.sheetPartilha(n.texto); if (n.arq && X.midia) X.midia.abrirArquivo({ ...n.arq, col: "notaArqs" }); },
+    "nt-fb-copiar": el => { A.fecharBarra(); const n = nota(el.dataset.id); if (n && n.texto) A.copiar(n.texto); },
+    "nt-fb-colar": async () => {
+      A.fecharBarra(); let t = "";
+      try { t = await navigator.clipboard.readText(); } catch (e) { }
+      const tx = $("#nt-tx"); if (!tx) return; if (!t) { tx.focus(); return toast("Toque e segure no campo para colar."); }
+      tx.value = (tx.value ? tx.value + "\n" : "") + t; NT.rascunho = tx.value; tx.focus(); tx.dispatchEvent(new Event("input", { bubbles: true }));
+    },
+    "nt-fb-fixar": el => { A.fecharBarra(); const n = nota(el.dataset.id); if (n) atualizar(n.id, { fixada: !n.fixada }); },
+    "nt-fb-feito": el => { A.fecharBarra(); const n = nota(el.dataset.id); if (n) atualizar(n.id, { feito: !n.feito }); },
     "notas-feito": el => { const n = nota(el.dataset.id); if (n) { window.fecharSheet(); atualizar(n.id, { feito: !n.feito }); } },
     "notas-fixar": el => { const n = nota(el.dataset.id); if (n) { window.fecharSheet(); atualizar(n.id, { fixada: !n.fixada }); } },
     "notas-apagar": async el => {
       const n = nota(el.dataset.id); if (!n) return;
+      if (A.fecharBarra) A.fecharBarra();
       if (el.dataset.ok !== "1") { window.abrirSheet(`<div class="sheet-h"><h2>Apagar anotação?</h2></div><div class="row"><button class="btn" data-s="fechar" style="flex:1">Cancelar</button><button class="btn cs-perigo-f" data-s="notas-apagar" data-id="${esc(n.id)}" data-ok="1" style="flex:1">Apagar</button></div>`); return; }
       window.fecharSheet();
       try { await fb.deleteDoc(D("users", eu(), "notas", n.id)); if (n.arq && X.midia) X.midia.apagarArquivo(n.arq.id, "notaArqs"); toast("Anotação apagada."); } catch (e) { toast(msgErro(e)); }

@@ -675,10 +675,10 @@
     if (!CR.el) return; if (!m) { telaEditar(); return; }
     usarMusicaLib(m); telaEditar();
   };
-  function usarMusicaLib(m) { CR.musica = { lib: m, nome: m.titulo + " · " + m.artista, dur: m.dur || 0, inicio: m.inicio || 0 }; }
+  function usarMusicaLib(m) { CR.musica = m.arq ? { arq: m.arq, nome: m.titulo, dur: m.dur || 0, inicio: m.inicio || 0 } : { lib: m, nome: m.titulo + " · " + m.artista, dur: m.dur || 0, inicio: m.inicio || 0 }; }
   X.acoes["flc-mus-cel"] = async () => {
     window.fecharSheet();
-    const [f] = await M.escolher("audio/*", false); if (!f || !CR.el) return;
+    const [f] = await M.escolher("audio/*,video/*", false); if (!f || !CR.el) return;
     const u = URL.createObjectURL(f), a = new Audio(u);
     await new Promise(r => { a.onloadedmetadata = r; a.onerror = r; setTimeout(r, 5000); });
     URL.revokeObjectURL(u);

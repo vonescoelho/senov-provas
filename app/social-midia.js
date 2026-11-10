@@ -1059,9 +1059,8 @@
         <span class="cs-aud-onda" data-s="au-seek" data-v="${esc(au.id)}">${[...ondaTxt].map((c, i, arr) => `<i class="${i < prog * arr.length ? "on" : ""}" style="height:${18 + (+c) * 9}%"></i>`).join("")}</span>
         <button class="cs-aud-vel" data-s="au-vel">${String(PL.vel).replace(".", ",")}x</button></div>
       <div class="cs-aud-r"><small class="cs-aud-t">${mmss(ativo && PL.el.currentTime ? PL.el.currentTime : au.dur)}</small>${au.nome && au.nome !== "audio" ? `<small class="cs-aud-n">${esc(au.nome)}</small>` : ""}
-        ${tr && tr.texto ? (tr.oculto ? `<button class="cs-link cs-aud-tr" data-s="au-tr-mostrar" data-v="${esc(au.id)}">${I.texto} Texto</button>` : "") : `<button class="cs-link cs-aud-tr" data-s="au-transc" data-v="${esc(au.id)}" data-t="${esc(au.tipo || "")}" ${tr && tr.trabalhando ? "disabled" : ""}>${tr && tr.trabalhando ? esc(tr.trabalhando) : `${I.texto} Transcrever`}</button>`}</div>
-      ${tr && tr.texto && !tr.oculto ? `<p class="cs-aud-tx">${esc(tr.texto)}<button class="cs-aud-tx-x" data-s="au-tr-ocultar" data-v="${esc(au.id)}" aria-label="Esconder o texto">${I.olhoX || "×"}</button></p>` : ""}
-      <span class="cs-h">${o.hr}</span></div>`;
+        ${tr && tr.texto ? (tr.oculto ? `<button class="cs-link cs-aud-tr" data-s="au-tr-mostrar" data-v="${esc(au.id)}" aria-label="Mostrar texto">${I.texto}</button>` : "") : `<button class="cs-link cs-aud-tr" data-s="au-transc" data-v="${esc(au.id)}" data-t="${esc(au.tipo || "")}" ${tr && tr.trabalhando ? "disabled" : ""} aria-label="Transcrever">${tr && tr.trabalhando ? `<i class="cs-aud-spin"></i>` : I.texto}</button>`}<span class="cs-h">${o.hr}</span></div>
+      ${tr && tr.texto && !tr.oculto ? `<p class="cs-aud-tx">${esc(tr.texto)}<button class="cs-aud-tx-x" data-s="au-tr-ocultar" data-v="${esc(au.id)}" aria-label="Esconder o texto">${I.olhoX || "×"}</button></p>` : ""}</div>`;
   }
   X.acoes["au-play"] = async el => {
     const id = el.dataset.v, tipo = el.dataset.t;
@@ -1402,23 +1401,26 @@ body.cs-apres-on{overflow:hidden}
 .cs-ap-nav{position:absolute;top:50%;transform:translateY(-50%);width:54px;height:54px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:#fff;display:grid;place-items:center;cursor:pointer}
 .cs-ap-nav svg{width:28px;height:28px}
 .cs-ap-nav.esq{left:10px}.cs-ap-nav.dir{right:10px}
-.cs-aud{min-width:250px;max-width:330px;gap:4px}
+.cs-aud{min-width:220px;max-width:300px;gap:2px!important;padding:6px 9px 5px!important}
 .cs-aud-l{display:flex;align-items:center;gap:8px}
-.cs-aud-play{width:46px;height:46px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;flex:none;cursor:pointer}
+.cs-aud-play{width:38px;height:38px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;flex:none;cursor:pointer}
 .cs-m.eu .cs-aud-play{background:var(--primary-ink);color:var(--primary)}
-.cs-aud-play svg{width:22px;height:22px}
-.cs-aud-onda{flex:1;height:34px;display:flex;align-items:center;gap:2px;cursor:pointer}
+.cs-aud-play svg{width:18px;height:18px}
+.cs-aud-onda{flex:1;height:26px;display:flex;align-items:center;gap:2px;cursor:pointer}
 .cs-aud-onda i{flex:1;min-width:2px;border-radius:2px;background:currentColor;opacity:.32}
 .cs-aud-onda i.on{opacity:1}
 .cs-aud-vel{border:0;border-radius:99px;background:color-mix(in srgb,currentColor 14%,transparent);color:inherit;font:inherit;font-weight:800;font-size:.8rem;padding:5px 9px;cursor:pointer;flex:none}
-.cs-aud-r{display:flex;align-items:center;gap:10px;padding-left:54px;flex-wrap:wrap}
+.cs-aud-r{display:flex;align-items:center;gap:8px;padding-left:46px;font-size:.76rem;min-height:20px}
+@keyframes csAudSpin{to{transform:rotate(360deg)}}
+.cs-aud-r .cs-h{position:static!important;margin:0 0 0 auto!important;float:none!important;display:inline-flex}
+.cs-aud-spin{width:13px;height:13px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:csAudSpin .8s linear infinite;display:inline-block}
 .cs-aud-t{font-variant-numeric:tabular-nums;opacity:.85}
 .cs-aud-n{opacity:.75;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
-.cs-aud-tr{display:inline-flex;align-items:center;gap:4px;font-size:.84rem;color:inherit!important;opacity:.95;text-decoration:underline}
+.cs-aud-tr{display:inline-grid;place-items:center;width:24px;height:22px;border-radius:7px;color:inherit!important;opacity:.9;text-decoration:none;background:color-mix(in srgb,currentColor 12%,transparent)}.cs-aud-tr svg{width:15px;height:15px}
 .cs-aud-tr svg{width:15px;height:15px}
 .cs-aud-tx{position:relative;padding-right:26px!important}
 .cs-aud-tx-x{position:absolute;right:0;top:0;border:0;background:none;color:inherit;opacity:.6;padding:2px;cursor:pointer}.cs-aud-tx-x svg{width:16px;height:16px}
-.cs-aud-tx{margin:4px 0 0;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,currentColor 8%,transparent);font-size:.95rem;line-height:1.4;white-space:pre-wrap}
+.cs-aud-tx{margin:3px 0 0;padding:5px 8px;border-radius:9px;background:color-mix(in srgb,currentColor 8%,transparent);font-size:.9rem;line-height:1.35;white-space:pre-wrap}
 .spin.sm{width:20px;height:20px;border-width:3px}
 .cs-grav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(0,0,0,.12);flex-wrap:wrap}
 .cs-grav-bt{width:54px;height:54px;border-radius:50%;border:0;background:var(--surface-2);color:var(--ink);display:grid;place-items:center;cursor:pointer;flex:none}

@@ -41,6 +41,8 @@
     foto: ic('<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>'),
     x: ic('<path d="M6 6l12 12M18 6 6 18"/>'),
     baixar: ic('<path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/>'),
+    estrela: ic('<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'),
+    traduzir: ic('<path d="M4 5h9M8.5 3v2M6 5c.6 3 2.6 5.6 5.5 7M11 5c-.8 3.6-3.4 6.6-7 8.2"/><path d="m13 21 4-9 4 9M14.4 18h5.2"/>'),
     resp: ic('<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v4"/>'),
     maisV: ic('<circle cx="12" cy="5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="19" r="1.3" fill="currentColor"/>'),
     mais: ic('<circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="19" cy="12" r="1.2" fill="currentColor"/>'),
@@ -546,7 +548,7 @@
     return `<section class="cs-auth cs-bv">
       <div class="cs-logo cs-logo-bv">${logoSimbolo("#fff")}</div>
       <h1 class="cs-bv-marca">${logoNome("cs-lg cs-lg-bv")}</h1>
-      <p class="cs-lema">Vídeos, amigos e conversas. Sem anúncios.</p>
+      <p class="cs-lema">Vídeos, amigos e conversas.</p>
       <div class="cs-auth-bt">
         <button class="btn primary cs-grande" data-s="ir" data-v="criar">Criar minha conta</button>
         <button class="btn cs-grande" data-s="ir" data-v="entrar">Já tenho conta</button>
@@ -714,6 +716,7 @@
       ${window.CS_E2E ? (() => { const fa = CS_E2E.faltam(); const sem = fa && fa.chat === c.id ? fa.uids.filter(u => u !== eu()) : [];
         return sem.length ? `<button class="cs-e2e-chat" data-s="e2e-info">🔓 ${esc(sem.map(u => P(u).nome).join(", "))} ainda não ativou a criptografia (precisa atualizar o app)</button>`
           : CS_E2E.pronto() ? `<button class="cs-e2e-chat" data-s="${g ? "e2e-info" : "e2e-codigo"}" data-id="${esc(g ? "" : t.outro)}">${K.lock} Mensagens criptografadas</button>` : ""; })() : ""}
+      ${(() => { const fm = fixadaDe(c.id), m = fm && (SO.msgs[c.id] || []).find(x => x.id === fm); return m && !m.apagada ? `<button class="cs-fixm" data-s="resp-ir" data-v="${esc(m.id)}">${K.fixa}<span>${esc(prevMsg(m).slice(0, 120))}</span></button>` : ""; })()}
       ${window.CS_FUNDO ? CS_FUNDO.html(c.id) : ""}<div class="cs-msgs" id="cs-msgs">${htmlMsgs(c)}</div>
       ${podeEscrever ? `${SO.figAberta ? (EXT.painelEmoji ? EXT.painelEmoji() : painelFig("fig-msg")) : ""}
       ${SO.resp && SO.resp[id] ? barraResp(SO.resp[id]) : ""}
@@ -743,9 +746,16 @@
       if (EXT.msgExtra && (m.local || m.figImg)) { h += EXT.msgExtra(m, { meu, seq, nome, hr, chat: c }); ant = m; return; }
       if (m.fig) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0">${nome}<div class="cs-fig" data-s="fig-ver" data-v="${esc(m.id)}">${figurinha(m.fig, 128)}<span class="cs-h">${hr}</span></div></div>`;
       else if (EXT.emojiGrande && EXT.emojiGrande(m.texto)) h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb cs-emo-msg">${nome}<span class="cs-tx">${[...new Intl.Segmenter("pt", { granularity: "grapheme" }).segment(m.texto.trim())].map(x => x.segment.trim() ? EXT.emojiAnimado(x.segment) : "").join("")}</span><span class="cs-h">${hr}</span></div></div>`;
-      else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb ${m.link ? "cs-com-lk" : ""}">${nome}${m.link && window.CS_LINK ? CS_LINK.card(m.link) : ""}<span class="cs-tx">${textoComLinks(m.texto)}</span>${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
+      else h += `<div class="cs-m ${meu ? "eu" : ""} ${seq ? "seq" : ""}" data-s="msg" data-id="${esc(m.id)}" role="button" tabindex="0"><div class="cs-b cs-tb ${m.link ? "cs-com-lk" : ""}">${nome}${m.link && window.CS_LINK ? CS_LINK.card(m.link) : ""}${(() => { const t = m.link && window.CS_LINK && CS_LINK.card(m.link) ? CS_LINK.semUrl(m.texto, m.link) : m.texto; return t ? `<span class="cs-tx">${textoComLinks(t)}</span>` : `<span class="cs-tx"></span>`; })()}${previaYT(m.texto)}<span class="cs-h">${hr}</span></div></div>`;
       ant = m;
-      } finally { if (m.resp && !m.apagada) h = h.slice(0, ini) + comResposta(h.slice(ini), m.resp); }
+      } finally { if (m.resp && !m.apagada) h = h.slice(0, ini) + comResposta(h.slice(ini), m.resp);
+        if (!m.apagada && h.length > ini) {
+          let pd = h.slice(ini);
+          if (marcadas().has(c.id + "/" + m.id)) pd = pd.replace('class="cs-m ', 'class="cs-m cs-marcada ');
+          const tr = SO.trad && SO.trad[m.id];
+          if (tr) { const k = pd.lastIndexOf('<span class="cs-h">'); if (k > 0) pd = pd.slice(0, k) + `<span class="cs-trad">${tr.t ? `<small>${K.traduzir}${esc(tr.nome)}</small>${esc(tr.t)}` : `<small>${K.traduzir}Traduzindo…</small>`}<button type="button" data-s="trad-x" data-v="${esc(m.id)}" aria-label="Tirar tradução">${K.x}</button></span>` + pd.slice(k); }
+          h = h.slice(0, ini) + pd;
+        } }
     });
     return h + (dia ? "</div>" : "");
   }
@@ -1421,7 +1431,7 @@
       <div class="${aba ? "" : "cs-pag "}stack cs-pf-pag">
       <section class="cs-pfl">
         <div class="cs-pf-top">
-          <div class="cs-pf-av">${EXT.perfilAv ? EXT.perfilAv(uid, av(p, 88, uid)) : av(p, 88, uid)}</div>
+          <div class="cs-pf-av">${(() => { const h = av(p, 88, uid), r = EXT.perfilAv ? EXT.perfilAv(uid, h) : h; return r === h && p.foto ? `<button class="cs-pf-fotobt" data-s="pf-foto" data-id="${esc(uid)}" aria-label="Ver foto">${h}</button>` : r; })()}</div>
           <div class="cs-pf-lado">
             <h2 title="${esc(p.nomeReal || p.nome)}"><span class="cs-pf-nm">${esc(p.nomeReal || p.nome)}</span>${seloHtml(p)}</h2>
             <div class="cs-pf-linha"><span class="cs-pf-cont" title="Publicações" aria-label="${n.posts} publicações">${K.grade}<b>${n.posts}</b></span>
@@ -1645,13 +1655,13 @@
     <li>Não publique dados pessoais de estudantes (nomes completos, fotos, laudos, notas).</li>
     <li>Use <b>Denunciar</b> para mensagens ofensivas, assédio ou golpes, e <b>Bloquear</b> para parar de receber mensagens de alguém.</li>
     <li>Em “Quem pode me mandar mensagem”, escolha “Só quem eu sigo” para mais privacidade.</li></ul>`;
-  const TXT_TERMOS = `<p class="cs-just">O FlashPapo é uma rede social brasileira, sem anúncios, para todas as idades a partir de 13 anos. Ao usar, você concorda em:</p>
+  const TXT_TERMOS = `<p class="cs-just">O FlashPapo é uma rede social brasileira para todas as idades a partir de 13 anos. Ao usar, você concorda em:</p>
     <ul class="cs-ul"><li>Tratar as pessoas com respeito. Xingamentos e qualquer forma de preconceito (racismo, LGBTfobia, capacitismo, machismo, xenofobia, intolerância religiosa) são proibidos e bloqueados automaticamente.</li>
     <li>Não publicar dados pessoais de outras pessoas, conteúdo impróprio, golpes, apostas ou links falsos (são bloqueados antes do envio).</li>
     <li>Publicar no MyFlash, no Mural e na Central do Artista só o que é seu ou o que você tem direito de usar.</li>
     <li>Contas com várias denúncias são suspensas automaticamente e podem pedir revisão ao Suporte.</li></ul>
     <p class="cs-just"><b>Menores de 18 anos.</b> Contas de 13 a 17 anos ficam protegidas: só recebem mensagens de quem seguem e não acessam Conexões. Conexões exige confirmação de maioridade, feita no próprio celular.</p>
-    <p class="cs-just"><b>Privacidade.</b> Guardamos o seu nome, @usuário, foto, publicações e mensagens, só para o funcionamento do app. Do nascimento, guardamos apenas dia e mês (aniversário) e se a conta é de menor. Selfie e documento da verificação são conferidos no celular e não são enviados. Não vendemos dados. Você pode excluir a sua conta a qualquer momento em Configurações. Tratamento de dados conforme a LGPD (Lei 13.709/2018) e o ECA Digital.</p>
+    <p class="cs-just"><b>Privacidade.</b> O FlashPapo segue a <b>Lei Geral de Proteção de Dados</b> (LGPD, Lei 13.709/2018), o <b>Marco Civil da Internet</b> (Lei 12.965/2014), o <b>Estatuto da Criança e do Adolescente</b> (ECA, Lei 8.069/1990) e o <b>ECA Digital</b> (Lei 15.211/2025). Pela LGPD, você pode pedir informações, correção e exclusão dos seus dados, e excluir a sua conta a qualquer momento em Configurações.</p>
     <p class="cs-just"><b>Professores.</b> Recursos de provas e aulas ficam disponíveis para quem informa o código INEP da escola; as questões seguem o termo de compartilhamento próprio.</p>`;
   function sheetExcluir() {
     window.abrirSheet(`<div class="sheet-h"><h2>Excluir conta</h2></div>
@@ -1795,7 +1805,8 @@
     texto = String(texto || "").slice(0, 2000); if (!texto) return;
     SO.partilha = texto;
     const l = SO.chats.filter(c => c.ultima || c.tipo === "grupo").sort((a, b) => ms(b.atualizadoEm) - ms(a.atualizadoEm)).slice(0, 40);
-    window.abrirSheet(`<div class="sheet-h"><h2>Enviar para</h2></div><p class="cs-part-tx">${esc(texto.slice(0, 160))}</p>
+    const fora = !!((window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Share) || navigator.share);
+    window.abrirSheet(`<div class="sheet-h"><h2>Enviar para</h2>${fora ? `<button class="cs-ico-bt" data-s="part-fora" aria-label="Outros apps">${K.share}</button>` : ""}</div><p class="cs-part-tx">${esc(texto.slice(0, 160))}</p>
       <div class="cs-lista">${l.map(c => { const t = tituloChat(c); return `<button class="cs-item" data-s="part-env" data-id="${esc(c.id)}">${t.av(40)}<span class="cs-item-t"><b>${esc(t.nome)}</b></span></button>`; }).join("") || `<p class="small muted">Nenhuma conversa ainda.</p>`}</div>`);
   }
   /* ================= Puxar para o lado troca de aba ================= */
@@ -1830,13 +1841,67 @@
     document.addEventListener("click", e => { if (cvFez) { cvFez = false; e.stopPropagation(); e.preventDefault(); } }, true);
     document.addEventListener("contextmenu", e => { const it = e.target.closest && e.target.closest(".cs-item[data-s=abrir-chat]"); if (it) { e.preventDefault(); clearTimeout(cvT); cvT = null; sheetConversa(it.dataset.id); } });
   }
+  /* ================= Barra flutuante de ações (só ícones) ================= */
+  const marcadas = () => { if (!SO.marc || SO.marc.uid !== eu()) SO.marc = { uid: eu(), s: new Set(lerLS("cs.marc." + eu(), [])) }; return SO.marc.s; };
+  const fixadaDe = chatId => (lerLS("cs.fixm." + eu(), {}) || {})[chatId] || "";
+  const FB = { el: null };
+  function fecharBarra() { if (FB.el) { FB.el.remove(); FB.el = null; } document.querySelectorAll(".cs-sel-on").forEach(x => x.classList.remove("cs-sel-on")); }
+  function barraFlutuante(alvo, itens) {
+    fecharBarra();
+    const b = document.createElement("div"); b.className = "cs-fbar"; b.setAttribute("role", "toolbar");
+    b.innerHTML = itens.filter(Boolean).map(i => `<button type="button" data-s="${i.s}" ${Object.entries(i.d || {}).map(([k, x]) => `data-${k}="${esc(x)}"`).join(" ")} aria-label="${esc(i.t)}" title="${esc(i.t)}" class="${i.perigo ? "perigo" : ""}">${i.ic}</button>`).join("");
+    document.body.appendChild(b); FB.el = b; if (alvo) alvo.classList.add("cs-sel-on");
+    const r = alvo ? alvo.getBoundingClientRect() : { top: innerHeight / 2, bottom: innerHeight / 2, left: 0, width: innerWidth }, w = b.offsetWidth, hh = b.offsetHeight;
+    let top = r.top - hh - 8; if (top < 76) top = Math.min(innerHeight - hh - 96, r.bottom + 8);
+    b.style.top = Math.max(8, top) + "px"; b.style.left = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
+    try { navigator.vibrate && navigator.vibrate(18); } catch (e) { }
+  }
+  document.addEventListener("pointerdown", e => { if (FB.el && !(e.target.closest && e.target.closest(".cs-fbar"))) fecharBarra(); }, true);
+  window.addEventListener("scroll", e => { if (FB.el && !(e.target && e.target.closest && e.target.closest(".cs-fbar"))) fecharBarra(); }, true);
+  function barraMsg(chatId, msgId, el) {
+    const m = (SO.msgs[chatId] || []).find(x => x.id === msgId); if (!m) return;
+    const ok = !m.apagada && !m.cifrada, d = { chat: chatId, id: msgId };
+    barraFlutuante(el, [
+      ok && { s: "fb-resp", t: "Responder", ic: K.resp, d },
+      ok && m.texto && { s: "fb-copiar", t: "Copiar", ic: K.copiar, d },
+      ok && m.texto && { s: "fb-trad", t: "Traduzir", ic: K.traduzir, d },
+      ok && (m.texto || m.link) && { s: "fb-part", t: "Compartilhar", ic: K.share, d },
+      ok && { s: "fb-fixar", t: fixadaDe(chatId) === msgId ? "Desafixar" : "Fixar", ic: K.fixa, d },
+      ok && { s: "fb-marcar", t: marcadas().has(chatId + "/" + msgId) ? "Desmarcar" : "Marcar", ic: K.estrela, d },
+      { s: "fb-apagar", t: "Apagar", ic: K.lixo, d, perigo: true },
+      { s: "fb-mais", t: "Mais", ic: K.mais, d }
+    ]);
+  }
+  /* tradução: 1) a do próprio celular/navegador (sem internet), 2) a IA grátis (Gemini) se tiver chave, 3) serviço público de tradução */
+  async function traduzir(texto, alvo) {
+    texto = String(texto || "").slice(0, 2000);
+    try {
+      if (self.Translator && self.LanguageDetector) {
+        const det = await LanguageDetector.create(), r = (await det.detect(texto))[0], de = r && r.detectedLanguage;
+        if (de && de !== alvo && de !== "und") { const disp = await Translator.availability({ sourceLanguage: de, targetLanguage: alvo }); if (disp && disp !== "unavailable") { const t = await Translator.create({ sourceLanguage: de, targetLanguage: alvo }); return await t.translate(texto); } }
+      }
+    } catch (e) { }
+    const nomes = { en: "inglês", es: "espanhol", pt: "português do Brasil" };
+    let chave = ""; try { chave = (JSON.parse(localStorage.getItem("senov.ia") || "null") || {}).gemini || window.CS_IA_GEMINI || ""; } catch (e) { }
+    if (chave) {
+      try {
+        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(chave), { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: `Traduza para ${nomes[alvo]}. Responda só com a tradução, sem comentários.\n\n${texto}` }] }], generationConfig: { temperature: 0 } }) });
+        if (r.ok) { const j = await r.json(), t = (((j.candidates || [])[0] || {}).content || { parts: [] }).parts.map(p => p.text || "").join("").trim(); if (t) return t; }
+      } catch (e) { }
+    }
+    const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + alvo + "&dt=t&q=" + encodeURIComponent(texto));
+    if (!r.ok) throw new Error("trad " + r.status);
+    const j = await r.json(); const t = (j[0] || []).map(x => x[0] || "").join("").trim(); if (!t) throw new Error("vazio"); return t;
+  }
+
   /* ================= Segurar a mensagem abre o menu (como no WhatsApp) ================= */
   { let lpT = null, lpXY = null, lpFez = false;
     document.addEventListener("pointerdown", e => {
       const m = e.target.closest && e.target.closest(".cs-m[data-s=msg]");
       if (!m || e.target.closest("button,a,audio,video,input,textarea,[data-s]:not(.cs-m)")) return;
       lpFez = false; lpXY = [e.clientX, e.clientY]; clearTimeout(lpT);
-      lpT = setTimeout(() => { lpT = null; lpFez = true; try { navigator.vibrate && navigator.vibrate(25); } catch (x) { } const t = topo(); if (t && t.v === "chat") sheetMsg(t.id, m.dataset.id); }, 480);
+      lpT = setTimeout(() => { lpT = null; lpFez = true; try { navigator.vibrate && navigator.vibrate(25); } catch (x) { } const t = topo(); if (t && t.v === "chat") barraMsg(t.id, m.dataset.id, m); }, 450);
     });
     document.addEventListener("pointermove", e => { if (lpT && lpXY && Math.hypot(e.clientX - lpXY[0], e.clientY - lpXY[1]) > 10) { clearTimeout(lpT); lpT = null; } });
     ["pointerup", "pointercancel"].forEach(n => document.addEventListener(n, () => { clearTimeout(lpT); lpT = null; }, true));
@@ -1854,8 +1919,8 @@
     switch (s) {
       case "ir": SO.tela = v; SO.erro = ""; pintar(); window.scrollTo(0, 0); break;
       case "ver-senha": { const inp = el.parentElement.querySelector("input"); const ver = inp.type === "password"; inp.type = ver ? "text" : "password"; SO.cad.verSenha = ver; el.innerHTML = ver ? K.olhoX : K.olho; el.setAttribute("aria-label", ver ? "Esconder senha" : "Mostrar senha"); break; }
-      case "termos": window.abrirSheet(`<div class="sheet-h"><h2>Termos de uso e privacidade</h2></div>${TXT_TERMOS}<button class="btn primary" data-s="fechar">Entendi</button>`); break;
-      case "dicas": window.abrirSheet(`<div class="sheet-h"><h2>Dicas de segurança</h2></div>${TXT_DICAS}<button class="btn primary" data-s="fechar">Entendi</button>`); break;
+      case "termos": window.abrirSheet(`<div class="sheet-h"><h2>Termos de uso e privacidade</h2></div>${TXT_TERMOS}<button class="btn primary" data-s="fechar">Concordo</button>`); break;
+      case "dicas": window.abrirSheet(`<div class="sheet-h"><h2>Dicas de segurança</h2></div>${TXT_DICAS}<button class="btn primary" data-s="fechar">Ok</button>`); break;
       case "fechar": window.fecharSheet(); break;
       case "link": ev.preventDefault(); abrirLink(v); break;
       case "esqueci": esqueci(); break;
@@ -1866,7 +1931,12 @@
       case "assistente": gravarLS("cs.assist.em." + eu(), Date.now()); SO.tab = "provas"; S.tab = "inicio"; lembrarTab(); pintar(); window.scrollTo(0, 0); break;
       case "abrir-chat": abrirChat(id); break;
       case "part-env": { const tx = SO.partilha || ""; SO.partilha = ""; window.fecharSheet(); limparPilha(); SO.tab = "conversas"; lembrarTab(); SO.rascunho[id] = tx; pintar(); setTimeout(() => { abrirChat(id); setTimeout(() => { const t = $("#cs-txt"); if (t) { t.value = tx; autosize(t); t.focus(); const f = t.closest("form"); if (f) f.classList.remove("vazio"); } }, 400); }, 200); break; }
+      case "part-fora": { const tx = SO.partilha || ""; window.fecharSheet(); const Sh = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Share;
+        (Sh ? Sh.share({ text: tx }) : navigator.share({ text: tx })).catch(() => { }); break; }
       case "msg-resp": window.fecharSheet(); responder(el.dataset.chat, el.dataset.id); break;
+      case "pf-foto": { const pp = P(el.dataset.id); if (!pp.foto) break;
+        const o = document.createElement("div"); o.className = "cs-foto-gr"; o.setAttribute("role", "dialog"); o.innerHTML = `<img src="${esc(pp.foto)}" alt="${esc(pp.nome || "")}">`;
+        o.onclick = () => { o.classList.add("sai"); setTimeout(() => o.remove(), 160); }; document.body.appendChild(o); break; }
       case "resp-x": { const t = topo(); if (t && SO.resp) delete SO.resp[t.id]; const b = $("#cs-resp-bar"); if (b) b.remove(); break; }
       case "resp-ir": { const alvo = document.querySelector(`#cs-msgs .cs-m[data-id="${CSS.escape(v || "")}"]`); if (alvo) { alvo.scrollIntoView({ block: "center", behavior: "smooth" }); alvo.classList.add("cs-pisca"); setTimeout(() => alvo.classList.remove("cs-pisca"), 1300); } break; }
       case "cv-ver-arq": SO.verArq = true; pintar(); window.scrollTo(0, 0); break;
@@ -1924,7 +1994,21 @@
       case "fig-msg": { usarFig(v); const t = topo(); SO.figAberta = false; document.body.classList.remove("cs-com-emo"); pintar(); if (t) enviarMsg(t.id, { fig: v }); break; }
       case "fig-post": { usarFig(v); SO.postFig = v; const o = $("#cs-post-figsel"); if (o) o.innerHTML = `<div class="cs-figsel">${figurinha(v, 96)}<button type="button" class="btn ghost sm" data-s="fig-post-tirar">Tirar figurinha</button></div>`; const d = el.closest("details"); if (d) d.open = false; break; }
       case "fig-post-tirar": SO.postFig = null; $("#cs-post-figsel").innerHTML = ""; break;
-      case "msg": { const t = topo(); if (t) sheetMsg(t.id, id); break; }
+      case "msg": { const t = topo(); if (t && !matchMedia("(pointer:coarse)").matches) barraMsg(t.id, id, el); break; }
+      case "fb-resp": fecharBarra(); responder(el.dataset.chat, el.dataset.id); break;
+      case "fb-copiar": { const m = (SO.msgs[el.dataset.chat] || []).find(x => x.id === el.dataset.id); fecharBarra(); if (m && m.texto) copiar(m.texto); break; }
+      case "fb-part": { const m = (SO.msgs[el.dataset.chat] || []).find(x => x.id === el.dataset.id); fecharBarra(); if (m) sheetPartilha(m.texto || (m.link && m.link.u) || ""); break; }
+      case "fb-mais": fecharBarra(); sheetMsg(el.dataset.chat, el.dataset.id); break;
+      case "fb-fixar": { const k = "cs.fixm." + eu(), o = lerLS(k, {}); if (o[el.dataset.chat] === el.dataset.id) delete o[el.dataset.chat]; else o[el.dataset.chat] = el.dataset.id; gravarLS(k, o); fecharBarra(); pintar(); break; }
+      case "fb-marcar": { const s2 = marcadas(), ch = el.dataset.chat + "/" + el.dataset.id; s2.has(ch) ? s2.delete(ch) : s2.add(ch); gravarLS("cs.marc." + eu(), [...s2].slice(-500)); fecharBarra(); pintar(); break; }
+      case "fb-apagar": { const m = (SO.msgs[el.dataset.chat] || []).find(x => x.id === el.dataset.id); fecharBarra(); if (!m) break;
+        const c = SO.chats.find(x => x.id === el.dataset.chat), todos = !m.apagada && !m.cifrada && (m.autor === eu() || (c && c.tipo === "grupo" && (c.admins || []).includes(eu())));
+        window.abrirSheet(`<div class="sheet-h"><h2>Apagar?</h2></div><div class="row">${todos ? `<button class="btn cs-perigo-f" data-s="apagar-msg" data-chat="${esc(el.dataset.chat)}" data-id="${esc(m.id)}" style="flex:1">Para todos</button>` : ""}<button class="btn" data-s="apagar-mim" data-chat="${esc(el.dataset.chat)}" data-id="${esc(m.id)}" style="flex:1">Para mim</button></div>`); break; }
+      case "fb-trad": { const b = FB.el; if (!b) break; b.classList.add("cs-fbar-tr"); b.innerHTML = [["en", "English"], ["es", "Español"], ["pt", "Português"]].map(([l, n]) => `<button type="button" data-s="fb-trad-ok" data-l="${l}" data-chat="${esc(el.dataset.chat)}" data-id="${esc(el.dataset.id)}">${n}</button>`).join(""); break; }
+      case "fb-trad-ok": { const m = (SO.msgs[el.dataset.chat] || []).find(x => x.id === el.dataset.id); fecharBarra(); if (!m || !m.texto) break;
+        const nomes = { en: "Inglês", es: "Espanhol", pt: "Português" }; SO.trad = SO.trad || {}; SO.trad[m.id] = { nome: nomes[el.dataset.l] }; pintar();
+        traduzir(m.texto, el.dataset.l).then(t => { SO.trad[m.id] = { nome: nomes[el.dataset.l], t }; pintar(); }, e => { delete SO.trad[m.id]; pintar(); toast("Não deu para traduzir agora."); }); break; }
+      case "trad-x": if (SO.trad) delete SO.trad[v]; pintar(); break;
       case "copiar": copiar(v); window.fecharSheet(); break;
       case "apagar-msg": {
         if (!ok) return pedirConfirmacao("Apagar mensagem?", "A mensagem será apagada para todos da conversa.", "Apagar", el);
@@ -2190,7 +2274,7 @@ html:has(> body.cs-on){padding-top:0}
 body.cs-on main{padding-top:calc(6px + env(safe-area-inset-top,0px))}
 body.cs-sem-nav .nav{display:none}
 body.cs-sem-nav .app{padding-left:0}
-body.cs-sem-nav main{padding-bottom:40px}
+body.cs-sem-nav main{padding-bottom:calc(72px + max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px)))}
 body.cs-com-compor main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px) + var(--kb,0px))}
 body.cs-chatbg{background-image:radial-gradient(color-mix(in srgb,var(--primary) 11%,transparent) 1.2px,transparent 1.3px);background-size:22px 22px}
 .cs-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
@@ -2231,7 +2315,7 @@ body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padd
 .cs-resp-in{margin-bottom:6px}.cs-resp-solta{max-width:220px;margin-bottom:4px}
 .scrim{background:rgba(8,12,24,.26)!important}
 .scrim .sheet{background:color-mix(in srgb,var(--surface) 86%,transparent)!important;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);gap:6px!important;padding:6px 12px calc(12px + env(safe-area-inset-bottom,0px))!important;max-width:560px;box-shadow:0 -10px 30px rgba(0,0,0,.14)}
-.scrim .sheet-h{background:transparent!important;padding:4px 4px 0!important}
+.scrim .sheet-h{position:sticky;top:-6px;z-index:3;background:color-mix(in srgb,var(--surface) 97%,transparent)!important;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);margin:0 -12px!important;padding:10px 16px 8px!important;box-shadow:0 1px 0 color-mix(in srgb,var(--line) 70%,transparent)}
 .scrim .sheet-h h2{font-size:1rem;font-weight:700}
 .scrim .sheet .cs-menu>button{min-height:44px;padding:7px 8px;font-size:.95rem;border-radius:10px;gap:12px}
 .scrim .sheet .cs-menu>button>svg:first-child{width:20px;height:20px}
@@ -2258,7 +2342,23 @@ body.cs-desl-e #main>*{animation:csDeslE .28s ease-out}body.cs-desl-d #main>*{an
 .cs-pf-cont{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:.92rem}.cs-pf-cont svg{width:16px;height:16px}.cs-pf-cont b{color:var(--ink);font-variant-numeric:tabular-nums}
 .cs-pf-qr{width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:grid;place-items:center;flex:none;cursor:pointer}.cs-pf-qr svg{width:21px;height:21px}
 .cs-qr-box{display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0}.cs-qr-box img{border-radius:16px;background:#fff;padding:8px}
-.cs-pf-av{flex:none}.cs-pf-av .cs-fl-anel{margin:0}
+.cs-fbar{position:fixed;z-index:260;display:flex;gap:2px;padding:5px;border-radius:999px;background:color-mix(in srgb,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.5);backdrop-filter:blur(18px) saturate(1.5);box-shadow:0 10px 30px rgba(0,0,0,.18),0 0 0 1px color-mix(in srgb,var(--line) 60%,transparent);animation:csFbar .14s ease}
+.cs-fbar button{width:40px;height:40px;border:0;border-radius:50%;background:none;color:var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}.cs-fbar button svg{width:20px;height:20px}
+.cs-fbar button:active{background:color-mix(in srgb,var(--primary) 14%,transparent)}.cs-fbar button.perigo{color:#DC2626}
+.cs-fbar.cs-fbar-tr button{width:auto;border-radius:999px;padding:0 13px;font:inherit;font-size:.86rem;font-weight:600}
+@keyframes csFbar{from{opacity:0;transform:translateY(4px) scale(.96)}to{opacity:1;transform:none}}
+.cs-sel-on .cs-b,.cs-sel-on.cs-nt{box-shadow:0 0 0 2px var(--primary)!important}
+.cs-marcada .cs-h::before{content:"★";color:#F5A524;margin-right:3px;font-size:.8em}
+.cs-trad{display:block;margin-top:5px;padding:5px 26px 5px 8px;border-radius:9px;background:color-mix(in srgb,currentColor 8%,transparent);font-size:.92rem;position:relative;white-space:pre-wrap}
+.cs-trad small{display:flex;align-items:center;gap:4px;opacity:.7;font-size:.72rem;margin-bottom:1px}.cs-trad small svg{width:12px;height:12px}
+.cs-trad button{position:absolute;right:2px;top:2px;border:0;background:none;color:inherit;opacity:.55;padding:3px;cursor:pointer}.cs-trad button svg{width:13px;height:13px}
+.cs-fixm{display:flex;align-items:center;gap:8px;width:calc(100% + 32px);margin:0 -16px;position:sticky;top:calc(54px + env(safe-area-inset-top,0px));-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:0;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 94%,transparent);color:var(--ink);padding:7px 14px;font:inherit;font-size:.86rem;text-align:left;cursor:pointer;z-index:21}
+.cs-fixm svg{width:16px;height:16px;color:var(--primary);flex:none}.cs-fixm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-pf-av{flex:none}.cs-pf-fotobt{border:0;padding:0;background:none;border-radius:50%;cursor:zoom-in;display:block}
+.cs-foto-gr{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.86);display:grid;place-items:center;animation:csFotoIn .18s ease;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.cs-foto-gr img{width:min(86vw,420px);height:min(86vw,420px);object-fit:cover;border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:csFotoZ .2s ease}
+.cs-foto-gr.sai{opacity:0;transition:opacity .16s}
+@keyframes csFotoIn{from{opacity:0}to{opacity:1}}@keyframes csFotoZ{from{transform:scale(.6)}to{transform:none}}.cs-pf-av .cs-fl-anel{margin:0}
 .cs-pf-nums{flex:1;display:grid;grid-template-columns:repeat(3,1fr);text-align:center}
 .cs-pf-nums>div{display:flex;flex-direction:column;align-items:center;gap:3px}
 .cs-pf-nums b{font-family:var(--display);font-size:1.35rem;line-height:1.1;font-variant-numeric:tabular-nums;display:flex;align-items:center}
@@ -2590,5 +2690,5 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   document.head.appendChild(css);
 
   window.SOCIAL = { render: renderSocial, ext: EXT,
-    _: { responder, prevMsg, sheetPartilha, SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk, itemPessoa, seguir, pub, reabrirMsgs, ehProf, ehAdulto, lembrarTab, idadeDe } };
+    _: { responder, prevMsg, sheetPartilha, barraFlutuante, fecharBarra, barraMsg, traduzir, SO, fb, db, D, C, TS, K, ic, esc, P, av, avGrupo, eu, pintar, abrirTela, voltar, topo, enviarMsg, ofensivo, toast, figurinha, msgErro, semAc, corDe, copiar, tituloChat, horaCurta, tempoPost, pintarMsgs, ms, dadosDe, abrirChat, abrirDireto, seloHtml, processarFoto, contatosOrdenados, contarConversa, garantirDireto, seguroTela, reduzir, abrirImagem, abrirLink, ytId, prepararFotoPost, baixarFotoPost, verFotos, MI_guardar, tinyOk, itemPessoa, seguir, pub, reabrirMsgs, ehProf, ehAdulto, lembrarTab, idadeDe } };
 })();
