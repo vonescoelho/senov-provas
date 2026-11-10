@@ -404,25 +404,36 @@
         ac.createMediaElementSource(mus).connect(g).connect(dest);
       }
       await ac.resume().catch(() => { });
-      const faixas = [...cv.captureStream(30).getVideoTracks(), ...dest.stream.getAudioTracks()];
-      const mime = ["video/webm;codecs=vp8,opus", "video/webm", "video/mp4"].find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || "";
-      const rec = new MediaRecorder(new MediaStream(faixas), { ...(mime ? { mimeType: mime } : {}), videoBitsPerSecond: o.bps || 900000, audioBitsPerSecond: 64000 });
+      const comAudio = o.somOriginal !== false || !!o.musica;
+      const faixas = [...cv.captureStream(30).getVideoTracks(), ...(comAudio ? dest.stream.getAudioTracks() : [])];
+      const mime = (comAudio ? ["video/webm;codecs=vp8,opus", "video/webm", "video/mp4"] : ["video/webm;codecs=vp8", "video/webm", "video/mp4"]).find(t => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || "";
+      const rec = new MediaRecorder(new MediaStream(faixas), { ...(mime ? { mimeType: mime } : {}), videoBitsPerSecond: o.bps || 900000, ...(comAudio ? { audioBitsPerSecond: 64000 } : {}) });
       const pedacos = []; rec.ondataavailable = e => { if (e.data && e.data.size) pedacos.push(e.data); };
       const ini = o.inicio || 0, fim = Math.min(v.duration || 0, ini + (o.dur || 1e9));
       v.currentTime = ini; await new Promise(r => { v.onseeked = r; setTimeout(r, 2500); });
       return await new Promise((res, rej) => {
         let acabou = false;
         const terminar = () => { if (acabou) return; acabou = true; v.pause(); if (mus) mus.pause(); try { rec.stop(); } catch (e) { } };
+        let voltando = false;
+        const desenhar = () => { if (o.efeito) o.efeito(cx, W, H, v); else cx.drawImage(v, 0, 0, W, H); };
+        /* "contínuo": depois de ir, volta de trás para frente (vai e volta) */
+        const reverso = async () => {
+          voltando = true; v.pause(); let t = fim;
+          while (t > ini && !acabou) { v.currentTime = t; await new Promise(r => { v.onseeked = r; setTimeout(r, 150); }); desenhar(); await new Promise(r => setTimeout(r, 1000 / 30)); t -= 1 / 30; }
+          terminar();
+        };
         rec.onstop = () => res(new Blob(pedacos, { type: (mime || "video/webm").split(";")[0] }));
         rec.onerror = e => rej(e);
         const quadro = () => {
           if (acabou) return;
-          if (o.efeito) o.efeito(cx, W, H, v); else cx.drawImage(v, 0, 0, W, H);
-          if (o.onProg) o.onProg(Math.min(1, (v.currentTime - ini) / Math.max(0.1, fim - ini)));
-          if (v.ended || v.currentTime >= fim) return terminar();
+          if (voltando) return;
+          desenhar();
+          if (o.onProg) o.onProg(Math.min(1, (v.currentTime - ini) / Math.max(0.1, fim - ini)) * (o.continuo ? 0.5 : 1));
+          if (v.ended || v.currentTime >= fim) return o.continuo ? reverso() : terminar();
           requestAnimationFrame(quadro);
         };
-        v.onended = terminar;
+        v.onended = () => { if (o.continuo) { if (!voltando) reverso(); } else terminar(); };
+        if (o.vel && o.vel !== 1) { v.defaultPlaybackRate = o.vel; v.playbackRate = o.vel; }
         rec.start(1000);
         v.play().then(() => { if (mus) mus.play().catch(() => { }); quadro(); }, rej);
       });

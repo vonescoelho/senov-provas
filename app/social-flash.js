@@ -20,6 +20,12 @@
     pessoas: ic('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2a5 5 0 0 1 6 4.8"/>'),
     som: ic('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>'),
     semSom: ic('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m22 9-6 6M16 9l6 6"/>'),
+    infinito: ic('<path d="M7.5 8.5C4 8.5 3 11 3 12s1 3.5 4.5 3.5S12 12 12 12s1-3.5 4.5-3.5S21 11 21 12s-1 3.5-4.5 3.5S12 12 12 12"/>'),
+    lento: ic('<circle cx="12" cy="13" r="8"/><path d="M12 13 8.5 10.5M12 5V3M9 3h6"/>'),
+    rapido: ic('<path d="M3 6l8 6-8 6zM12 6l8 6-8 6z"/>'),
+    foco: ic('<circle cx="12" cy="12" r="3"/><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/>'),
+    pele: ic('<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 15l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>'),
+    sol: ic('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
     lapis: ic('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>'),
     emoji: ic('<circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/>'),
     coracao: ic('<path d="M12 20s-7.5-4.6-9.3-9.2A5 5 0 0 1 12 6a5 5 0 0 1 9.3 4.8C19.5 15.4 12 20 12 20z"/>')
@@ -444,6 +450,11 @@
   }
   /* efeitos leves: “suavizar pele” mistura uma cópia desfocada clareando só as partes mais escuras (marcas, rugas) */
   function comEfeito(cx, W, H, src, ef, espelho) {
+    if (ef.foco) {
+      const m = Math.min(W, H);
+      cx.filter = filtroDe(ef, `blur(${Math.max(4, m / 60).toFixed(1)}px)`); cobrir(cx, src, W, H, espelho);
+      cx.save(); cx.beginPath(); cx.ellipse(ef.foco.x * W, ef.foco.y * H, m * 0.3, m * 0.38, 0, 0, Math.PI * 2); cx.clip();
+    }
     cx.filter = filtroDe(ef); cobrir(cx, src, W, H, espelho);
     if (ef.suave > 0.01) {
       const r = Math.max(1.5, Math.min(W, H) / 160) * (0.6 + ef.suave);
@@ -452,11 +463,13 @@
       cx.globalCompositeOperation = "source-over"; cx.globalAlpha = ef.suave * 0.22; cobrir(cx, src, W, H, espelho);
       cx.globalAlpha = 1;
     }
+    if (ef.foco) cx.restore();
     cx.filter = "none";
   }
   function abrirCriador(destino, musica) {
     fecharCriador();
-    Object.assign(CR, { destino, modo: destino === "xflesh" ? "video" : "foto", musicaInicial: musica || null, fonte: null, fonteTipo: null, blob: null, musica: null, legenda: "", somOriginal: true, publico: destino === "flash" ? ((SO.eu && SO.eu.privFlash) || "todos") : null, para: [] });
+    Object.assign(CR, { destino, modo: destino === "xflesh" ? "video" : "foto", musicaInicial: musica || null, fonte: null, fonteTipo: null, blob: null, musica: null, legenda: "", somOriginal: true, vfx: "", dirV: 1, publico: destino === "flash" ? ((SO.eu && SO.eu.privFlash) || "todos") : null, para: [] });
+    CR.ef.foco = null;
     const el = document.createElement("div"); el.className = "cs-flc"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", nomeDestino());
     document.body.appendChild(el); CR.el = el; document.body.classList.add("cs-vis-on");
     /* no Android: abre direto a câmera do aparelho (CameraX, com modos, zoom, HDR…); a do navegador fica de reserva */
@@ -512,9 +525,16 @@
   function pararCamera() { if (CR.stream) CR.stream.getTracks().forEach(t => t.stop()); CR.stream = null; if (CR.gravando) { try { CR.gravando.stop(); } catch (e) { } CR.gravando = null; } }
   function painelEfeitos() {
     return `<div class="cs-flc-ef">
-      <div class="cs-flc-tons">${TONS.map(([k, n]) => `<button data-s="flc-tom" data-v="${k}" aria-pressed="${CR.ef.tom === k}">${n}</button>`).join("")}</div>
-      <label>Suavizar pele<input type="range" id="flc-suave" min="0" max="100" value="${Math.round(CR.ef.suave * 100)}"></label>
-      <label>Iluminar rosto<input type="range" id="flc-luz" min="0" max="100" value="${Math.round(CR.ef.luz * 100)}"></label></div>`;
+      <div class="cs-flc-tons">${TONS.map(([k, n, f]) => `<button data-s="flc-tom" data-v="${k}" aria-pressed="${CR.ef.tom === k}" aria-label="${esc(n)}" title="${esc(n)}"><i style="filter:${f || "none"}"></i></button>`).join("")}</div>
+      <label title="Suavizar pele">${I.pele}<input type="range" id="flc-suave" min="0" max="100" value="${Math.round(CR.ef.suave * 100)}" aria-label="Suavizar pele"></label>
+      <label title="Iluminar rosto">${I.sol}<input type="range" id="flc-luz" min="0" max="100" value="${Math.round(CR.ef.luz * 100)}" aria-label="Iluminar rosto"></label></div>`;
+  }
+  /* efeitos de vídeo e foco (só ícones) */
+  function painelVfx() {
+    return CR.fonteTipo && CR.fonteTipo !== "camera" ? `<div class="cs-flc-vfx">
+        <button data-s="flc-foco" aria-pressed="${!!CR.ef.foco}" aria-label="Foco" title="Foco">${I.foco}</button>
+        ${CR.fonteTipo === "video" ? [["cont", "Contínuo", I.infinito], ["lento", "Câmera lenta", I.lento], ["rapido", "Acelerado", I.rapido]].map(([k, n, ic_]) => `<button data-s="flc-vfx" data-v="${k}" aria-pressed="${CR.vfx === k}" aria-label="${n}" title="${n}">${ic_}</button>`).join("") : ""}
+      </div>` : "";
   }
   async function telaCamera() {
     const el = CR.el; if (!el) return;
@@ -556,6 +576,13 @@
     el.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === el)));
     const d = $("#flc-disp"); if (d) { d.className = "cs-flc-disp " + CR.modo; d.setAttribute("aria-label", CR.modo === "foto" ? "Tirar foto" : "Gravar vídeo"); }
   };
+  X.acoes["flc-foco"] = el => { CR.ef.foco = CR.ef.foco ? null : { x: 0.5, y: 0.42 }; el.setAttribute("aria-pressed", String(!!CR.ef.foco)); redesenharPrevia(); };
+  X.acoes["flc-vfx"] = el => { CR.vfx = CR.vfx === el.dataset.v ? "" : el.dataset.v; CR.dirV = 1; document.querySelectorAll("[data-s=flc-vfx]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === CR.vfx))); if (CR.fonte && CR.fonteTipo === "video") { CR.fonte.currentTime = CR.inicioVideo || 0; CR.fonte.play().catch(() => { }); } };
+  /* tocar na prévia escolhe o ponto de foco */
+  document.addEventListener("click", e => {
+    const cv = e.target && e.target.id === "flc-cv" ? e.target : null; if (!cv || !CR.ef.foco) return;
+    const r = cv.getBoundingClientRect(); CR.ef.foco = { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }; redesenharPrevia();
+  });
   X.acoes["flc-tom"] = el => { CR.ef.tom = el.dataset.v; gravarLS("cs.flef", CR.ef); el.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === el))); redesenharPrevia(); };
   document.addEventListener("input", e => {
     if (e.target.id === "flc-suave") { CR.ef.suave = e.target.value / 100; gravarLS("cs.flef", CR.ef); redesenharPrevia(); }
@@ -622,13 +649,15 @@
     const video = CR.fonteTipo === "video", longo = video && CR.durTotal > maxDur() + 0.5;
     el.innerHTML = `<div class="cs-flc-top"><button class="cs-vbt" data-s="flc-refazer" aria-label="Voltar para a câmera">${I.ant}</button><b>${video ? "Vídeo" : "Foto"}</b>
         <button class="cs-vbt" data-s="flc-fechar" aria-label="Fechar">${I.fechar}</button></div>
-      <div class="cs-flc-palco"><canvas id="flc-cv"></canvas></div>
-      ${CR.jaComEfeito ? "" : painelEfeitos()}
+      <div class="cs-flc-palco"><canvas id="flc-cv"></canvas>
+        <div class="cs-flc-sobre">
+          <button class="cs-flc-mpill ${CR.musica ? "on" : ""}" data-s="flc-musica">${CR.musica && CR.musica.lib && X.capaMusica ? X.capaMusica(CR.musica.lib, "cs-flc-capa") : I.musica}<span>${CR.musica ? esc(CR.musica.nome) : "Adicionar música"}</span>${CR.musica ? `<i data-s="flc-mus-tirar" role="button" aria-label="Tirar música">${I.fechar}</i>` : ""}</button>
+          ${video ? `<button class="cs-flc-som ${CR.somOriginal ? "" : "off"}" data-s="flc-somorig" aria-label="Som do vídeo ${CR.somOriginal ? "ligado" : "desligado"}">${CR.somOriginal ? I.som : I.semSom}</button>` : ""}
+        </div></div>
+      ${painelVfx()}${CR.jaComEfeito ? "" : painelEfeitos()}
       <div class="cs-flc-ed">
+        ${CR.musica ? `<label class="cs-flc-linha cs-flc-mini">${I.musica}<span><small id="flc-mus-t">começa em ${mmss(CR.musica.inicio)}</small></span><input type="range" id="flc-mus-ini" min="0" max="${Math.max(0, Math.floor((CR.musica.dur || 0) - CR.dur))}" value="${CR.musica.inicio}" aria-label="Início da música"></label>` : ""}
         ${longo ? `<label class="cs-flc-linha">${I.tela}<span>Trecho de ${maxDur()} s · começa em <b id="flc-vini-t">0:00</b></span><input type="range" id="flc-vini" min="0" max="${Math.floor(CR.durTotal - maxDur())}" value="0"></label>` : ""}
-        <button class="cs-flc-linha cs-flc-mus ${CR.musica ? "on" : ""}" data-s="flc-musica">${CR.musica && CR.musica.lib && X.capaMusica ? X.capaMusica(CR.musica.lib, "cs-flc-capa") : I.musica}<span>${CR.musica ? `<b>${esc(CR.musica.nome)}</b> <small id="flc-mus-t">começa em ${mmss(CR.musica.inicio)}</small>` : "Adicionar música"}</span>${CR.musica ? `<i data-s="flc-mus-tirar" role="button" aria-label="Tirar música">${I.fechar}</i>` : ""}</button>
-        ${CR.musica ? `<input type="range" id="flc-mus-ini" min="0" max="${Math.max(0, Math.floor((CR.musica.dur || 0) - CR.dur))}" value="${CR.musica.inicio}" aria-label="Início da música">` : ""}
-        ${video ? `<button class="cs-flc-linha" data-s="flc-somorig">${CR.somOriginal ? I.som : I.semSom}<span>Som do vídeo: <b>${CR.somOriginal ? "ligado" : "desligado"}</b></span></button>` : ""}
         <input class="in" id="flc-leg" maxlength="200" placeholder="Escreva uma legenda (opcional)" value="${esc(CR.legenda)}">
         ${CR.destino === "flash" ? `<button class="cs-flc-linha" data-s="flc-publico">${I.pessoas}<span>Quem vê: <b>${esc(textoPublico())}</b></span>${I.prox}</button>` : ""}
         <button class="btn primary cs-grande" data-s="flc-publicar">${CR.destino === "flash" ? `${I.flash} Publicar Flash` : CR.destino === "xflesh" ? `${I.play} Publicar no MyFlash` : `${I.estrela} Salvar nos Destaques`}</button>
@@ -640,7 +669,12 @@
       src.currentTime = CR.inicioVideo || 0; src.play().catch(() => { });
       const loop = () => {
         if (!CR.el || CR.fonte !== src) return;
-        if (src.currentTime > (CR.inicioVideo || 0) + CR.dur) src.currentTime = CR.inicioVideo || 0;
+        const ini = CR.inicioVideo || 0, fimP = ini + (CR.vfx === "cont" ? Math.min(3, CR.dur) : CR.dur);
+        const vel = CR.vfx === "lento" ? 0.5 : CR.vfx === "rapido" ? 2 : 1; if (src.playbackRate !== vel) src.playbackRate = vel;
+        if (CR.vfx === "cont") {
+          if (CR.dirV < 0) { const t = src.currentTime - 1 / 30; if (t <= ini) { CR.dirV = 1; src.currentTime = ini; src.play().catch(() => { }); } else if (!src.seeking) src.currentTime = t; }
+          else if (src.currentTime >= fimP) { CR.dirV = -1; src.pause(); }
+        } else if (src.currentTime > fimP) { src.currentTime = ini; if (src.paused) src.play().catch(() => { }); }
         desenharPrevia(); CR.raf = requestAnimationFrame(loop);
       };
       loop();
@@ -650,7 +684,7 @@
   function desenharPrevia() {
     if (!CR.cv || !CR.fonte || CR.fonteTipo === "camera") return;
     const cx = CR.cv.getContext("2d");
-    if (CR.jaComEfeito) { cx.filter = "none"; cobrir(cx, CR.fonte, CR.cv.width, CR.cv.height, false); }
+    if (CR.jaComEfeito) { if (CR.ef.foco) comEfeito(cx, CR.cv.width, CR.cv.height, CR.fonte, { tom: "natural", suave: 0, luz: 0, foco: CR.ef.foco }, false); else { cx.filter = "none"; cobrir(cx, CR.fonte, CR.cv.width, CR.cv.height, false); } }
     else comEfeito(cx, CR.cv.width, CR.cv.height, CR.fonte, CR.ef, false);
   }
   function redesenharPrevia() { if (CR.fonteTipo === "foto") desenharPrevia(); }
@@ -778,17 +812,20 @@
       let midia, mime, dur = CR.dur, thumb = await miniatura(CR.fonte);
       if (!video) {
         const cv = document.createElement("canvas"), [w, h] = dims(CR.fonte), k = Math.min(1, 1440 / Math.max(w, h)); cv.width = Math.round(w * k); cv.height = Math.round(h * k);
-        const cx = cv.getContext("2d"); if (CR.jaComEfeito) cx.drawImage(CR.fonte, 0, 0, cv.width, cv.height); else comEfeito(cx, cv.width, cv.height, CR.fonte, CR.ef, false);
+        const cx = cv.getContext("2d"); if (CR.jaComEfeito && !CR.ef.foco) cx.drawImage(CR.fonte, 0, 0, cv.width, cv.height); else comEfeito(cx, cv.width, cv.height, CR.fonte, CR.jaComEfeito ? { tom: "natural", suave: 0, luz: 0, foco: CR.ef.foco } : CR.ef, false);
         midia = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.85)); mime = "image/jpeg"; cv.width = cv.height = 0;
         dur = CR.musica ? Math.min(maxDur(), 15) : 6;
       } else {
-        const precisa = !CR.jaComEfeito || CR.durTotal > maxDur() + 0.5 || CR.blob.size > 12e6;
+        const precisa = !CR.jaComEfeito || !!CR.vfx || !!CR.ef.foco || CR.durTotal > maxDur() + 0.5 || CR.blob.size > 12e6;
+        const vel = CR.vfx === "lento" ? 0.5 : CR.vfx === "rapido" ? 2 : 1, cont = CR.vfx === "cont";
         if (precisa) {
           fase("Preparando o vídeo…");
-          midia = await M.recodificar(CR.blob, { maxLado: 960, bps: 1100000, inicio: CR.inicioVideo || 0, dur: maxDur(), somOriginal: true,
-            efeito: CR.jaComEfeito ? null : (cx, W, H, v) => comEfeito(cx, W, H, v, CR.ef, false), onProg: f => barra(f * 0.5) });
+          const durFonte = cont ? Math.min(3, CR.dur) : Math.min(CR.dur, maxDur() * vel);
+          midia = await M.recodificar(CR.blob, { maxLado: 960, bps: 1100000, inicio: CR.inicioVideo || 0, dur: durFonte, somOriginal: !cont && CR.somOriginal !== false, vel, continuo: cont,
+            efeito: CR.jaComEfeito && !CR.ef.foco ? null : (cx, W, H, v) => comEfeito(cx, W, H, v, CR.jaComEfeito ? { tom: "natural", suave: 0, luz: 0, foco: CR.ef.foco } : CR.ef, false), onProg: f => barra(f * 0.5) });
         } else midia = CR.blob;
-        mime = midia.type || "video/webm"; dur = Math.min(maxDur(), CR.dur);
+        mime = midia.type || "video/webm";
+        dur = Math.min(maxDur(), cont ? Math.min(3, CR.dur) * 2 : CR.dur / vel);
       }
       let som = null, somMime = null, mus = null;
       if (CR.musica && CR.musica.lib) {
@@ -910,16 +947,28 @@
 .cs-flc{position:fixed;inset:0;z-index:92;background:#000;color:#fff;display:flex;flex-direction:column;overflow-y:auto}
 .cs-flc-top{display:flex;align-items:center;gap:8px;padding:calc(6px + env(safe-area-inset-top,0px)) 8px 6px}
 .cs-flc-top b{flex:1;text-align:center}
-.cs-flc-palco{flex:1;min-height:42vh;display:grid;place-items:center;position:relative;padding:0 8px}
-.cs-flc-palco canvas{max-width:100%;max-height:58vh;border-radius:16px;background:#111}
+.cs-flc-palco{flex:1 1 auto;min-height:34vh;display:grid;place-items:center;position:relative;padding:0 8px;overflow:hidden}
+.cs-flc-palco canvas{max-width:100%;max-height:min(58vh,100%);width:auto;height:auto;border-radius:16px;background:#111;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
+.cs-flc-sobre{position:absolute;top:10px;left:14px;right:14px;z-index:3;display:flex;align-items:center;justify-content:center;gap:8px;pointer-events:none}
+.cs-flc-sobre>*{pointer-events:auto}
+.cs-flc-mpill{display:inline-flex;align-items:center;gap:8px;max-width:72%;border:0;border-radius:999px;padding:8px 14px;background:rgba(0,0,0,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);color:#fff;font:inherit;font-weight:700;font-size:.92rem;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.cs-flc-mpill svg{width:18px;height:18px;flex:none}.cs-flc-mpill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cs-flc-mpill.on{background:rgba(255,200,61,.92);color:#111}
+.cs-flc-mpill i{display:grid;place-items:center;margin-left:2px}.cs-flc-mpill i svg{width:15px;height:15px}.cs-flc-mpill .cs-flc-capa{width:22px;height:22px;border-radius:6px;flex:none}
+.cs-flc-som{position:absolute;right:0;width:40px;height:40px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer}.cs-flc-som svg{width:20px;height:20px}.cs-flc-som.off{color:#FCA5A5}
+.cs-flc-mini{padding:6px 12px!important}
 .cs-flc-sem{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:20px}
 .cs-flc-rec{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#E5484D;padding:4px 12px;border-radius:99px;font-weight:800;font-variant-numeric:tabular-nums}
 .cs-flc-ef{display:flex;flex-direction:column;gap:6px;padding:8px 14px 0}
 .cs-flc-ef label{display:flex;align-items:center;gap:10px;font-size:.85rem;font-weight:600}
 .cs-flc-ef input{flex:1;accent-color:#FFC83D}
 .cs-flc-tons{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
-.cs-flc-tons button{flex:none;border:1px solid rgba(255,255,255,.3);background:none;color:#fff;border-radius:99px;padding:7px 14px;font:inherit;font-weight:700;font-size:.85rem;cursor:pointer}
-.cs-flc-tons button[aria-pressed="true"]{background:#fff;color:#000}
+.cs-flc-tons button{flex:none;width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.25);background:none;padding:3px;cursor:pointer}
+.cs-flc-tons button i{display:block;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 35% 35%,#FFE0C2 0 18%,transparent 19%),linear-gradient(135deg,#F59E9E,#F7D08A 45%,#7CC6E8)}
+.cs-flc-tons button[aria-pressed="true"]{border-color:#FFC83D;box-shadow:0 0 0 2px rgba(255,200,61,.35)}
+.cs-flc-vfx{display:flex;gap:8px;justify-content:center;padding:8px 14px 0}
+.cs-flc-vfx button{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;display:grid;place-items:center;cursor:pointer}.cs-flc-vfx svg{width:20px;height:20px}
+.cs-flc-vfx button[aria-pressed="true"]{background:#FFC83D;color:#111;border-color:#FFC83D}
+.cs-flc-ef label svg{width:20px;height:20px;flex:none;opacity:.9}
 .cs-flc-baixo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px))}
 .cs-flc-gal{justify-self:start;border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:14px;width:62px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font:inherit}
 .cs-flc-gal svg{width:24px;height:24px}.cs-flc-gal small{font-size:.7rem}

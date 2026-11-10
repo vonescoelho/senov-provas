@@ -1841,6 +1841,24 @@
     document.addEventListener("click", e => { if (cvFez) { cvFez = false; e.stopPropagation(); e.preventDefault(); } }, true);
     document.addEventListener("contextmenu", e => { const it = e.target.closest && e.target.closest(".cs-item[data-s=abrir-chat]"); if (it) { e.preventDefault(); clearTimeout(cvT); cvT = null; sheetConversa(it.dataset.id); } });
   }
+  /* ================= Foto de perfil em tamanho grande (perfil, cabeçalho da conversa e lista de conversas) ================= */
+  function fotoGrande(src, nome) {
+    if (!src || document.querySelector(".cs-foto-gr")) return;
+    const o = document.createElement("div"); o.className = "cs-foto-gr"; o.setAttribute("role", "dialog"); o.setAttribute("aria-label", "Foto");
+    o.innerHTML = `<figure><img src="${esc(src)}" alt="">${nome ? `<figcaption>${esc(nome)}</figcaption>` : ""}</figure>`;
+    const fechar = () => { o.classList.add("sai"); setTimeout(() => o.remove(), 160); window.removeEventListener("popstate", fechar); };
+    o.addEventListener("click", fechar);
+    window.addEventListener("popstate", fechar);
+    document.body.appendChild(o);
+  }
+  document.addEventListener("click", e => {
+    const a = e.target.closest && e.target.closest(".cs-av"); if (!a || a.closest(".cs-fl-anel")) return;
+    const zona = a.closest(".cs-chat-quem, .cs-item, .cs-pf-av, .cs-m, .cs-pessoa, .cs-autor");
+    const im = a.querySelector("img"); if (!zona || !im || !im.getAttribute("src")) return;
+    e.stopPropagation(); e.preventDefault();
+    const nomeEl = zona.querySelector("b"); fotoGrande(im.getAttribute("src"), nomeEl ? nomeEl.textContent.trim() : "");
+  }, true);
+
   /* ================= Barra flutuante de ações (só ícones) ================= */
   const marcadas = () => { if (!SO.marc || SO.marc.uid !== eu()) SO.marc = { uid: eu(), s: new Set(lerLS("cs.marc." + eu(), [])) }; return SO.marc.s; };
   const fixadaDe = chatId => (lerLS("cs.fixm." + eu(), {}) || {})[chatId] || "";
@@ -1934,9 +1952,7 @@
       case "part-fora": { const tx = SO.partilha || ""; window.fecharSheet(); const Sh = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Share;
         (Sh ? Sh.share({ text: tx }) : navigator.share({ text: tx })).catch(() => { }); break; }
       case "msg-resp": window.fecharSheet(); responder(el.dataset.chat, el.dataset.id); break;
-      case "pf-foto": { const pp = P(el.dataset.id); if (!pp.foto) break;
-        const o = document.createElement("div"); o.className = "cs-foto-gr"; o.setAttribute("role", "dialog"); o.innerHTML = `<img src="${esc(pp.foto)}" alt="${esc(pp.nome || "")}">`;
-        o.onclick = () => { o.classList.add("sai"); setTimeout(() => o.remove(), 160); }; document.body.appendChild(o); break; }
+      case "pf-foto": { const pp = P(el.dataset.id); if (pp.foto) fotoGrande(pp.foto, pp.nome); break; }
       case "resp-x": { const t = topo(); if (t && SO.resp) delete SO.resp[t.id]; const b = $("#cs-resp-bar"); if (b) b.remove(); break; }
       case "resp-ir": { const alvo = document.querySelector(`#cs-msgs .cs-m[data-id="${CSS.escape(v || "")}"]`); if (alvo) { alvo.scrollIntoView({ block: "center", behavior: "smooth" }); alvo.classList.add("cs-pisca"); setTimeout(() => alvo.classList.remove("cs-pisca"), 1300); } break; }
       case "cv-ver-arq": SO.verArq = true; pintar(); window.scrollTo(0, 0); break;
@@ -2356,6 +2372,7 @@ body.cs-desl-e #main>*{animation:csDeslE .28s ease-out}body.cs-desl-d #main>*{an
 .cs-fixm svg{width:16px;height:16px;color:var(--primary);flex:none}.cs-fixm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-pf-av{flex:none}.cs-pf-fotobt{border:0;padding:0;background:none;border-radius:50%;cursor:zoom-in;display:block}
 .cs-foto-gr{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.86);display:grid;place-items:center;animation:csFotoIn .18s ease;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.cs-foto-gr figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:12px}.cs-foto-gr figcaption{color:#fff;font-weight:600;font-size:1rem;max-width:86vw;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cs-foto-gr img{width:min(86vw,420px);height:min(86vw,420px);object-fit:cover;border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:csFotoZ .2s ease}
 .cs-foto-gr.sai{opacity:0;transition:opacity .16s}
 @keyframes csFotoIn{from{opacity:0}to{opacity:1}}@keyframes csFotoZ{from{transform:scale(.6)}to{transform:none}}.cs-pf-av .cs-fl-anel{margin:0}
