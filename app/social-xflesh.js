@@ -255,6 +255,10 @@
     const a = new Audio(u); XF.aud = a; a.muted = XF.mudo;
     a.addEventListener("loadedmetadata", () => { try { a.currentTime = ini; } catch (e) { } if (XF.ativo === id) a.play().catch(() => { }); }, { once: true });
     a.addEventListener("timeupdate", () => { if (a.currentTime > ini + Math.max(5, dur) + 0.3) { a.currentTime = ini; if (XF.video) XF.video.currentTime = 0; } });
+    /* a música repete sempre junto com o vídeo */
+    a.addEventListener("ended", () => { if (XF.ativo !== id || XF.aud !== a) return; try { a.currentTime = ini; } catch (e) { } if (!XF.video || !XF.video.paused) a.play().catch(() => { }); });
+    const vv = XF.video;
+    if (vv) { let ant = vv.currentTime || 0; const sinc = () => { if (XF.aud !== a) return vv.removeEventListener("timeupdate", sinc); if (vv.currentTime + 0.3 < ant) { try { a.currentTime = ini; } catch (e) { } if (!vv.paused) a.play().catch(() => { }); } ant = vv.currentTime; }; vv.addEventListener("timeupdate", sinc); }
     /* karaokê */
     if (x.mus && x.mus.fonte === "chatmil" && X.letraDe) {
       let l = XF.letras.get(x.mus.id); if (!l) { l = await X.letraDe(x.mus.id); XF.letras.set(x.mus.id, l); }

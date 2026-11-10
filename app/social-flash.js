@@ -537,7 +537,7 @@
       </div>` : "";
   }
   async function telaCamera() {
-    const el = CR.el; if (!el) return;
+    const el = CR.el; if (!el) return; el.classList.remove("cs-flc-edit");
     el.innerHTML = `<div class="cs-flc-top"><button class="cs-vbt" data-s="flc-fechar" aria-label="Fechar">${I.fechar}</button><b>${nomeDestino()}</b>
         ${X.temCameraNativa ? `<button class="cs-vbt" data-s="flc-celular" aria-label="Câmera do celular (HD)"><b style="font-size:.78rem">HD</b></button>` : ""}<button class="cs-vbt" data-s="flc-virar" aria-label="Trocar câmera">${I.virar}</button></div>
       <div class="cs-flc-palco"><canvas id="flc-cv"></canvas><div class="cs-flc-sem" id="flc-sem" hidden><b>Câmera indisponível</b><span>Escolha uma foto ou vídeo da galeria.</span></div><span class="cs-flc-rec" id="flc-rec" hidden></span></div>
@@ -581,7 +581,10 @@
   /* tocar na prévia escolhe o ponto de foco */
   document.addEventListener("click", e => {
     const cv = e.target && e.target.id === "flc-cv" ? e.target : null; if (!cv || !CR.ef.foco) return;
-    const r = cv.getBoundingClientRect(); CR.ef.foco = { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) }; redesenharPrevia();
+    const r = cv.getBoundingClientRect(), cobre = getComputedStyle(cv).objectFit === "cover";
+    const k = cobre ? Math.max(r.width / cv.width, r.height / cv.height) : Math.min(r.width / cv.width, r.height / cv.height), dw = cv.width * k, dh = cv.height * k;
+    const ox = r.left + (r.width - dw) / 2, oy = r.top + (r.height - dh) / 2;
+    CR.ef.foco = { x: Math.min(1, Math.max(0, (e.clientX - ox) / dw)), y: Math.min(1, Math.max(0, (e.clientY - oy) / dh)) }; redesenharPrevia();
   });
   X.acoes["flc-tom"] = el => { CR.ef.tom = el.dataset.v; gravarLS("cs.flef", CR.ef); el.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === el))); redesenharPrevia(); };
   document.addEventListener("input", e => {
@@ -654,14 +657,15 @@
           <button class="cs-flc-mpill ${CR.musica ? "on" : ""}" data-s="flc-musica">${CR.musica && CR.musica.lib && X.capaMusica ? X.capaMusica(CR.musica.lib, "cs-flc-capa") : I.musica}<span>${CR.musica ? esc(CR.musica.nome) : "Adicionar música"}</span>${CR.musica ? `<i data-s="flc-mus-tirar" role="button" aria-label="Tirar música">${I.fechar}</i>` : ""}</button>
           ${video ? `<button class="cs-flc-som ${CR.somOriginal ? "" : "off"}" data-s="flc-somorig" aria-label="Som do vídeo ${CR.somOriginal ? "ligado" : "desligado"}">${CR.somOriginal ? I.som : I.semSom}</button>` : ""}
         </div></div>
-      ${painelVfx()}${CR.jaComEfeito ? "" : painelEfeitos()}
+      ${painelVfx()}<div class="cs-flc-baixoed">${CR.jaComEfeito ? "" : painelEfeitos()}
       <div class="cs-flc-ed">
         ${CR.musica ? `<label class="cs-flc-linha cs-flc-mini">${I.musica}<span><small id="flc-mus-t">começa em ${mmss(CR.musica.inicio)}</small></span><input type="range" id="flc-mus-ini" min="0" max="${Math.max(0, Math.floor((CR.musica.dur || 0) - CR.dur))}" value="${CR.musica.inicio}" aria-label="Início da música"></label>` : ""}
         ${longo ? `<label class="cs-flc-linha">${I.tela}<span>Trecho de ${maxDur()} s · começa em <b id="flc-vini-t">0:00</b></span><input type="range" id="flc-vini" min="0" max="${Math.floor(CR.durTotal - maxDur())}" value="0"></label>` : ""}
-        <input class="in" id="flc-leg" maxlength="200" placeholder="Escreva uma legenda (opcional)" value="${esc(CR.legenda)}">
+        <input class="in" id="flc-leg" maxlength="200" placeholder="Legenda" value="${esc(CR.legenda)}">
         ${CR.destino === "flash" ? `<button class="cs-flc-linha" data-s="flc-publico">${I.pessoas}<span>Quem vê: <b>${esc(textoPublico())}</b></span>${I.prox}</button>` : ""}
         <button class="btn primary cs-grande" data-s="flc-publicar">${CR.destino === "flash" ? `${I.flash} Publicar Flash` : CR.destino === "xflesh" ? `${I.play} Publicar no MyFlash` : `${I.estrela} Salvar nos Destaques`}</button>
-      </div>`;
+      </div></div>`;
+    el.classList.add("cs-flc-edit");
     CR.cv = el.querySelector("#flc-cv");
     const src = CR.fonte, [w, h] = dims(src), k = Math.min(1, 1280 / Math.max(w, h));
     CR.cv.width = Math.round(w * k / 2) * 2 || 2; CR.cv.height = Math.round(h * k / 2) * 2 || 2;
@@ -956,6 +960,19 @@
 .cs-flc-mpill i{display:grid;place-items:center;margin-left:2px}.cs-flc-mpill i svg{width:15px;height:15px}.cs-flc-mpill .cs-flc-capa{width:22px;height:22px;border-radius:6px;flex:none}
 .cs-flc-som{position:absolute;right:0;width:40px;height:40px;border:0;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:grid;place-items:center;cursor:pointer}.cs-flc-som svg{width:20px;height:20px}.cs-flc-som.off{color:#FCA5A5}
 .cs-flc-mini{padding:6px 12px!important}
+/* edição em tela cheia: a prévia ocupa tudo e os controles ficam por cima */
+.cs-flc.cs-flc-edit{overflow:hidden}
+.cs-flc-edit .cs-flc-palco{position:absolute;inset:0;padding:0;min-height:0;display:block}
+.cs-flc-edit .cs-flc-palco canvas{position:absolute;inset:0;top:0;left:0;transform:none;width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;border-radius:0;background:#000}
+.cs-flc-edit .cs-flc-top{position:absolute;top:0;left:0;right:0;z-index:6;background:linear-gradient(rgba(0,0,0,.55),transparent)}
+.cs-flc-edit .cs-flc-sobre{top:calc(62px + env(safe-area-inset-top,0px))}
+.cs-flc-edit .cs-flc-vfx{position:absolute;right:10px;top:34%;z-index:6;flex-direction:column;padding:0;gap:10px}
+.cs-flc-edit .cs-flc-vfx button{background:rgba(0,0,0,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-color:rgba(255,255,255,.2)}
+.cs-flc-edit .cs-flc-vfx button[aria-pressed="true"]{background:#FFC83D}
+.cs-flc-baixoed{display:flex;flex-direction:column}
+.cs-flc-edit .cs-flc-baixoed{position:absolute;left:0;right:0;bottom:0;z-index:6;max-height:64vh;overflow-y:auto;padding-top:44px;background:linear-gradient(transparent,rgba(0,0,0,.62) 34%,rgba(0,0,0,.82))}
+.cs-flc-edit .cs-flc-ed{gap:8px;padding-top:8px}
+.cs-flc-edit .cs-flc-ed .in,.cs-flc-edit .cs-flc-linha{background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .cs-flc-sem{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:20px}
 .cs-flc-rec{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:#E5484D;padding:4px 12px;border-radius:99px;font-weight:800;font-variant-numeric:tabular-nums}
 .cs-flc-ef{display:flex;flex-direction:column;gap:6px;padding:8px 14px 0}
