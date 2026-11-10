@@ -152,6 +152,7 @@ public class CameraActivity extends AppCompatActivity {
     private final List<Bitmap> celulas = new ArrayList<>();
     private boolean ferrAbertas = false, efeitosAbertos, ajustesAbertos, grade;
     private LinearLayout painelAjustes; private View vGrade;
+    private String noite = "auto"; private boolean noiteAuto = false; private int escuroN = 0, claroN = 0; private TextView bLua; private Icone bDupla;
     private Icone bAjustes;
     /* Dupla (frente + trás) */
     private boolean dupla, concorrente;
@@ -179,6 +180,7 @@ public class CameraActivity extends AppCompatActivity {
         flash = prefs.getInt("flash", ImageCapture.FLASH_MODE_OFF);
         hdr = prefs.getBoolean("hdr", false);
         grade = prefs.getBoolean("grade", false);
+        noite = prefs.getString("noite", "auto");
         efeito = prefs.getString("efeito", "original");
         if (Efeitos.matriz(efeito) == null) efeito = "original";
         squareUltimo = prefs.getInt("square", 4);
@@ -361,7 +363,11 @@ public class CameraActivity extends AppCompatActivity {
         topo.addView(fechar); topo.addView(meio, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         bAjustes = new Icone(this, Icone.AJUSTES); bAjustes.setContentDescription("Ajustes da câmera");
         bAjustes.setOnClickListener(v -> { ajustesAbertos = !ajustesAbertos; pintarTopo(); pintarAjustes(); });
-        topo.addView(bFlash); topo.addView(bHdr); topo.addView(bTimer);
+        bLua = botao("☾", 17); bLua.setTextColor(AMARELO); bLua.setContentDescription("Noturno automático"); bLua.setVisibility(View.GONE);
+        bLua.setOnClickListener(v -> { ajustesAbertos = true; pintarTopo(); pintarAjustes(); });
+        bDupla = new Icone(this, Icone.DUPLA); bDupla.setContentDescription("Duas câmeras"); bDupla.setOnClickListener(v -> alternarDupla());
+        topo.addView(bLua); topo.addView(bFlash); topo.addView(bHdr); topo.addView(bTimer);
+        topo.addView(bDupla, new LinearLayout.LayoutParams(dp(44), dp(44)));
         topo.addView(bAjustes, new LinearLayout.LayoutParams(dp(44), dp(44)));
         raiz.addView(topo, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP));
 
@@ -396,7 +402,7 @@ public class CameraActivity extends AppCompatActivity {
         baixo.addView(acoesSquare, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         zooms = new LinearLayout(this); zooms.setGravity(Gravity.CENTER);
-        LinearLayout linha = new LinearLayout(this); linha.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout linha = new LinearLayout(this); linha.setGravity(Gravity.CENTER);
         galeria = new Icone(this, Icone.GALERIA); galeria.setContentDescription("Galeria");
         GradientDrawable fg = new GradientDrawable(); fg.setCornerRadius(dp(12)); fg.setColor(Color.argb(55, 255, 255, 255)); fg.setStroke(dp(1.5f), Color.argb(210, 255, 255, 255)); galeria.setBackground(fg);
         galeria.setOnClickListener(v -> abrirGaleria());
@@ -468,6 +474,28 @@ public class CameraActivity extends AppCompatActivity {
         });
         preview.setOnTouchListener((v, e) -> { pinca.onTouchEvent(e); if (!pinca.isInProgress()) toque.onTouchEvent(e); return true; });
         pintarModos(); pintarTopo(); pintarDisparo(); pintarFerramentas(); pintarEfeitos();
+        h.postDelayed(this::olharLuz, 2500);
+    }
+
+    /* noturno automático: mede a luz da prévia e liga/desliga o modo Noturno sozinho */
+    private void olharLuz() {
+        if (isFinishing()) return;
+        h.postDelayed(this::olharLuz, 1500);
+        try {
+            if (!"auto".equals(noite) || gravando != null || capturandoLoop || ocupado || loop || square > 0 || dupla) return;
+            if (!(M_FOTO.equals(modo) || (M_NOTURNO.equals(modo) && noiteAuto))) return;
+            if (!extensaoDisponivel(ExtensionMode.NIGHT)) return;
+            android.graphics.Bitmap b = preview.getBitmap(); if (b == null) return;
+            android.graphics.Bitmap p = android.graphics.Bitmap.createScaledBitmap(b, 24, 32, false);
+            long soma = 0; int n = 0;
+            for (int y = 0; y < p.getHeight(); y++) for (int x = 0; x < p.getWidth(); x++) {
+                int c = p.getPixel(x, y); soma += (Color.red(c) * 299 + Color.green(c) * 587 + Color.blue(c) * 114) / 1000; n++;
+            }
+            if (p != b) p.recycle(); b.recycle();
+            int luz = n == 0 ? 128 : (int) (soma / n);
+            if (M_FOTO.equals(modo)) { escuroN = luz < 42 ? escuroN + 1 : 0; if (escuroN >= 2) { escuroN = 0; noiteAuto = true; trocarModo(M_NOTURNO); } }
+            else { claroN = luz > 120 ? claroN + 1 : 0; if (claroN >= 3) { claroN = 0; noiteAuto = false; trocarModo(M_FOTO); } }
+        } catch (Throwable t) { }
     }
 
     /* ---------- aparência ---------- */
@@ -479,6 +507,8 @@ public class CameraActivity extends AppCompatActivity {
         bFlash.setContentDescription("Flash: " + (idx == 0 ? "desligado" : idx == 1 ? "automático" : "ligado"));
         bFlash.setVisibility(frente || loop || square > 0 || dupla ? View.GONE : View.VISIBLE);
         bAjustes.ativo = ajustesAbertos; bAjustes.invalidate();
+        if (bDupla != null) { bDupla.ativo = dupla; bDupla.invalidate(); bDupla.setVisibility(gravando == null && !capturandoLoop && !loop && square == 0 ? View.VISIBLE : View.GONE); }
+        if (bLua != null) bLua.setVisibility(M_NOTURNO.equals(modo) ? View.VISIBLE : View.GONE);
         boolean temHdr = extensoes != null && M_FOTO.equals(modo) && !loop && square == 0 && extensaoDisponivel(ExtensionMode.HDR);
         bHdr.setVisibility(temHdr && hdr && !ajustesAbertos ? View.VISIBLE : View.GONE);
         bHdr.setTextColor(hdr ? AMARELO : Color.WHITE);
@@ -511,6 +541,13 @@ public class CameraActivity extends AppCompatActivity {
             boolean temHdr = extensoes != null && M_FOTO.equals(modo) && !loop && square == 0 && extensaoDisponivel(ExtensionMode.HDR);
             if (temHdr) linhaAjuste("HDR", new String[]{"Não", "Sim"}, hdr ? 1 : 0, i -> { boolean n = i == 1; if (n == hdr) return; hdr = n; prefs.edit().putBoolean("hdr", hdr).apply(); ligar(); });
             if (foto) linhaAjuste("Temporizador", new String[]{"Não", "3 s", "10 s"}, timer == 3 ? 1 : timer == 10 ? 2 : 0, i -> timer = i == 1 ? 3 : i == 2 ? 10 : 0);
+            if (extensoes != null && extensaoDisponivel(ExtensionMode.NIGHT) && !M_VIDEO.equals(modo))
+                linhaAjuste("Noturno", new String[]{"Auto", "Sim", "Não"}, "sim".equals(noite) ? 1 : "nao".equals(noite) ? 2 : 0, i -> {
+                    noite = i == 1 ? "sim" : i == 2 ? "nao" : "auto"; prefs.edit().putString("noite", noite).apply();
+                    noiteAuto = false; escuroN = 0; claroN = 0;
+                    if ("sim".equals(noite)) trocarModo(M_NOTURNO); else if (M_NOTURNO.equals(modo)) trocarModo(M_FOTO);
+                });
+            if (!M_VIDEO.equals(modo)) linhaAjuste("Pro", new String[]{"Não", "Sim"}, M_PRO.equals(modo) ? 1 : 0, i -> trocarModo(i == 1 ? M_PRO : M_FOTO));
             linhaAjuste("Grade", new String[]{"Não", "Sim"}, grade ? 1 : 0, i -> { grade = i == 1; prefs.edit().putBoolean("grade", grade).apply(); vGrade.setVisibility(grade ? View.VISIBLE : View.GONE); });
             painelAjustes.setVisibility(View.VISIBLE);
             if (painelAjustes.getAlpha() < 1f || painelAjustes.getTag() == null) { painelAjustes.setTag(1); painelAjustes.setAlpha(0f); painelAjustes.setTranslationY(-dp(8)); painelAjustes.animate().alpha(1f).translationY(0).setDuration(160).start(); }
@@ -546,12 +583,11 @@ public class CameraActivity extends AppCompatActivity {
         if (extensoes != null && extensaoDisponivel(ExtensionMode.BOKEH)) lista.add(new String[]{M_RETRATO, "RETRATO"});
         lista.add(new String[]{M_FOTO, "FOTO"});
         lista.add(new String[]{M_VIDEO, "VÍDEO"});
-        if (extensoes != null && extensaoDisponivel(ExtensionMode.NIGHT)) lista.add(new String[]{M_NOTURNO, "NOTURNO"});
-        lista.add(new String[]{M_PRO, "PRO"});
+        /* Noturno e Pro ficam na engrenagem; o noturno também liga sozinho quando está escuro */
         boolean ferr = loop || square > 0;
         for (String[] m : lista) {
             TextView t = botao(m[1], 13);
-            boolean on = !ferr && m[0].equals(modo);
+            boolean on = !ferr && (m[0].equals(modo) || (M_FOTO.equals(m[0]) && (M_NOTURNO.equals(modo) || M_PRO.equals(modo))));
             t.setTextColor(on ? AMARELO : Color.argb(200, 255, 255, 255));
             t.setTypeface(android.graphics.Typeface.create("sans-serif-medium", on ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL));
             t.setLetterSpacing(0.08f); t.setShadowLayer(0, 0, 0, 0);

@@ -290,6 +290,19 @@ public class NativoPlugin extends Plugin {
         });
     }
 
+    /* tela acesa enquanto transmite ao vivo */
+    @PluginMethod
+    public void telaLigada(PluginCall call) {
+        final boolean ligar = Boolean.TRUE.equals(call.getBoolean("ligar", false));
+        getActivity().runOnUiThread(() -> {
+            try {
+                if (ligar) getActivity().getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+                else getActivity().getWindow().clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } catch (Throwable t) { }
+            call.resolve();
+        });
+    }
+
     @PluginMethod
     public void seguro(final PluginCall call) {
         final boolean ligar = Boolean.TRUE.equals(call.getBoolean("ligar", false));
