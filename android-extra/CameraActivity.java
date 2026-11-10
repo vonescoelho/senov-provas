@@ -383,7 +383,7 @@ public class CameraActivity extends AppCompatActivity {
         baixo = new LinearLayout(this);
         baixo.setOrientation(LinearLayout.VERTICAL); baixo.setGravity(Gravity.CENTER_HORIZONTAL);
         baixo.setPadding(0, dp(8), 0, dp(26));
-        baixo.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{Color.argb(170, 0, 0, 0), Color.TRANSPARENT}));
+        baixo.setBackground(new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{Color.argb(240, 0, 0, 0), Color.argb(200, 0, 0, 0), Color.TRANSPARENT}));
 
         rolarEfeitos = new HorizontalScrollView(this); rolarEfeitos.setHorizontalScrollBarEnabled(false); rolarEfeitos.setVisibility(View.GONE);
         faixaEfeitos = new LinearLayout(this); faixaEfeitos.setPadding(dp(10), 0, dp(10), dp(10)); faixaEfeitos.setGravity(Gravity.CENTER_VERTICAL);
@@ -397,15 +397,22 @@ public class CameraActivity extends AppCompatActivity {
 
         zooms = new LinearLayout(this); zooms.setGravity(Gravity.CENTER);
         LinearLayout linha = new LinearLayout(this); linha.setGravity(Gravity.CENTER_VERTICAL);
-        galeria = new Icone(this, Icone.GALERIA); galeria.setContentDescription("Galeria"); galeria.setBackground(redondo(Color.argb(90, 255, 255, 255)));
+        galeria = new Icone(this, Icone.GALERIA); galeria.setContentDescription("Galeria");
+        GradientDrawable fg = new GradientDrawable(); fg.setCornerRadius(dp(12)); fg.setColor(Color.argb(55, 255, 255, 255)); fg.setStroke(dp(1.5f), Color.argb(210, 255, 255, 255)); galeria.setBackground(fg);
         galeria.setOnClickListener(v -> abrirGaleria());
         disparo = new View(this); disparo.setContentDescription("Fotografar ou gravar"); disparo.setOnClickListener(v -> disparar());
-        trocar = new Icone(this, Icone.TROCAR); trocar.setContentDescription("Trocar câmera"); trocar.setBackground(redondo(Color.argb(90, 255, 255, 255)));
+        trocar = new Icone(this, Icone.TROCAR); trocar.setContentDescription("Trocar câmera"); trocar.setBackground(redondo(Color.argb(70, 255, 255, 255)));
         trocar.setOnClickListener(v -> { if (gravando != null || capturandoLoop || ocupado) return; frente = !frente; trocar.animate().rotationBy(180).setDuration(250).start(); ligar(); });
-        LinearLayout.LayoutParams ld = new LinearLayout.LayoutParams(dp(80), dp(80)); ld.leftMargin = dp(40); ld.rightMargin = dp(40);
-        linha.addView(galeria, new LinearLayout.LayoutParams(dp(56), dp(56))); linha.addView(disparo, ld); linha.addView(trocar, new LinearLayout.LayoutParams(dp(56), dp(56)));
+        LinearLayout.LayoutParams ld = new LinearLayout.LayoutParams(dp(78), dp(78)); ld.leftMargin = dp(46); ld.rightMargin = dp(46);
+        linha.addView(galeria, new LinearLayout.LayoutParams(dp(50), dp(50))); linha.addView(disparo, ld); linha.addView(trocar, new LinearLayout.LayoutParams(dp(50), dp(50)));
+        /* toque no disparador: encolhe um pouco, como no iPhone */
+        disparo.setOnTouchListener((vv, ev) -> {
+            if (ev.getAction() == MotionEvent.ACTION_DOWN) vv.animate().scaleX(0.9f).scaleY(0.9f).setDuration(90).start();
+            else if (ev.getAction() == MotionEvent.ACTION_UP || ev.getAction() == MotionEvent.ACTION_CANCEL) vv.animate().scaleX(1f).scaleY(1f).setDuration(140).start();
+            return false;
+        });
         HorizontalScrollView rolar = new HorizontalScrollView(this); rolar.setHorizontalScrollBarEnabled(false);
-        modos = new LinearLayout(this); modos.setGravity(Gravity.CENTER); modos.setPadding(dp(8), dp(12), dp(8), 0);
+        modos = new LinearLayout(this); modos.setGravity(Gravity.CENTER); modos.setPadding(dp(8), 0, dp(8), dp(12));
         rolar.addView(modos);
         LinearLayout.LayoutParams lz = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT); lz.bottomMargin = dp(14);
         LinearLayout pro = new LinearLayout(this); pro.setGravity(Gravity.CENTER_VERTICAL); pro.setPadding(dp(20), 0, dp(20), dp(8));
@@ -426,8 +433,12 @@ public class CameraActivity extends AppCompatActivity {
         pro.addView(rotExp); pro.addView(exposicao, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         pro.setVisibility(View.GONE);
         baixo.addView(pro, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        baixo.addView(zooms, lz); baixo.addView(linha);
+        /* como no iPhone: zoom, depois os modos e, embaixo, o disparador no centro */
+        zooms.setBackground(pilula(Color.argb(80, 0, 0, 0), 0)); zooms.setPadding(dp(3), dp(3), dp(3), dp(3));
+        LinearLayout.LayoutParams lzz = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT); lzz.bottomMargin = dp(12);
+        baixo.addView(zooms, lzz);
         baixo.addView(rolar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        baixo.addView(linha);
         raiz.addView(baixo, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         setContentView(raiz);
 
@@ -539,25 +550,29 @@ public class CameraActivity extends AppCompatActivity {
         lista.add(new String[]{M_PRO, "PRO"});
         boolean ferr = loop || square > 0;
         for (String[] m : lista) {
-            TextView t = botao(m[1], 14);
+            TextView t = botao(m[1], 13);
             boolean on = !ferr && m[0].equals(modo);
-            t.setTextColor(on ? AMARELO : Color.argb(170, 255, 255, 255));
-            t.setTypeface(null, on ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
-            t.setPadding(dp(13), dp(8), dp(13), dp(8));
+            t.setTextColor(on ? AMARELO : Color.argb(200, 255, 255, 255));
+            t.setTypeface(android.graphics.Typeface.create("sans-serif-medium", on ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL));
+            t.setLetterSpacing(0.08f); t.setShadowLayer(0, 0, 0, 0);
+            t.setPadding(dp(12), dp(6), dp(12), dp(6));
             final String k = m[0];
             t.setOnClickListener(v -> trocarModo(k));
             modos.addView(t);
         }
     }
     private void pintarDisparo() {
-        GradientDrawable g = new GradientDrawable();
-        g.setShape(GradientDrawable.OVAL);
+        /* disparador estilo iPhone: aro branco, espaço e miolo (branco = foto, vermelho = vídeo, quadradinho = gravando) */
         boolean vid = M_VIDEO.equals(modo) && !loop && square == 0;
         boolean rec = gravando != null || capturandoLoop;
-        g.setColor(rec ? Color.rgb(225, 29, 72) : vid ? Color.rgb(225, 29, 72) : Color.WHITE);
-        g.setStroke(dp(5), rec ? Color.WHITE : loop ? AMARELO : Color.argb(170, 255, 255, 255));
-        if (gravando != null) { g.setShape(GradientDrawable.RECTANGLE); g.setCornerRadius(dp(18)); }
-        disparo.setBackground(g);
+        GradientDrawable aro = new GradientDrawable(); aro.setShape(GradientDrawable.OVAL); aro.setColor(Color.TRANSPARENT); aro.setStroke(dp(4), loop ? AMARELO : Color.WHITE);
+        GradientDrawable miolo = new GradientDrawable();
+        miolo.setColor(vid || rec ? Color.rgb(255, 59, 48) : Color.WHITE);
+        if (gravando != null) { miolo.setShape(GradientDrawable.RECTANGLE); miolo.setCornerRadius(dp(7)); } else miolo.setShape(GradientDrawable.OVAL);
+        android.graphics.drawable.LayerDrawable ld = new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{aro, miolo});
+        int ins = gravando != null ? dp(25) : dp(8);
+        ld.setLayerInset(1, ins, ins, ins, ins);
+        disparo.setBackground(ld);
     }
     private void pintarFerramentas() {
         ferramentas.removeAllViews();
@@ -603,7 +618,7 @@ public class CameraActivity extends AppCompatActivity {
         rolarEfeitos.setVisibility(efeitosAbertos ? View.VISIBLE : View.GONE);
     }
     private void pintarZooms() {
-        zooms.removeAllViews();
+        zooms.removeAllViews(); zooms.setVisibility(View.INVISIBLE);
         if (camera == null) return;
         ZoomState z = camera.getCameraInfo().getZoomState().getValue();
         if (z == null) return;
@@ -614,15 +629,16 @@ public class CameraActivity extends AppCompatActivity {
         if (max >= 2f) op.add(2f);
         if (max >= 5f) op.add(5f);
         if (op.size() < 2) return;
+        zooms.setVisibility(View.VISIBLE);
         for (Float r : op) {
             boolean on = Math.abs(at - r) < 0.05f || (r == 1f && at > 0.95f && at < 1.95f && !op.contains(at));
             TextView t = botao(on ? String.format(Locale.US, "%.1f×", at).replace(".0×", "×") : (r < 1 ? ".5" : String.valueOf(r.intValue())), on ? 14 : 12);
             t.setPadding(0, 0, 0, 0);
-            t.setBackground(redondo(Color.argb(on ? 150 : 90, 0, 0, 0)));
+            t.setBackground(redondo(Color.argb(on ? 170 : 0, 0, 0, 0)));
             t.setTextColor(on ? AMARELO : Color.WHITE);
             final float alvo = r;
             t.setOnClickListener(v -> aplicarZoom(alvo));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(44), dp(44)); lp.leftMargin = dp(6); lp.rightMargin = dp(6);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(38), dp(38)); lp.leftMargin = dp(2); lp.rightMargin = dp(2);
             zooms.addView(t, lp);
         }
     }
