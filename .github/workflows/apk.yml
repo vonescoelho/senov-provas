@@ -58,7 +58,7 @@ jobs:
                       <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="Receber chamadas de voz e video do FlashPapo com o app fechado" />
                   </service>
                   <receiver android:name=".ChamadaAcaoReceiver" android:exported="false" />
-                  <activity android:name=".CameraActivity" android:exported="false" android:theme="@style/AppTheme.NoActionBar" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
+                  <activity android:name=".CameraActivity" android:exported="false" android:screenOrientation="portrait" android:theme="@style/AppTheme.NoActionBar" android:configChanges="orientation|screenSize|screenLayout|keyboardHidden" />
                   <receiver android:name=".InicioReceiver" android:exported="true">
                       <intent-filter>
                           <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -73,6 +73,9 @@ jobs:
           m = _re.search(r'<activity[^>]*android:name="\.MainActivity"', s)
           if m and "supportsPictureInPicture" not in s:
               s = s[:m.end()] + ' android:supportsPictureInPicture="true" android:resizeableActivity="true"' + s[m.end():]
+          m = _re.search(r'<activity[^>]*android:name="\.MainActivity"', s)
+          if m and "screenOrientation" not in s[m.start():m.start()+600].split(">")[0]:
+              s = s[:m.end()] + ' android:screenOrientation="portrait"' + s[m.end():]
           # links de fora (NotePino: flashpapo://sos?...) e "Compartilhar" de outros apps (links e textos)
           m = _re.search(r'<activity[^>]*android:name="\.MainActivity"[^>]*>', s)
           if m and "flashpapo" not in s:
