@@ -39,6 +39,7 @@ jobs:
       - name: Recursos do Android (imprimir, abrir com, salvar, TV, bloqueio de print, câmera e microfone)
         run: |
           cp android-extra/*.java android/app/src/main/java/br/com/senov/provas/
+          mkdir -p android/app/src/main/res/drawable && cp android-extra/res/drawable/*.xml android/app/src/main/res/drawable/
           M=android/app/src/main/AndroidManifest.xml
           sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />\n    <uses-feature android:name="android.hardware.microphone" android:required="false" />#' $M
           grep -c "RECORD_AUDIO" $M
