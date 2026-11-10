@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Logo do FlashPapo (balão "P" com brilho) para a barra de notificações: branco, o Android pinta -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="100" android:viewportHeight="100">
+    <group android:translateX="-0.5" android:translateY="0">
+        <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd"
+            android:pathData="M21,22Q21,8 35,8H56A30,30 0,0 1,56 68H41V78L15,92L21,78ZM56,20Q59,35 74,38Q59,41 56,56Q53,41 38,38Q53,35 56,20Z"/>
+    </group>
+</vector>
