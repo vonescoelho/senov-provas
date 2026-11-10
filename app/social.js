@@ -1,4 +1,4 @@
-/* FlashPapo — rede social dos professores: cadastro, perfil, conversas, grupos, mural e configurações.
+/* FlashPapo — rede social para todos: cadastro, perfil, conversas, grupos, mural e configurações.
    Usa o Firebase (login por e-mail e banco em tempo real). Só entra em ação quando
    app/firebase-config.js tem a configuração do projeto; sem ela, o app funciona como antes. */
 (function () {
@@ -85,6 +85,7 @@
     info: ic('<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>'),
     varinha: ic('<path d="M15 4V2M15 16v-2M8 9h2M20 9h2M17.8 11.8 19 13M17.8 6.2 19 5M12.2 6.2 11 5M3 21l9-9"/>'),
     escola: ic('<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/>'),
+    predio: ic('<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>'),
     megafone: ic('<path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/>'),
     check: ic('<path d="M20 6 9 17l-5-5"/>'),
     pen: ic('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
@@ -595,14 +596,17 @@
       <p class="small muted cs-centro">Ainda não tem conta? <button class="cs-link" data-s="ir" data-v="criar">Criar conta</button></p>
     </section>`;
   }
+  const INTERESSES = ["🎵 Música", "⚽ Esportes", "📚 Leitura", "🎮 Jogos", "✈️ Viagens", "🎬 Filmes", "🎨 Arte", "💻 Tecnologia", "🍳 Culinária", "🌿 Natureza", "🙏 Fé", "👗 Moda", "📸 Fotografia", "💼 Negócios", "🎓 Educação", "🐾 Pets"];
   function chipsDisciplinas(sel, alvo) {
-    return `<div class="chips">${(typeof DISCIPLINAS !== "undefined" ? DISCIPLINAS : []).map(d => `<button type="button" class="chip" data-s="disc" data-alvo="${alvo}" data-v="${esc(d)}" aria-pressed="${sel.includes(d)}">${esc(d)}</button>`).join("")}</div>`;
+    const base = INTERESSES.concat(ehProf() && typeof DISCIPLINAS !== "undefined" ? DISCIPLINAS : []);
+    const lista = base.concat(sel.filter(d => !base.includes(d)));
+    return `<div class="chips">${lista.map(d => `<button type="button" class="chip" data-s="disc" data-alvo="${alvo}" data-v="${esc(d)}" aria-pressed="${sel.includes(d)}">${esc(d)}</button>`).join("")}</div>`;
   }
   function campoFoto(foto, nome) {
     return `<div class="cs-foto-campo">
       <label class="cs-foto-bt" for="cs-foto-in" aria-label="Escolher foto">${foto ? `<img src="${esc(foto)}" alt="Sua foto">` : `<span class="cs-foto-vazia" style="background:${corDe(nome)}">${esc(iniciais(nome))}</span>`}<span class="cs-foto-cam">${K.camera}</span></label>
       <input type="file" id="cs-foto-in" accept="image/*" hidden>
-      <div class="stack" style="gap:6px"><b>Foto do perfil</b><span class="small muted">Ajuda os colegas a reconhecer você.</span>
+      <div class="stack" style="gap:6px"><b>Foto do perfil</b><span class="small muted">Ajuda os amigos a reconhecer você.</span>
       ${foto ? `<button type="button" class="btn ghost sm" data-s="foto-tirar" style="align-self:flex-start">Remover foto</button>` : ""}</div>
     </div>`;
   }
@@ -931,14 +935,27 @@
 
   /* ---------- Grupos ---------- */
   const novoCodigo = () => Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("");
+  const GRUPO_CAT = [["edu", "🎓", "Educação", ["Turma", "Sala dos professores", "Grupo de estudos", "Pais e escola"]],
+    ["rel", "❤️", "Relacionamento", ["Nós dois", "Casais", "Encontros"]],
+    ["trab", "💼", "Trabalho", ["Equipe", "Projeto", "Plantão", "Avisos"]],
+    ["emp", "🏢", "Empresarial", ["Clientes", "Vendas", "Diretoria", "Fornecedores"]],
+    ["fam", "🏠", "Família", ["Família", "Primos", "Pais e filhos", "Casa"]],
+    ["ami", "🎉", "Amigos", ["Amigos", "Rolê", "Viagem", "Turma antiga"]],
+    ["esp", "⚽", "Esportes", ["Futebol", "Corrida", "Academia", "Pelada"]],
+    ["fe", "🙏", "Fé", ["Oração", "Célula", "Coral", "Louvor"]],
+    ["com", "🏘️", "Comunidade", ["Bairro", "Condomínio", "Voluntários", "Vizinhos"]],
+    ["laz", "🎮", "Lazer", ["Jogos", "Leitura", "Música", "Filmes"]]];
+  const catGrupo = k => GRUPO_CAT.find(c => c[0] === k);
   function vNovoGrupo() {
-    const g = SO.ng || (SO.ng = { nome: "", descricao: "", foto: null, membros: [] });
+    const g = SO.ng || (SO.ng = { nome: "", descricao: "", foto: null, membros: [], cat: "" });
+    const cg = catGrupo(g.cat);
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Novo grupo</b></header>
       <form class="stack cs-pag" id="cs-f-grupo" novalidate>
         <div class="cs-foto-campo"><label class="cs-foto-bt" for="cs-foto-in">${g.foto ? `<img src="${esc(g.foto)}" alt="">` : `<span class="cs-foto-vazia" style="background:var(--primary)">${K.grupo}</span>`}<span class="cs-foto-cam">${K.camera}</span></label>
           <input type="file" id="cs-foto-in" accept="image/*" hidden><div class="stack" style="gap:4px"><b>Foto do grupo</b><span class="small muted">Opcional</span></div></div>
-        <label class="f" for="cs-g-nome">Nome do grupo<input class="in" id="cs-g-nome" maxlength="60" value="${esc(g.nome)}" placeholder="Ex.: Área de Linguagens"></label>
-        <div class="chips">${["Área de Linguagens", "Área de Matemática", "Ciências da Natureza", "Ciências Humanas", "Sala dos professores", "Professores do AEE"].map(n => `<button type="button" class="chip" data-s="g-sug" data-v="${n}">${n}</button>`).join("")}</div>
+        <label class="f" for="cs-g-nome">Nome do grupo<input class="in" id="cs-g-nome" maxlength="60" value="${esc(g.nome)}" placeholder="${cg ? "Ex.: " + esc(cg[3][0]) : "Nome do grupo"}"></label>
+        <div class="cs-gcat" role="group" aria-label="Tipo de grupo">${GRUPO_CAT.map(([k, e, n]) => `<button type="button" data-s="g-cat" data-v="${k}" aria-pressed="${g.cat === k}"><i>${e}</i><span>${n}</span></button>`).join("")}</div>
+        ${cg ? `<div class="chips">${cg[3].map(n => `<button type="button" class="chip" data-s="g-sug" data-v="${esc(n)}">${esc(n)}</button>`).join("")}</div>` : ""}
         <label class="f" for="cs-g-desc"><span>Descrição <small class="muted">(opcional)</small></span><textarea class="in" id="cs-g-desc" maxlength="300" rows="2" placeholder="Para que serve o grupo">${esc(g.descricao)}</textarea></label>
         <div class="f"><span>Participantes</span>
           <div class="chips">${g.membros.map(u => `<button type="button" class="chip cs-chip-p" data-s="g-tirar" data-v="${esc(u)}" aria-label="Tirar ${esc(P(u).nome)}">${av(P(u), 22, u)} ${esc(P(u).nome.split(" ")[0])} ✕</button>`).join("")}</div>
@@ -957,7 +974,7 @@
     const ref = fb.doc(C("chats")), codigo = novoCodigo();
     const b = fb.writeBatch(db);
     b.set(ref, { tipo: "grupo", nome: g.nome, descricao: g.descricao, foto: g.foto || null, membros: [eu(), ...g.membros.filter(u => u !== eu())], admins: [eu()],
-      criadoPor: eu(), criadoEm: TS(), atualizadoEm: TS(), codigo, soAdmins: false, ultima: null });
+      criadoPor: eu(), criadoEm: TS(), atualizadoEm: TS(), codigo, soAdmins: false, ultima: null, ...(g.cat ? { cat: g.cat } : {}) });
     b.set(D("convites", codigo), { chatId: ref.id, nome: g.nome });
     try { await b.commit(); SO.ng = null; SO.busca = ""; SO.resultados = null; SO.ocupado = false; SO.pilha.pop(); try { history.replaceState({ cs: SO.pilha.length }, ""); } catch (e) { } abrirChat(ref.id); toast("Grupo criado!"); }
     catch (e) { erro(msgErro(e)); }
@@ -969,7 +986,7 @@
     const mem = (c.membros || []).slice().sort((a, b) => ((c.admins || []).includes(b) - (c.admins || []).includes(a)) || P(a).nome.localeCompare(P(b).nome, "pt-BR"));
     return `<header class="cs-chat-h"><button class="cs-ico-bt" data-s="voltar" aria-label="Voltar">${K.back}</button><b>Dados do grupo</b></header>
       <div class="cs-pag stack">
-        <div class="cs-ghead">${avGrupo(c, 96)}<h1>${esc(c.nome)}</h1><span class="muted">Grupo · ${mem.length} ${mem.length === 1 ? "membro" : "membros"}</span>${c.descricao ? `<p class="cs-just">${esc(c.descricao)}</p>` : ""}</div>
+        <div class="cs-ghead">${avGrupo(c, 96)}<h1>${esc(c.nome)}</h1><span class="muted">${catGrupo(c.cat) ? catGrupo(c.cat)[1] + " " + catGrupo(c.cat)[2] : "Grupo"} · ${mem.length} ${mem.length === 1 ? "membro" : "membros"}</span>${c.descricao ? `<p class="cs-just">${esc(c.descricao)}</p>` : ""}</div>
         <div class="card cs-codigo"><div><span class="small muted">Código de convite</span><b>${esc(c.codigo || "—")}</b></div>
           <div class="row"><button class="btn sm" data-s="copiar" data-v="${esc(c.codigo)}">${K.copiar} Copiar</button><button class="btn primary sm" data-s="compartilhar-grupo" data-id="${esc(c.id)}">${K.share} Convidar</button></div></div>
         ${admin ? `<div class="cs-menu card flat">
@@ -1037,7 +1054,7 @@
   function avisoEmail() {
     if (!SO.user || SO.user.emailVerified || !/\.(gov|edu)\.br$/i.test(SO.user.email || "")) return "";
     try { if (localStorage.getItem("cs.avisoMail") === "nao") return ""; } catch (e) { }
-    return `<div class="aviso cs-aviso-mail">${K.mail}<span>Confirme o e-mail institucional para ganhar o selo de professor(a). É opcional.</span><button class="btn sm" data-s="email">Ver</button><button class="btn sm ghost" data-s="aviso-mail-nao" aria-label="Não mostrar de novo">Fechar</button></div>`;
+    return `<div class="aviso cs-aviso-mail">${K.mail}<span>Confirme o e-mail institucional para ganhar o selo. É opcional.</span><button class="btn sm" data-s="email">Ver</button><button class="btn sm ghost" data-s="aviso-mail-nao" aria-label="Não mostrar de novo">Fechar</button></div>`;
   }
   /* ---------- Recompartilhar: a publicação original aparece dentro da nova ---------- */
   SO.origCache = SO.origCache || {};
@@ -1470,7 +1487,8 @@
         </div>
         <div class="cs-pf-info">
           ${p.inst ? `<span class="cs-pf-tag">${K.check} E-mail institucional</span>` : ""}
-          ${p.escola ? `<span class="cs-pf-esc">${K.escola} ${esc(p.escola)}</span>` : ""}
+          ${p.escola ? `<span class="cs-pf-esc">${p.prof && p.prof.inep ? K.escola : K.predio} ${esc(p.escola)}</span>` : ""}
+          ${(p.disciplinas || []).length ? `<div class="cs-pf-int">${p.disciplinas.slice(0, 8).map(d => `<span>${esc(d)}</span>`).join("")}</div>` : ""}
           ${p.bio ? `<p class="cs-bio">${esc(p.bio)}</p>` : ""}
         </div>
         ${meu ? ""
@@ -1558,9 +1576,9 @@
         <label class="f" for="cs-nome"><span>Nome completo</span><input class="in" id="cs-nome" maxlength="60" value="${esc(e.nome)}"></label>
         <label class="f" for="cs-usu">Nome de usuário<span class="cs-arroba"><span>@</span><input class="in" id="cs-usu" autocapitalize="none" autocomplete="off" spellcheck="false" value="${esc(SO.cad.usuario)}"></span></label>
         <span id="cs-usu-ok" class="cs-ok" aria-live="polite"></span>
-        <label class="f" for="cs-escola">Escola<input class="in" id="cs-escola" maxlength="100" value="${esc(e.escola || "")}"></label>
-        <div class="f"><span>Disciplinas</span>${chipsDisciplinas(e.disciplinas, "ed")}</div>
-        <label class="f" for="cs-bio"><span>Sobre você</span><textarea class="in" id="cs-bio" maxlength="300" rows="3" placeholder="Ex.: Professora de Português há 12 anos, apaixonada por leitura.">${esc(e.bio || "")}</textarea></label>
+        <label class="f" for="cs-escola">Onde estuda ou trabalha<input class="in" id="cs-escola" maxlength="100" value="${esc(e.escola || "")}"></label>
+        <div class="f"><span>Interesses</span>${chipsDisciplinas(e.disciplinas, "ed")}</div>
+        <label class="f" for="cs-bio"><span>Sobre você</span><textarea class="in" id="cs-bio" maxlength="300" rows="3" placeholder="Conte um pouco sobre você">${esc(e.bio || "")}</textarea></label>
         ${ehAdulto() && !(SO.eu && SO.eu.menor) ? `<div class="f"><span>Relacionamento</span>
           <div class="cs-seg" role="group" aria-label="Relacionamento">${[["solteiro", "Solteiro(a)"], ["relacionamento", "Num relacionamento"]].map(([v, t]) => `<button type="button" data-s="ed-relac" data-v="${v}" aria-pressed="${(SO.eu && SO.eu.relac) === v}">${t}</button>`).join("")}</div>
           <button type="button" class="cs-link" data-s="pt-ajustes">Interesses e localização das Conexões</button></div>` : ""}
@@ -2077,6 +2095,7 @@
       }
       case "apagar-mim": ocultar(el.dataset.chat, id); window.fecharSheet(); pintarMsgs(); toast("Mensagem apagada para você."); break;
       case "denunciar": window.fecharSheet(); sheetDenuncia({ tipo: el.dataset.tipo, uid: el.dataset.uid, id, chat: el.dataset.chat, post: el.dataset.post }); break;
+      case "g-cat": { if (!SO.ng) break; const i = $("#cs-g-nome"), d = $("#cs-g-desc"); if (i) SO.ng.nome = i.value; if (d) SO.ng.descricao = d.value; SO.ng.cat = SO.ng.cat === v ? "" : v; pintar(); break; }
       case "g-sug": { const i = $("#cs-g-nome"); if (i) i.value = v; if (SO.ng) SO.ng.nome = v; break; }
       case "g-add": if (SO.ng && !SO.ng.membros.includes(id)) SO.ng.membros.push(id); SO.busca = ""; SO.resultados = null; pintar(); break;
       case "g-tirar": if (SO.ng) SO.ng.membros = SO.ng.membros.filter(u => u !== v); pintar(); break;
@@ -2421,6 +2440,12 @@ body.cs-desl-e #main>*{animation:csDeslE .28s ease-out}body.cs-desl-d #main>*{an
 .cs-pf-info .cs-selo{width:18px;height:18px}
 .cs-pf-tag,.cs-pf-esc{display:inline-flex;align-items:center;gap:5px;font-size:.84rem;color:var(--muted)}
 .cs-pf-tag svg,.cs-pf-esc svg{width:15px;height:15px}
+.cs-gcat{display:flex;flex-wrap:wrap;gap:6px}
+.cs-gcat button{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:99px;border:1px solid var(--line,#ddd);background:var(--card,transparent);color:inherit;font:inherit;font-size:.8rem}
+.cs-gcat button i{font-style:normal;font-size:1rem;line-height:1}
+.cs-gcat button[aria-pressed="true"]{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 14%,transparent);font-weight:700}
+.cs-pf-int{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.cs-pf-int span{font-size:.76rem;padding:3px 9px;border-radius:99px;background:color-mix(in srgb,var(--primary) 10%,transparent);color:var(--ink,inherit)}
 .cs-pf-info .cs-bio{margin:2px 0 0;text-align:left;white-space:pre-wrap;line-height:1.4}
 .cs-pf-bts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .cs-pf-bts .btn{min-height:40px;padding:0 10px;font-size:.92rem;border-radius:12px;background:var(--surface-2);border-color:transparent;color:var(--ink)}
