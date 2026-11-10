@@ -505,7 +505,7 @@ body.cs-5abas .nav .ico{padding:3px 12px}
 .cs-ytp .cs-ico-bt{color:#fff;background:rgba(255,255,255,.12)}
 .cs-ytp-v{flex:1;display:grid;place-items:center}
 .cs-ytp-v iframe{width:100%;aspect-ratio:16/9;max-height:100%;border:0}
-.cs-ytp-a{display:flex;gap:8px;padding:10px 12px calc(14px + env(safe-area-inset-bottom,0px))}.cs-ytp-a .btn{flex:1}
+.cs-ytp-a{display:flex;gap:8px;padding:10px 12px calc(14px + var(--sab,0px))}.cs-ytp-a .btn{flex:1}
 `;
   document.head.appendChild(css);
 

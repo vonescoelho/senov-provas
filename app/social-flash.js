@@ -921,10 +921,10 @@
 .cs-flv-barras b{display:block;height:100%;background:#fff}
 .cs-flv-top{display:flex;align-items:center;gap:10px;padding:4px 8px 6px 12px;z-index:2}
 .cs-flv-top>span:not(.cs-av){flex:1;display:flex;flex-direction:column;min-width:0}.cs-flv-top>.cs-av{flex:none}.cs-flv-top small{opacity:.8}
-.cs-flv-palco{flex:1;min-height:0;display:grid;place-items:center;position:relative}
-.cs-flv-palco img,.cs-flv-palco video{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}
-.cs-flv-leg{position:absolute;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom,0px));text-align:center;font-size:1.05rem;font-weight:600;text-shadow:0 1px 4px #000;margin:0;pointer-events:none}
-.cs-flv-pe{display:flex;align-items:center;gap:8px;padding:10px 10px calc(12px + env(safe-area-inset-bottom,0px));margin-bottom:var(--kb,0px)}
+.cs-flv-palco{flex:1;min-height:0;display:grid;place-items:center;position:relative;overflow:hidden}
+.cs-flv-palco img,.cs-flv-palco video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.cs-flv-leg{position:absolute;left:12px;right:12px;bottom:calc(84px + var(--sab,0px));text-align:center;font-size:1.05rem;font-weight:600;text-shadow:0 1px 4px #000;margin:0;pointer-events:none}
+.cs-flv-pe{position:relative;z-index:3;flex:none;display:flex;align-items:center;gap:8px;padding:10px 10px calc(12px + var(--sab,0px));margin-bottom:var(--kb,0px)}
 .cs-flv-resp{flex:1;background:rgba(255,255,255,.12)!important;color:#fff!important;border-color:rgba(255,255,255,.3)!important;border-radius:24px!important}
 .cs-flv-resp::placeholder{color:rgba(255,255,255,.75)}
 .cs-flv-bt span{white-space:nowrap}
@@ -987,7 +987,7 @@
 .cs-flc-vfx button{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;display:grid;place-items:center;cursor:pointer}.cs-flc-vfx svg{width:20px;height:20px}
 .cs-flc-vfx button[aria-pressed="true"]{background:#FFC83D;color:#111;border-color:#FFC83D}
 .cs-flc-ef label svg{width:20px;height:20px;flex:none;opacity:.9}
-.cs-flc-baixo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.cs-flc-baixo{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:14px 16px calc(16px + var(--sab,0px))}
 .cs-flc-gal{justify-self:start;border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:14px;width:62px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;font:inherit}
 .cs-flc-gal svg{width:24px;height:24px}.cs-flc-gal small{font-size:.7rem}
 .cs-flc-disp{width:84px;height:84px;border:0;background:none;position:relative;cursor:pointer;padding:0}
@@ -999,7 +999,7 @@
 .cs-flc-disp.gravando i{inset:26px;border-radius:8px}
 .cs-flc-modo{justify-self:end}
 .cs-flc-modo button{color:#fff}
-.cs-flc-ed{display:flex;flex-direction:column;gap:10px;padding:12px 14px calc(16px + env(safe-area-inset-bottom,0px))}
+.cs-flc-ed{display:flex;flex-direction:column;gap:10px;padding:12px 14px calc(16px + var(--sab,0px))}
 .cs-flc-linha{display:flex;align-items:center;gap:10px;border:0;background:rgba(255,255,255,.1);color:#fff;border-radius:14px;padding:12px;font:inherit;text-align:left;cursor:pointer;width:100%}
 .cs-flc-linha>span{flex:1;min-width:0}.cs-flc-linha svg{width:22px;height:22px;flex:none}
 .cs-flc-linha i{display:grid;place-items:center}

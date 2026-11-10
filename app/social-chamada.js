@@ -36,6 +36,7 @@
     return TURN;
   }
   const ICE_ = () => [...STUN, ...(TURN || RELE_PUBLICO)];
+  X.ice = async () => { await carregarTurn(); return ICE_(); };
   /* som de "chamando" para quem liga (425 Hz: 1 s tocando, 4 s pausa, como no Brasil) */
   function tocarChamando() {
     pararChamando();
@@ -426,7 +427,8 @@
       const s = await fb.getDoc(D("chamadas", p.cid)); const d = s.exists() ? s.data() : null;
       if (!d || d.estado === "fim" || !(d.dentro || []).length) { toast("A chamada já terminou."); if (NV) NV.fimChamada().catch(() => { }); return; }
       if (CH.id === p.cid) return;
-      if (p.acao === "atender" || (p.acao === "auto" && d.urgente && podeAtenderSozinho(d.de))) atender(p.cid, d, p.acao === "auto");
+      /* "auto" já foi conferido no Android (lista de quem pode): atende direto, mesmo com a lista do app ainda carregando */
+      if (p.acao === "atender" || (p.acao === "auto" && d.urgente)) atender(p.cid, d, p.acao === "auto");
       else if (!CH.id) mostrarEntrada({ id: p.cid, ...d });
     } catch (e) { console.warn(e); }
   }
@@ -553,13 +555,13 @@ body.cs-ch-on{overflow:hidden}
 .cs-ch-eu.traseira{transform:none}
 .cs-ch-aviso{margin:0 12px 6px;background:rgba(255,255,255,.12);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:.9rem}
 .cs-ch-aviso .btn{align-self:flex-start}
-.cs-ch-ctl{display:flex;justify-content:center;gap:18px;padding:14px 12px calc(22px + env(safe-area-inset-bottom,0px))}
+.cs-ch-ctl{display:flex;justify-content:center;gap:18px;padding:14px 12px calc(22px + var(--sab,0px))}
 .cs-ch-bt{width:62px;height:62px;border-radius:50%;border:0;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;cursor:pointer}
 .cs-ch-bt svg{width:28px;height:28px}
 .cs-ch-bt.off{background:#fff;color:#111}
 .cs-ch-bt.fim{background:#E5484D}
 .cs-ch-bt.ok{background:#22A06B;animation:csToque 1.2s infinite}
-.cs-ch-entra .cs-ch-ctl{gap:70px;padding-bottom:calc(50px + env(safe-area-inset-bottom,0px))}
+.cs-ch-entra .cs-ch-ctl{gap:70px;padding-bottom:calc(50px + var(--sab,0px))}
 .cs-ch-entra .cs-ch-bt{width:72px;height:72px}
 @keyframes csToque{50%{transform:scale(1.08)}}
 body.cs-pip .cs-ch-top,body.cs-pip .cs-ch-ctl,body.cs-pip .cs-ch-aviso,body.cs-pip .cs-ch-nome,body.cs-pip .cs-ch-con{display:none!important}

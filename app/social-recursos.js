@@ -355,7 +355,7 @@ body.cs-chatbg .cs-msgs{position:relative;z-index:1}
 .cs-sos-l{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
 .cs-sos-l small{color:var(--muted)}
 .cs-emo-mais{font-size:2rem;font-weight:300;color:var(--primary);border:2px dashed var(--line)!important;border-radius:16px!important;display:grid;place-items:center}
-.cs-fge{position:fixed;inset:0;z-index:140;background:var(--bg);display:flex;flex-direction:column;gap:12px;padding:calc(8px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.cs-fge{position:fixed;inset:0;z-index:140;background:var(--bg);display:flex;flex-direction:column;gap:12px;padding:calc(8px + env(safe-area-inset-top,0px)) 16px calc(16px + var(--sab,0px))}
 .cs-fge-top{display:flex;align-items:center;gap:10px}.cs-fge-top b{flex:1;font-size:1.05rem}
 .cs-fge-palco{align-self:center;width:min(86vw,360px);aspect-ratio:1;border-radius:18px;background:repeating-conic-gradient(var(--line) 0 25%,transparent 0 50%) 0 0/24px 24px;touch-action:none}
 .cs-fge-palco canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}

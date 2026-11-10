@@ -97,7 +97,7 @@ window.CS_EMOJIS = [["Carinhas", "😀", "😀 😃 😄 😁 😆 😅 🤣 �
 
   const css = document.createElement("style");
   css.textContent = `
-.cs-emop{position:fixed;left:0;right:0;bottom:calc(64px + var(--kb,0px) + env(safe-area-inset-bottom,0px));z-index:24;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -10px 30px rgba(15,20,40,.12);border-radius:22px 22px 0 0;display:flex;flex-direction:column;height:min(46vh,340px)}
+.cs-emop{position:fixed;left:0;right:0;bottom:calc(64px + var(--kb,0px) + var(--sab,0px));z-index:24;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -10px 30px rgba(15,20,40,.12);border-radius:22px 22px 0 0;display:flex;flex-direction:column;height:min(46vh,340px)}
 .cs-emo-abas{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;padding:8px 8px 4px;border-bottom:1px solid var(--line)}
 .cs-emo-abas::-webkit-scrollbar{display:none}
 .cs-emo-abas button{flex:none;width:40px;height:36px;border:0;border-radius:12px;background:none;font-size:1.25rem;cursor:pointer;display:grid;place-items:center;filter:grayscale(.6);opacity:.75}

@@ -1357,7 +1357,7 @@
 .cs-mid-dur{position:absolute;left:8px;bottom:8px;background:rgba(0,0,0,.55);color:#fff;font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:99px}
 .cs-midia .cs-h{position:absolute;right:12px;bottom:10px;background:rgba(0,0,0,.45);color:#fff!important;padding:1px 7px;border-radius:99px;opacity:1}
 .cs-midia{position:relative}
-.cs-up{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:120;background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 14px 14px;font-weight:700;font-size:.9rem;overflow:hidden}
+.cs-up{position:fixed;left:12px;right:12px;bottom:calc(76px + var(--sab,0px));z-index:120;background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 14px 14px;font-weight:700;font-size:.9rem;overflow:hidden}
 .cs-up i{position:absolute;left:0;bottom:0;height:4px;background:var(--primary);transition:width .2s}
 .cs-clip-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .cs-clip-g button{border:0;background:var(--surface-2);border-radius:16px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;font:inherit;font-weight:700;color:var(--ink);cursor:pointer;font-size:.9rem;text-align:center}
@@ -1379,7 +1379,7 @@ body.cs-vis-on .toast,body.cs-apres-on .toast{z-index:130}
 .cs-vpg{font-variant-numeric:tabular-nums;font-weight:700;opacity:.85;padding:0 4px}
 .cs-vis-palco{flex:1;min-height:0;display:grid;place-items:center;overflow:hidden;position:relative;touch-action:none}
 .cs-vis-palco img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none;transition:transform .05s}
-.cs-vis-acoes{display:flex;justify-content:space-around;gap:4px;padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px));background:rgba(255,255,255,.04)}
+.cs-vis-acoes{display:flex;justify-content:space-around;gap:4px;padding:8px 6px calc(8px + var(--sab,0px));background:rgba(255,255,255,.04)}
 .cs-vis-acoes button{flex:1;border:0;background:none;color:#fff;display:flex;flex-direction:column;align-items:center;gap:4px;font:inherit;font-size:.78rem;font-weight:600;padding:6px 2px;border-radius:12px;cursor:pointer;min-height:56px}
 .cs-vis-acoes button:active{background:rgba(255,255,255,.1)}
 .cs-vis-acoes svg{width:24px;height:24px}
@@ -1433,7 +1433,7 @@ body.cs-apres-on{overflow:hidden}
 .cs-aud-tx-x{position:absolute;right:0;top:0;border:0;background:none;color:inherit;opacity:.6;padding:2px;cursor:pointer}.cs-aud-tx-x svg{width:16px;height:16px}
 .cs-aud-tx{margin:3px 0 0;padding:5px 8px;border-radius:9px;background:color-mix(in srgb,currentColor 8%,transparent);font-size:.9rem;line-height:1.35;white-space:pre-wrap}
 .spin.sm{width:20px;height:20px;border-width:3px}
-.cs-grav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(0,0,0,.12);flex-wrap:wrap}
+.cs-grav{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--surface);border-top:1px solid var(--line);display:flex;align-items:center;gap:8px;padding:10px 10px calc(10px + var(--sab,0px));box-shadow:0 -8px 24px rgba(0,0,0,.12);flex-wrap:wrap}
 .cs-grav-bt{width:54px;height:54px;border-radius:50%;border:0;background:var(--surface-2);color:var(--ink);display:grid;place-items:center;cursor:pointer;flex:none}
 .cs-grav-bt svg{width:24px;height:24px}
 .cs-grav-bt.env{background:var(--primary);color:var(--primary-ink);width:62px;height:62px}
@@ -1476,7 +1476,7 @@ body.cs-apres-on{overflow:hidden}
 .cs-un-palco canvas{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none}
 .cs-un-tx{font-size:1.3rem;line-height:1.5;max-width:640px;white-space:pre-wrap;background:#1a1f2e;padding:20px 22px;border-radius:18px}
 .cs-un-aud{display:flex;flex-direction:column;align-items:center;gap:16px}
-.cs-un-aviso{display:flex;align-items:center;justify-content:center;gap:6px;opacity:.75;font-size:.85rem;margin:0;padding:10px 10px calc(14px + env(safe-area-inset-bottom,0px))}
+.cs-un-aviso{display:flex;align-items:center;justify-content:center;gap:6px;opacity:.75;font-size:.85rem;margin:0;padding:10px 10px calc(14px + var(--sab,0px))}
 .cs-un-aviso svg{width:16px;height:16px}
 `;
   document.head.appendChild(css);

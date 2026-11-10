@@ -226,6 +226,6 @@
 .cs-mus-trecho{border-top:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:var(--surface)}
 .cs-mus-tr-h{display:flex;align-items:center;gap:10px}.cs-mus-tr-h svg{width:22px;height:22px;color:var(--primary)}.cs-mus-tr-t{display:flex;flex-direction:column;min-width:0}.cs-mus-tr-t small{color:var(--muted)}
 .cs-mus-trecho input[type=range]{width:100%}.cs-mus-trecho .btn svg{width:16px;height:16px;vertical-align:-3px;margin-right:4px}
-.cs-mus-cred{font-size:.72rem;color:var(--muted);text-align:center;margin:0;padding:6px 14px calc(env(safe-area-inset-bottom,0px) + 8px)}`;
+.cs-mus-cred{font-size:.72rem;color:var(--muted);text-align:center;margin:0;padding:6px 14px calc(var(--sab,0px) + 8px)}`;
   document.head.appendChild(css);
 })();

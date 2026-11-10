@@ -123,6 +123,14 @@
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const eu = () => SO.user && SO.user.uid;
   const toast = m => window.toast ? window.toast(m) : alert(m);
+  /* o Android mostra um botão cinza de "play" antes do vídeo carregar: troca por uma imagem transparente */
+  try {
+    const VAZIO = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+    const semPoster = r => { (r.tagName === "VIDEO" ? [r] : r.querySelectorAll ? r.querySelectorAll("video:not([poster])") : []).forEach(v => { if (!v.getAttribute("poster")) v.setAttribute("poster", VAZIO); }); };
+    new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) semPoster(n); }))).observe(document.documentElement, { childList: true, subtree: true });
+  } catch (e) { }
+  /* no app Android o conteúdo já termina acima dos botões do celular: sem espaço extra embaixo */
+  try { const c = window.Capacitor; if (c && c.isNativePlatform && c.isNativePlatform() && c.getPlatform && c.getPlatform() === "android") document.documentElement.classList.add("cs-sem-sab"); } catch (e) { }
   const lerLS = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
   const gravarLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } };
   const lembrarTab = () => { try { localStorage.setItem("cs.tab", SO.tab); } catch (e) { } };
@@ -810,6 +818,28 @@
     const l = SO.msgs[c.id] || [], ul = l[l.length - 1], minha = ul && ul.autor === eu() && (!ul.em || Date.now() - ms(ul.em) < 8000);
     el.innerHTML = htmlMsgs(c);
     if (perto || minha) window.scrollTo(0, document.documentElement.scrollHeight);
+    chuvaDeEmojis(c.id, l);
+  }
+  /* emoções nas conversas: quando um manda um emoji e o outro responde com o mesmo, sobem vários na tela */
+  const SO_chuva = new Set();
+  const soEmojis = t => { const x = String(t || "").trim(); if (!x || x.length > 24) return null; try { const g = [...new Intl.Segmenter("pt", { granularity: "grapheme" }).segment(x)].map(y => y.segment).filter(y => y.trim()); return g.length && g.every(y => /\p{Extended_Pictographic}/u.test(y)) ? g : null; } catch (e) { return null; } };
+  function chuvaDeEmojis(chatId, l) {
+    const ul = l[l.length - 1]; if (!ul || ul.apagada || SO_chuva.has(ul.id)) return;
+    if (ul.em && Date.now() - ms(ul.em) > 15000) { SO_chuva.add(ul.id); return; }
+    const a = soEmojis(ul.texto); if (!a) return;
+    const ant = [...l].reverse().find(x => x.id !== ul.id && !x.apagada && x.autor !== ul.autor);
+    const b = ant && soEmojis(ant.texto); SO_chuva.add(ul.id);
+    const comum = b ? a.find(e => b.includes(e)) : null;
+    chuva(comum || a[0], comum ? 26 : 8);
+  }
+  function chuva(e, n) {
+    for (let i = 0; i < n; i++) {
+      const d = document.createElement("i"); d.className = "cs-chuva"; d.textContent = e;
+      d.style.left = (4 + Math.random() * 88) + "vw"; d.style.fontSize = (22 + Math.random() * 26) + "px";
+      d.style.animationDelay = (Math.random() * (n > 10 ? 1.4 : 0.5)) + "s"; d.style.setProperty("--x", (Math.random() * 60 - 30) + "px");
+      document.body.appendChild(d); setTimeout(() => d.remove(), 4200);
+    }
+    try { navigator.vibrate && navigator.vibrate(n > 10 ? [25, 60, 25] : 15); } catch (x) { }
   }
   /* Todas as figurinhas numa só grade; as usadas por último aparecem primeiro */
   const figRecentes = () => { try { return (JSON.parse(localStorage.getItem("cs.figrec") || "[]")).filter(id => FIGS[id]); } catch (e) { return []; } };
@@ -2293,8 +2323,8 @@ html:has(> body.cs-on){padding-top:0}
 body.cs-on main{padding-top:calc(6px + env(safe-area-inset-top,0px))}
 body.cs-sem-nav .nav{display:none}
 body.cs-sem-nav .app{padding-left:0}
-body.cs-sem-nav main{padding-bottom:calc(72px + max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px)))}
-body.cs-com-compor main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px) + var(--kb,0px))}
+body.cs-sem-nav main{padding-bottom:calc(72px + var(--sab,0px))}
+body.cs-com-compor main{padding-bottom:calc(96px + var(--sab,0px) + var(--kb,0px))}
 body.cs-chatbg{background-image:radial-gradient(color-mix(in srgb,var(--primary) 11%,transparent) 1.2px,transparent 1.3px);background-size:22px 22px}
 .cs-cab{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px}
 .cs-cab h1,.xf-tit,h1.cs-pf-usu{font-family:var(--display)!important;font-size:1.15rem!important;font-weight:700!important;letter-spacing:-.01em!important;line-height:1.2!important;margin:0;text-transform:none}
@@ -2333,7 +2363,7 @@ body.cs-on .nav button{min-height:56px;padding:8px 2px}body.cs-on .nav .ico{padd
 .cs-m.eu .cs-resp-in{background:rgba(255,255,255,.16);border-left-color:#fff}.cs-m.eu .cs-resp-in b{color:#fff}
 .cs-resp-in{margin-bottom:6px}.cs-resp-solta{max-width:220px;margin-bottom:4px}
 .scrim{background:rgba(8,12,24,.26)!important}
-.scrim .sheet{background:color-mix(in srgb,var(--surface) 86%,transparent)!important;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);gap:6px!important;padding:6px 12px calc(12px + env(safe-area-inset-bottom,0px))!important;max-width:560px;box-shadow:0 -10px 30px rgba(0,0,0,.14)}
+.scrim .sheet{background:color-mix(in srgb,var(--surface) 86%,transparent)!important;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);gap:6px!important;padding:6px 12px calc(12px + var(--sab,0px))!important;max-width:560px;box-shadow:0 -10px 30px rgba(0,0,0,.14)}
 .scrim .sheet-h{position:sticky;top:-6px;z-index:3;background:color-mix(in srgb,var(--surface) 97%,transparent)!important;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);margin:0 -12px!important;padding:10px 16px 8px!important;box-shadow:0 1px 0 color-mix(in srgb,var(--line) 70%,transparent)}
 .scrim .sheet-h h2{font-size:1rem;font-weight:700}
 .scrim .sheet .cs-menu>button{min-height:44px;padding:7px 8px;font-size:.95rem;border-radius:10px;gap:12px}
@@ -2373,6 +2403,8 @@ body.cs-desl-e #main>*{animation:csDeslE .28s ease-out}body.cs-desl-d #main>*{an
 .cs-trad button{position:absolute;right:2px;top:2px;border:0;background:none;color:inherit;opacity:.55;padding:3px;cursor:pointer}.cs-trad button svg{width:13px;height:13px}
 .cs-fixm{display:flex;align-items:center;gap:8px;width:calc(100% + 32px);margin:0 -16px;position:sticky;top:calc(54px + env(safe-area-inset-top,0px));-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:0;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--surface) 94%,transparent);color:var(--ink);padding:7px 14px;font:inherit;font-size:.86rem;text-align:left;cursor:pointer;z-index:21}
 .cs-fixm svg{width:16px;height:16px;color:var(--primary);flex:none}.cs-fixm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-chuva{position:fixed;bottom:-50px;z-index:270;pointer-events:none;font-style:normal;animation:csChuva 2.6s cubic-bezier(.25,.6,.3,1) forwards;opacity:0}
+@keyframes csChuva{0%{opacity:0;transform:translate(0,0) scale(.6)}12%{opacity:1}100%{opacity:0;transform:translate(var(--x),-92vh) scale(1.15) rotate(12deg)}}
 .cs-pf-av{flex:none}.cs-pf-fotobt{border:0;padding:0;background:none;border-radius:50%;cursor:zoom-in;display:block}
 .cs-foto-gr{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.86);display:grid;place-items:center;animation:csFotoIn .18s ease;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .cs-foto-gr figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:12px}.cs-foto-gr figcaption{color:#fff;font-weight:600;font-size:1rem;max-width:86vw;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -2445,7 +2477,7 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-selo svg{width:100%;height:100%}
 .nav .ico{position:relative}
 .cs-badge{position:absolute;top:-3px;right:4px;min-width:20px;height:20px;border-radius:99px;background:var(--danger);color:#fff;font-size:.7rem;font-style:normal;display:grid;place-items:center;padding:0 5px;font-weight:800;border:2px solid var(--surface)}
-.cs-fab{position:fixed;right:18px;bottom:calc(84px + env(safe-area-inset-bottom,0px));width:62px;height:62px;border-radius:20px;border:0;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;box-shadow:0 12px 26px color-mix(in srgb,var(--primary) 40%,transparent);cursor:pointer;z-index:26}
+.cs-fab{position:fixed;right:18px;bottom:calc(84px + var(--sab,0px));width:62px;height:62px;border-radius:20px;border:0;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;box-shadow:0 12px 26px color-mix(in srgb,var(--primary) 40%,transparent);cursor:pointer;z-index:26}
 .cs-fab svg{width:28px;height:28px}
 @media (min-width:900px){.cs-fab{bottom:28px;right:28px}}
 .cs-menu{display:flex;flex-direction:column}
@@ -2508,13 +2540,13 @@ button.cs-item:hover{background:var(--surface-2)}
 .cs-fig{display:flex;flex-direction:column;align-items:inherit}
 .cs-fig .cs-h{background:color-mix(in srgb,var(--surface) 88%,transparent);padding:1px 8px;border-radius:99px;color:var(--ink);opacity:1;margin-top:-6px}
 .cs-m>.cs-autor{padding-left:6px}
-.cs-compor{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:25;display:flex;align-items:flex-end;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line)}
+.cs-compor{position:fixed;left:0;right:0;bottom:var(--kb,0px);z-index:25;display:flex;align-items:flex-end;gap:6px;padding:8px 10px calc(8px + var(--sab,0px));background:color-mix(in srgb,var(--bg) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line)}
 .cs-compor .in{flex:1;border-radius:24px;min-height:50px;max-height:140px;resize:none;padding:13px 16px;line-height:1.35;font-size:1.03rem}
 .cs-env{width:50px;min-height:50px;height:50px;border-radius:50%;padding:0;flex:none}
 .cs-env svg{width:22px;height:22px}
 .cs-compor .cs-ico-bt{height:50px;width:50px}
 .cs-aviso-comp{justify-content:center;align-items:center;color:var(--muted);font-size:.94rem;min-height:64px;gap:6px}
-.cs-figp{position:fixed;left:0;right:0;bottom:calc(66px + env(safe-area-inset-bottom,0px));z-index:24;background:var(--surface);border-top:1px solid var(--line);padding:12px;max-height:48vh;overflow:auto;box-shadow:0 -10px 26px rgba(0,0,0,.1);border-radius:20px 20px 0 0}
+.cs-figp{position:fixed;left:0;right:0;bottom:calc(66px + var(--sab,0px));z-index:24;background:var(--surface);border-top:1px solid var(--line);padding:12px;max-height:48vh;overflow:auto;box-shadow:0 -10px 26px rgba(0,0,0,.1);border-radius:20px 20px 0 0}
 .cs-figp .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .cs-figp .chips .chip{flex:none}
 #layer .cs-figp{position:static;box-shadow:none;border:0;padding:8px 0 0;max-height:none;border-radius:0}
@@ -2595,7 +2627,7 @@ body.cs-on .btn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-mfv-palco{flex:1;display:grid;place-items:center;overflow:hidden}
 .cs-mfv-palco img{max-width:100%;max-height:100%;object-fit:contain;transition:transform .2s ease,filter .3s;will-change:transform}
 .cs-mfv-palco img.bor{filter:blur(14px)}
-.cs-mfv-pts{display:flex;justify-content:center;gap:6px;padding:10px 0 calc(14px + env(safe-area-inset-bottom,0px))}
+.cs-mfv-pts{display:flex;justify-content:center;gap:6px;padding:10px 0 calc(14px + var(--sab,0px))}
 .cs-mfv-pts i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35)}.cs-mfv-pts i.on{background:#fff}
 
 .cs-seg button{flex:1}

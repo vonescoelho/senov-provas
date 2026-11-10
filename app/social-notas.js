@@ -264,6 +264,6 @@
 .cs-nt-anx{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:12px;padding:6px 8px;font-size:.85rem}
 .cs-nt-anx img{width:40px;height:40px;object-fit:cover;border-radius:8px}.cs-nt-anx>svg{width:20px;height:20px}.cs-nt-anx span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cs-nt-anx button{border:0;background:none;color:var(--muted);width:30px;height:30px;display:grid;place-items:center}.cs-nt-anx button svg{width:16px;height:16px}
-body.cs-com-compor .cs-nt-lista{padding-bottom:calc(130px + env(safe-area-inset-bottom,0px))}`;
+body.cs-com-compor .cs-nt-lista{padding-bottom:calc(130px + var(--sab,0px))}`;
   document.head.appendChild(css);
 })();

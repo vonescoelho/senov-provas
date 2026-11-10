@@ -85,7 +85,9 @@
     const el = document.createElement("div"); el.id = "xf-app"; el.className = "xf";
     el.innerHTML = `<div class="xf-top"><button class="xf-x" data-s="xf-sair-fixo" aria-label="Fechar" hidden>${I.x}</button>
         <div class="xf-modos"><button data-s="xf-modo" data-v="pv" aria-label="Para você" title="Para você">${I.voce}</button><button data-s="xf-modo" data-v="seg" aria-label="Seguindo" title="Seguindo">${I.amigos}</button></div>
+        <button class="xf-live-bt" data-s="lv-iniciar" aria-label="Transmitir ao vivo"><i></i>LIVE</button>
         <span class="xf-esp"></span><h1 class="xf-tit">MyFlash</h1><button class="xf-tbt" data-s="xf-mudo" aria-label="Som" id="xf-mudo">${I.som}</button></div>
+      <div class="xf-lives" id="xf-lives"></div>
       <div class="xf-feed" id="xf-feed"></div>
       <button class="xf-criar" data-s="xf-criar" aria-label="Criar MyFlash">${I.mais}</button>`;
     document.body.appendChild(el); XF.el = el;
@@ -160,7 +162,8 @@
     const alvoX = lg.left - r.left + 112 * k, alvoY = lg.top - r.top + 76 * k;
     peca.style.transition = "left .3s ease, top .3s ease, transform .3s ease"; peca.style.left = alvoX + "px"; peca.style.top = alvoY + "px";
     qc.classList.add("ok"); try { navigator.vibrate && navigator.vibrate(30); } catch (e) { }
-    setTimeout(() => { if (X.criarXFlesh) X.criarXFlesh(); setTimeout(() => { qc.classList.remove("ok"); peca.style.transition = ""; peca.style.left = ""; peca.style.top = ""; }, 800); }, 550);
+    setTimeout(() => { const pr = peca.getBoundingClientRect(); festa(pr.left + pr.width / 2, pr.top + pr.height / 2, 18); }, 280);
+    setTimeout(() => { if (X.criarXFlesh) X.criarXFlesh(); setTimeout(() => { qc.classList.remove("ok"); peca.style.transition = ""; peca.style.left = ""; peca.style.top = ""; }, 800); }, 1300);
   }
   document.addEventListener("pointerdown", e => {
     const peca = e.target.closest && e.target.closest("#xf-qc-peca"); if (!peca) return;
@@ -176,6 +179,62 @@
     };
     peca.addEventListener("pointermove", mover); peca.addEventListener("pointerup", soltar); peca.addEventListener("pointercancel", soltar);
   });
+  /* ---------- festa de emojis quando acerta ---------- */
+  const ALEGRES = ["🎉", "😄", "🥳", "✨", "💜", "⭐", "😍", "🎈", "🙌", "💫"];
+  function festa(x, y, n) {
+    for (let i = 0; i < (n || 12); i++) {
+      const e = document.createElement("i"); e.className = "xf-festa"; e.textContent = ALEGRES[Math.floor(Math.random() * ALEGRES.length)];
+      const ang = Math.random() * Math.PI * 2, dist = 70 + Math.random() * 120;
+      e.style.left = x + "px"; e.style.top = y + "px";
+      e.style.setProperty("--dx", Math.cos(ang) * dist + "px"); e.style.setProperty("--dy", (Math.sin(ang) * dist - 60) + "px");
+      e.style.setProperty("--r", (Math.random() * 120 - 60) + "deg"); e.style.fontSize = (18 + Math.random() * 16) + "px";
+      document.body.appendChild(e); setTimeout(() => e.remove(), 1300);
+    }
+    try { navigator.vibrate && navigator.vibrate([20, 40, 20]); } catch (e) { }
+  }
+  X.festa = festa;
+  /* ---------- joguinhos quando ainda não tem vídeo ---------- */
+  const JG = { jogo: "qc", cartas: null, viradas: [], pares: 0, bolhas: 0 };
+  const EMO_MEM = ["🐶", "🍕", "🚀", "🌈", "🎸", "🍉", "🦄", "⚽", "🌻", "🐙"];
+  function novasCartas() {
+    const e = [...EMO_MEM].sort(() => Math.random() - 0.5).slice(0, 4), l = [...e, ...e].sort(() => Math.random() - 0.5);
+    JG.cartas = l.map((v, i) => ({ i, v, aberta: false, ok: false })); JG.viradas = []; JG.pares = 0;
+  }
+  function htmlJogo() {
+    const abas = [["qc", "🧩"], ["mem", "🃏"], ["bol", "🎈"]].map(([k, ic]) => `<button data-s="xf-jogo" data-v="${k}" aria-pressed="${JG.jogo === k}" aria-label="${k === "qc" ? "Quebra-cabeça" : k === "mem" ? "Memória" : "Bolhas"}">${ic}</button>`).join("");
+    let corpo = "";
+    if (JG.jogo === "mem") {
+      if (!JG.cartas) novasCartas();
+      corpo = `<div class="xf-mem">${JG.cartas.map(c => `<button class="xf-carta ${c.aberta || c.ok ? "aberta" : ""} ${c.ok ? "ok" : ""}" data-s="xf-carta" data-v="${c.i}" aria-label="Carta"><span>${c.aberta || c.ok ? c.v : ""}</span></button>`).join("")}</div>
+        ${JG.pares === 4 ? `<button class="xf-denovo" data-s="xf-mem-novo" aria-label="Jogar de novo">↻</button>` : ""}`;
+    } else if (JG.jogo === "bol") {
+      corpo = `<div class="xf-bol" id="xf-bol">${Array.from({ length: 10 }, (_, i) => `<button class="xf-bolha" data-s="xf-bolha" style="--x:${8 + (i * 9) % 80}%;--d:${(i * 0.7) % 4}s;--t:${5 + (i % 4)}s" aria-label="Bolha">${["🎈", "🫧", "🎈", "⭐", "🫧"][i % 5]}</button>`).join("")}</div><b class="xf-placar">${JG.bolhas}</b>`;
+    } else corpo = quebraCabeca();
+    return `<div class="xf-jogos" role="tablist">${abas}</div>${corpo}`;
+  }
+  function repintarJogo() { const v = document.querySelector(".xf-vazio"); if (v) v.innerHTML = htmlJogo(); }
+  Object.assign(X.acoes, {
+    "xf-jogo": el => { JG.jogo = el.dataset.v; if (JG.jogo === "bol") JG.bolhas = 0; repintarJogo(); },
+    "xf-mem-novo": () => { novasCartas(); repintarJogo(); },
+    "xf-carta": el => {
+      const c = JG.cartas && JG.cartas[+el.dataset.v]; if (!c || c.ok || c.aberta || JG.viradas.length >= 2) return;
+      c.aberta = true; JG.viradas.push(c); repintarJogo();
+      if (JG.viradas.length === 2) {
+        const [a, b] = JG.viradas;
+        if (a.v === b.v) {
+          a.ok = b.ok = true; JG.viradas = []; JG.pares++;
+          const r = el.getBoundingClientRect(); festa(r.left + r.width / 2, r.top + r.height / 2, JG.pares === 4 ? 26 : 8);
+          setTimeout(repintarJogo, 250);
+        } else setTimeout(() => { a.aberta = b.aberta = false; JG.viradas = []; repintarJogo(); }, 750);
+      }
+    },
+    "xf-bolha": el => {
+      const r = el.getBoundingClientRect(); el.classList.add("pop"); el.disabled = true; JG.bolhas++;
+      festa(r.left + r.width / 2, r.top + r.height / 2, JG.bolhas >= 10 ? 26 : 5);
+      const p = document.querySelector(".xf-placar"); if (p) p.textContent = JG.bolhas;
+      if (JG.bolhas >= 10) setTimeout(() => { JG.bolhas = 0; repintarJogo(); }, 1400);
+    }
+  });
   function desenhar(doTopo) {
     const el = montar(), feed = el.querySelector("#xf-feed"), l = lista();
     el.querySelectorAll("[data-s=xf-modo]").forEach(b => b.setAttribute("aria-pressed", String(!XF.fixo && b.dataset.v === XF.modo)));
@@ -185,7 +244,7 @@
     if (l == null) { feed.innerHTML = `<div class="xf-vazio"><div class="spin"></div></div>`; return; }
     if (!l.length) {
       pararAtual();
-      feed.innerHTML = `<div class="xf-vazio">${quebraCabeca()}</div>`; el.classList.add("xf-claro"); document.body.classList.add("cs-xf-claro"); return;
+      feed.innerHTML = `<div class="xf-vazio">${htmlJogo()}</div>`; el.classList.add("xf-claro"); document.body.classList.add("cs-xf-claro"); return;
     }
     el.classList.remove("xf-claro"); document.body.classList.remove("cs-xf-claro");
     /* mantém os itens já desenhados (o vídeo não reinicia); só acrescenta os novos */
@@ -495,6 +554,20 @@ body.cs-xf main{visibility:hidden}
 body.cs-xf.cs-xf-claro{background:var(--bg)}body.cs-xf.cs-xf-claro .nav{background:var(--surface);border-top-color:var(--line)}body.cs-xf.cs-xf-claro .nav button{color:var(--muted)}
 body.cs-xf.cs-xf-claro .nav button[aria-current="page"]{color:var(--primary)}body.cs-xf.cs-xf-claro .nav button[aria-current="page"] .ico{background:var(--primary-soft)}
 .xf-qc{position:relative;width:240px;height:330px;margin:0 auto;touch-action:none}
+.xf-festa{position:fixed;z-index:400;pointer-events:none;font-style:normal;transform:translate(-50%,-50%);animation:xfFesta 1.2s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes xfFesta{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}15%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--r)) scale(1.1)}}
+.xf-jogos{display:flex;gap:10px;justify-content:center;margin-bottom:6px}
+.xf-jogos button{width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(176,38,255,.25);background:rgba(255,255,255,.7);font-size:1.35rem;cursor:pointer;display:grid;place-items:center}
+.xf-jogos button[aria-pressed="true"]{background:linear-gradient(135deg,#FF3D7F,#B026FF);border-color:transparent;box-shadow:0 6px 16px rgba(176,38,255,.3)}
+.xf-mem{display:grid;grid-template-columns:repeat(4,64px);gap:10px;justify-content:center;margin-top:10px}
+.xf-carta{width:64px;height:84px;border-radius:14px;border:0;cursor:pointer;background:linear-gradient(135deg,#FF3D7F,#B026FF);box-shadow:0 6px 14px rgba(176,38,255,.25);font-size:1.9rem;display:grid;place-items:center;transition:transform .25s}
+.xf-carta.aberta{background:#fff;transform:rotateY(0) scale(1.03);box-shadow:0 4px 12px rgba(0,0,0,.12)}.xf-carta.ok{opacity:.55;transform:scale(.94)}
+.xf-denovo{margin-top:14px;width:48px;height:48px;border-radius:50%;border:0;background:linear-gradient(135deg,#FF3D7F,#B026FF);color:#fff;font-size:1.4rem;cursor:pointer}
+.xf-bol{position:relative;width:min(86vw,340px);height:380px;margin:6px auto 0;overflow:hidden;border-radius:24px;background:linear-gradient(180deg,rgba(176,38,255,.08),rgba(255,61,127,.08))}
+.xf-bolha{position:absolute;left:var(--x);bottom:-60px;width:52px;height:52px;border:0;background:none;font-size:2.2rem;cursor:pointer;animation:xfSobe var(--t) linear var(--d) infinite}
+.xf-bolha.pop{animation:none;opacity:0;transform:scale(1.6);transition:all .2s}
+@keyframes xfSobe{0%{transform:translateY(0) translateX(0)}50%{transform:translateY(-220px) translateX(14px)}100%{transform:translateY(-460px) translateX(-10px)}}
+.xf-placar{display:block;margin-top:8px;font-size:1.4rem;color:#B026FF}
 .xf-qc-logo{position:absolute;left:10px;top:0;width:220px;height:220px;filter:drop-shadow(0 10px 24px rgba(176,38,255,.28))}
 .xf-qc-vaga{fill:rgba(255,255,255,.88);stroke:#fff;stroke-width:2.5;stroke-dasharray:5 4}
 .xf-qc-peca{position:absolute;left:120px;top:282px;width:74px;height:74px;margin:-37px 0 0 -37px;border:0;background:none;padding:0;cursor:grab;touch-action:none;filter:drop-shadow(0 6px 14px rgba(20,18,31,.28));animation:xfQc 1.8s ease-in-out infinite}

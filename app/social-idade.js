@@ -431,7 +431,7 @@
 .cs-idc-x svg{width:22px;height:22px}
 .cs-idc-passos{position:absolute;top:calc(env(safe-area-inset-top,0px) + 28px);left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:1}
 .cs-idc-passos i{width:34px;height:5px;border-radius:3px;background:rgba(255,255,255,.35)}.cs-idc-passos i.ok{background:#30c48d}
-.cs-idc-txt{position:absolute;left:0;right:0;bottom:0;padding:22px 20px calc(env(safe-area-inset-bottom,0px) + 26px);background:linear-gradient(transparent,rgba(0,0,0,.85) 30%);text-align:center;display:flex;flex-direction:column;gap:6px}
+.cs-idc-txt{position:absolute;left:0;right:0;bottom:0;padding:22px 20px calc(var(--sab,0px) + 26px);background:linear-gradient(transparent,rgba(0,0,0,.85) 30%);text-align:center;display:flex;flex-direction:column;gap:6px}
 .cs-idc-txt b{font-size:1.3rem}.cs-idc-txt span{opacity:.85;font-size:.95rem}
 .cs-idc-bts{display:flex;flex-direction:column;gap:10px;margin-top:12px}
 .cs-idc-bts .btn:not(.primary){background:rgba(255,255,255,.14);color:#fff;border-color:rgba(255,255,255,.35)}
