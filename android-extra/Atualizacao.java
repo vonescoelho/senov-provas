@@ -119,8 +119,8 @@ public class Atualizacao {
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pi = PendingIntent.getActivity(ctx, ID_NOTIF, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification n = new NotificationCompat.Builder(ctx, CANAL)
-            .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("✨ FlashPapo novinho te esperando · toque e veja")
+            .setSmallIcon(ChamadasService.icone(ctx))
+            .setContentTitle("✨ Versão nova · toque para atualizar")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(pi)

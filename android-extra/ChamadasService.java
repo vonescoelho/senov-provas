@@ -94,6 +94,19 @@ public class ChamadasService extends Service {
         nm.createNotificationChannel(av);
     }
 
+    /* logo do app na barra de notificações */
+    static int icone(android.content.Context c) {
+        int id = c.getResources().getIdentifier("ic_stat_flashpapo", "drawable", c.getPackageName());
+        return id != 0 ? id : android.R.drawable.stat_notify_chat;
+    }
+    /* só a primeira linha da mensagem, com "…" se tiver mais */
+    static String umaLinha(String t) {
+        if (t == null) return "";
+        String l = t.trim(); boolean corte = false;
+        int n = l.indexOf('\n'); if (n >= 0) { l = l.substring(0, n).trim(); corte = true; }
+        if (l.length() > 70) { l = l.substring(0, 70).trim(); corte = true; }
+        return corte ? l + "…" : l;
+    }
     static int idAviso(String chave) { return 20000 + (chave.hashCode() & 0x7ffff); }
 
     /* abre a conversa (ou o perfil) quando a pessoa toca no aviso */
@@ -105,11 +118,10 @@ public class ChamadasService extends Service {
 
     private void avisar(String chave, String titulo, String texto, PendingIntent pi, String categoria) {
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CANAL_AVISOS)
-            .setSmallIcon(android.R.drawable.stat_notify_chat)
+            .setSmallIcon(icone(this))
             .setColor(0xFFB026FF)
             .setContentTitle(titulo)
-            .setContentText(texto)
-            .setStyle(new NotificationCompat.BigTextStyle().bigText(texto))
+            .setContentText(umaLinha(texto))
             .setCategory(categoria)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
@@ -184,8 +196,9 @@ public class ChamadasService extends Service {
         Intent abrir = new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pi = PendingIntent.getActivity(this, 1, abrir, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         Notification n = new NotificationCompat.Builder(this, CANAL_CONEXAO)
-            .setSmallIcon(android.R.drawable.stat_sys_phone_call)
-            .setContentTitle("FlashPapo ativo")
+            .setSmallIcon(icone(this))
+            .setColor(0xFFB026FF)
+            .setContentTitle("Conectado")
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .setContentIntent(pi)
@@ -292,7 +305,7 @@ public class ChamadasService extends Service {
         PendingIntent piRecusar = PendingIntent.getBroadcast(this, id + 2, recusar, f);
         String tipo = urgente ? "🚨 Ligação Urgente" + (auto ? " · atendendo" : "") : voz ? "📞 Te ligando agora" : "🎥 Chamada de vídeo pra você";
         NotificationCompat.Builder b = new NotificationCompat.Builder(this, CANAL_CHAMADA)
-            .setSmallIcon(android.R.drawable.sym_call_incoming)
+            .setSmallIcon(icone(this))
             .setContentTitle(nome)
             .setContentText(tipo)
             .setCategory(NotificationCompat.CATEGORY_CALL)
