@@ -401,6 +401,29 @@ service cloud.firestore {
       match /som/{pid} { allow read: if logado() && pode(); allow create: if logado() && f().dono == eu() && request.resource.data.d is bytes && request.resource.data.d.size() <= 750000; allow delete: if logado() && f().dono == eu(); }
       match /vistos/{uid} { allow create, update: if logado() && uid == eu() && pode() && request.resource.data.keys().hasOnly(['em', 'curtiu', 'emo']) && textoOk('emo', 16); allow read, delete: if logado() && f().dono == eu(); }
     }
+    // Ao vivo no MyFlash: o vídeo vai direto entre os celulares; aqui ficam o aviso, quem assiste, os sinais e os comentários
+    match /lives/{id} {
+      function lv() { return get(/databases/$(database)/documents/lives/$(id)).data; }
+      allow read: if logado();
+      allow create: if logado() && request.resource.data.dono == eu() && request.resource.data.ativo == true && textoOk('titulo', 100);
+      allow update: if logado() && resource.data.dono == eu() && request.resource.data.dono == eu();
+      allow delete: if logado() && resource.data.dono == eu();
+      match /viewers/{uid} {
+        allow read: if logado() && (uid == eu() || lv().dono == eu());
+        allow create, update: if logado() && uid == eu() && lv().ativo == true;
+        allow delete: if logado() && (uid == eu() || lv().dono == eu());
+      }
+      match /sinais/{s} {
+        allow read, delete: if logado() && (resource.data.para == eu() || resource.data.de == eu());
+        allow create: if logado() && request.resource.data.de == eu() && request.resource.data.d is string && request.resource.data.d.size() <= 20000
+          && (lv().dono == eu() || request.resource.data.para == lv().dono);
+      }
+      match /coments/{c} {
+        allow read: if logado();
+        allow create: if logado() && request.resource.data.autor == eu() && textoOk('texto', 300) && textoOk('emo', 16);
+        allow delete: if logado() && (resource.data.autor == eu() || lv().dono == eu());
+      }
+    }
     // Destaques do perfil (até 5, controlado pelo app)
     match /destaques/{id} {
       function f() { return get(/databases/$(database)/documents/destaques/$(id)).data; }
