@@ -278,9 +278,12 @@ public class NativoPlugin extends Plugin {
                 androidx.core.view.WindowInsetsControllerCompat c = new androidx.core.view.WindowInsetsControllerCompat(w, w.getDecorView());
                 c.setAppearanceLightStatusBars(!escuro);
                 c.setAppearanceLightNavigationBars(!escuro);
-                if (fundo != null && Build.VERSION.SDK_INT < 35) {
+                if (fundo != null) {
                     int cor = android.graphics.Color.parseColor(fundo);
-                    w.setStatusBarColor(cor); w.setNavigationBarColor(cor);
+                    /* a faixa atrás dos botões do celular fica da cor do app */
+                    w.getDecorView().setBackgroundColor(cor);
+                    try { android.view.View wv = getBridge().getWebView(); if (wv != null && wv.getParent() instanceof android.view.View) ((android.view.View) wv.getParent()).setBackgroundColor(cor); } catch (Throwable t2) { }
+                    if (Build.VERSION.SDK_INT < 35) { w.setStatusBarColor(cor); w.setNavigationBarColor(cor); }
                 }
             } catch (Throwable t) { }
             call.resolve();

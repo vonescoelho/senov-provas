@@ -109,6 +109,12 @@ public class MainActivity extends BridgeActivity {
                     if (bridge == null || bridge.getWebView() == null) return;
                     WebView w = bridge.getWebView();
                     WindowInsetsCompat ins = ViewCompat.getRootWindowInsets(decor);
+                    /* o conteúdo do app termina acima dos botões do celular (voltar, início…): nada passa por baixo deles */
+                    if (ins != null && w.getLayoutParams() instanceof android.view.ViewGroup.MarginLayoutParams) {
+                        int nav = ins.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+                        android.view.ViewGroup.MarginLayoutParams lp = (android.view.ViewGroup.MarginLayoutParams) w.getLayoutParams();
+                        if (lp.bottomMargin != nav) { lp.bottomMargin = nav; w.setLayoutParams(lp); return; }
+                    }
                     int ime = 0;
                     if (ins != null && ins.isVisible(WindowInsetsCompat.Type.ime())) ime = ins.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     int[] loc = new int[2];
