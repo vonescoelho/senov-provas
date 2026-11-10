@@ -1581,7 +1581,10 @@
       const t = tema(), mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
       const escuro = t === "escuro" || (t === "auto" && !!(mq && mq.matches));
       const N = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Nativo;
-      if (N && N.barras) N.barras({ escuro }).catch(() => { });
+      if (N && N.barras) setTimeout(() => {
+        let fundo = null; try { const m = (getComputedStyle(document.body).backgroundColor || "").match(/\d+(\.\d+)?/g); if (m && m.length >= 3 && (m.length < 4 || +m[3] > 0)) fundo = "#" + m.slice(0, 3).map(x => Math.round(+x).toString(16).padStart(2, "0")).join(""); } catch (e) { }
+        N.barras({ escuro, ...(fundo ? { fundo } : {}) }).catch(() => { });
+      }, 60);
     } catch (e) { }
   }
   aplicarTema(tema());

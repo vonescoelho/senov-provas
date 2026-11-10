@@ -243,7 +243,7 @@
       ${f.legenda ? `<p class="cs-flv-leg">${esc(f.legenda)}</p>` : ""}
       <div class="cs-flv-pe">${meu ? `${s.tipo === "flash" ? `<button class="cs-flv-bt" data-s="flv-vistos">${I.olho}<span id="flv-nv"></span><span class="cs-flv-nc" id="flv-nc" hidden>${I.coracao}<b></b></span></button><button class="cs-flv-bt" data-s="flv-destacar" aria-label="Destacar">${I.estrela}</button><button class="cs-flv-bt" data-s="flv-editar" aria-label="Editar">${I.lapis}</button>` : ""}
           <button class="cs-flv-bt" data-s="flv-apagar" aria-label="${s.tipo === "destaque" ? "Remover" : "Apagar"}">${I.lixo}</button>`
-        : s.tipo === "flash" ? `<button class="cs-flv-bt cs-flv-cur ${curtiLocal(f.id) ? "on" : ""}" data-s="flv-curtir" aria-pressed="${curtiLocal(f.id)}" aria-label="Curtir">${I.coracao}</button><button class="cs-flv-bt cs-flv-emo ${emoLocal(f.id) ? "on" : ""}" data-s="flv-emo" aria-label="Reagir">${emoLocal(f.id) || I.emoji}</button><input class="in cs-flv-resp" id="flv-resp" maxlength="500" placeholder="Responder a ${esc((p.nome || "").split(" ")[0])}…" aria-label="Responder"><button class="cs-flv-bt env" data-s="flv-responder" aria-label="Enviar resposta">${I.enviar}</button>` : ""}</div>`;
+        : s.tipo === "flash" ? `<button class="cs-flv-bt cs-flv-cur ${curtiLocal(f.id) ? "on" : ""}" data-s="flv-curtir" aria-pressed="${curtiLocal(f.id)}" aria-label="Curtir">${I.coracao}</button><button class="cs-flv-bt cs-flv-emo ${emoLocal(f.id) ? "on" : ""}" data-s="flv-emo" aria-label="Reagir">${emoLocal(f.id) || I.emoji}</button><input class="in cs-flv-resp" id="flv-resp" maxlength="500" placeholder="Responder a ${esc((p.nome || "").split(" ")[0])}…" aria-label="Responder"><button class="cs-flv-bt env" data-s="flv-responder" aria-label="Enviar resposta">${I.enviar}</button>` : `<button class="cs-flv-bt cs-flv-emo ${emoLocal(f.id) ? "on" : ""}" data-s="flv-emo" aria-label="Reagir">${emoLocal(f.id) || I.emoji}</button><input class="in cs-flv-resp" id="flv-resp" maxlength="500" placeholder="Responder a ${esc((p.nome || "").split(" ")[0])}…" aria-label="Responder"><button class="cs-flv-bt env" data-s="flv-responder" aria-label="Enviar resposta">${I.enviar}</button>`}</div>`;
     if (meu && s.tipo === "flash") fb.getDocs(C(f.col, f.id, "vistos")).then(q => {
       if (itemAtual() !== f) return;
       const e = $("#flv-nv"), c = $("#flv-nc"), n = q.docs.filter(d => d.data().curtiu).length, em = q.docs.map(d => d.data().emo).filter(Boolean);
@@ -328,8 +328,8 @@
     if (e.target.id === "flv-resp") { if (e.key === "Enter") { e.preventDefault(); X.acoes["flv-responder"](); } return; }
     if (e.key === "Escape") fecharVisorFl(); if (e.key === "ArrowRight") navegar(1); if (e.key === "ArrowLeft") navegar(-1);
   });
-  X.acoes["flv-responder"] = async () => {
-    const inp = $("#flv-resp"), t = inp ? inp.value.trim() : "", f = itemAtual(); if (!t || !f) return;
+  X.acoes["flv-responder"] = async (el, ev, textoPronto) => {
+    const inp = $("#flv-resp"), t = textoPronto || (inp ? inp.value.trim() : ""), f = itemAtual(); if (!t || !f) return;
     if (ofensivo(t)) return toast("Mensagem não enviada: tem palavras ofensivas ou preconceituosas.");
     const id = [eu(), f.dono].sort().join("_");
     try {
@@ -340,7 +340,7 @@
       }
       if (!SO.chats.some(c => c.id === id)) SO.chats.push({ id, tipo: "direto", membros: [eu(), f.dono].sort() });
       const ok = await enviarMsg(id, { texto: "↩ Flash: " + t });
-      if (ok !== false) { inp.value = ""; inp.blur(); toast("Resposta enviada."); pausar(false); }
+      if (ok !== false) { if (!textoPronto && inp) { inp.value = ""; inp.blur(); toast("Resposta enviada."); } pausar(false); }
     } catch (e) { toast("Não foi possível responder: a pessoa pode aceitar mensagens só de quem ela segue."); }
   };
   /* curtir (quem vê); o dono vê quem curtiu e quem visualizou */
@@ -386,6 +386,7 @@
     const b = VW.el.querySelector("[data-s=flv-emo]"); if (b) { b.innerHTML = v || I.emoji; b.classList.toggle("on", !!v); }
     if (v) { const voa = document.createElement("div"); voa.className = "cs-flv-voa"; voa.textContent = v; VW.el.appendChild(voa); setTimeout(() => voa.remove(), 1200); try { navigator.vibrate && navigator.vibrate(15); } catch (e) { } }
     pausar(false);
+    if (VW.s && VW.s.tipo !== "flash") { if (v) X.acoes["flv-responder"](null, null, v); return; }
     try { await fb.setDoc(D(f.col, f.id, "vistos", eu()), { em: TS(), emo: v || null }, { merge: true }); } catch (e) { console.warn(e); }
   };
   /* editar a legenda depois de postar (só o dono) */
